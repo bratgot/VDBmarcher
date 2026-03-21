@@ -35,7 +35,6 @@ target_compile_definitions(VDBRender PRIVATE
 target_link_libraries(VDBRender PRIVATE
     ${NDK_LIB}
     OpenVDB::openvdb
-    opengl32
 )
 
 # Nuke expects no lib prefix, .dll suffix

@@ -74,16 +74,31 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Color_knob(f, _lightColor, "light_color", "Light Color");
     Tooltip(f, "Color and intensity of the light source.");
 
-    Divider(f, "Display");
-    Bool_knob(f, &_showBbox, "show_bbox", "Show Bounding Box");
-    Tooltip(f, "Draw a green wireframe around the volume in the output.\n"
-               "Helps you find the volume and frame your camera.");
+    Divider(f, "3D Viewport");
+    static const char* displayModes[] = {
+        "Off", "Bounding Box", "Bbox + Points (Low)",
+        "Bbox + Points (Med)", "Bbox + Points (High)", nullptr
+    };
+    Enumeration_knob(f, &_displayMode, displayModes, "display_mode", "3D Display");
+    Tooltip(f, "Controls what is drawn in the 3D viewport.\n\n"
+               "Off — nothing drawn\n"
+               "Bounding Box — green wireframe only\n"
+               "Bbox + Points — wireframe plus density point cloud preview\n"
+               "  Low ~16k points, Med ~64k, High ~250k\n"
+               "Point brightness = density. Helps visualise the volume shape.");
 }
 
 int VDBRenderIop::knob_changed(Knob* k)
 {
     if (k->is("file") || k->is("grid_name") || k->is("frame_offset")) {
         _gridValid = false;
+        _previewPoints.clear();
+        return 1;
+    }
+    if (k->is("display_mode")) {
+        _previewPoints.clear();
+        return 1;
+    }
         return 1;
     }
     return Iop::knob_changed(k);
@@ -184,59 +199,152 @@ void VDBRenderIop::append(Hash& hash)
 
 void VDBRenderIop::build_handles(ViewerContext* ctx)
 {
-    // Only draw when we have a valid grid and bbox display is on
-    if (!_showBbox || !_gridValid) return;
-
-    // Register ourselves for draw_handle callback
+    if (_displayMode == 0 || !_gridValid) return;
     add_draw_handle(ctx);
+}
+
+void VDBRenderIop::rebuildPointCloud()
+{
+    _previewPoints.clear();
+    _maxDensity = 1.0f;
+
+    if (!_floatGrid || _displayMode < 2) return;
+
+    // Resolution: Low=24, Med=40, High=64 samples per axis
+    int res = 24;
+    if (_displayMode == 3) res = 40;
+    if (_displayMode == 4) res = 64;
+
+    auto acc = _floatGrid->getConstAccessor();
+    const auto& xform = _floatGrid->transform();
+
+    const double dx = (_bboxMax[0] - _bboxMin[0]) / res;
+    const double dy = (_bboxMax[1] - _bboxMin[1]) / res;
+    const double dz = (_bboxMax[2] - _bboxMin[2]) / res;
+
+    // Threshold: skip very low density voxels
+    const float threshold = 0.001f;
+
+    _previewPoints.reserve(res * res * res / 4); // rough estimate
+
+    float maxD = 0.0f;
+    for (int iz = 0; iz < res; ++iz) {
+        double wz = _bboxMin[2] + (iz + 0.5) * dz;
+        for (int iy = 0; iy < res; ++iy) {
+            double wy = _bboxMin[1] + (iy + 0.5) * dy;
+            for (int ix = 0; ix < res; ++ix) {
+                double wx = _bboxMin[0] + (ix + 0.5) * dx;
+
+                openvdb::Vec3d wPos(wx, wy, wz);
+                openvdb::Vec3d iPos = xform.worldToIndex(wPos);
+                openvdb::Coord ijk(
+                    static_cast<int>(std::floor(iPos[0])),
+                    static_cast<int>(std::floor(iPos[1])),
+                    static_cast<int>(std::floor(iPos[2])));
+                float d = acc.getValue(ijk);
+
+                if (d > threshold) {
+                    _previewPoints.push_back({
+                        static_cast<float>(wx),
+                        static_cast<float>(wy),
+                        static_cast<float>(wz),
+                        d
+                    });
+                    if (d > maxD) maxD = d;
+                }
+            }
+        }
+    }
+
+    _maxDensity = (maxD > 0.0f) ? maxD : 1.0f;
 }
 
 void VDBRenderIop::draw_handle(ViewerContext* ctx)
 {
-    if (!_showBbox || !_gridValid) return;
+    if (_displayMode == 0 || !_gridValid) return;
 
-    // Build the 8 world-space corners of the bbox
-    float corners[8][3];
-    int ci = 0;
-    for (int iz = 0; iz <= 1; ++iz)
-        for (int iy = 0; iy <= 1; ++iy)
-            for (int ix = 0; ix <= 1; ++ix) {
-                corners[ci][0] = static_cast<float>(ix ? _bboxMax[0] : _bboxMin[0]);
-                corners[ci][1] = static_cast<float>(iy ? _bboxMax[1] : _bboxMin[1]);
-                corners[ci][2] = static_cast<float>(iz ? _bboxMax[2] : _bboxMin[2]);
-                ++ci;
-            }
-
-    // Draw wireframe box
-    glPushAttrib(GL_CURRENT_BIT | GL_LINE_BIT | GL_ENABLE_BIT);
+    glPushAttrib(GL_CURRENT_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_POINT_BIT);
     glDisable(GL_LIGHTING);
-    glLineWidth(1.5f);
-    glColor3f(0.0f, 1.0f, 0.0f); // green
 
-    glBegin(GL_LINES);
-    for (int e = 0; e < 12; ++e) {
-        int i0 = _bboxEdges[e][0];
-        int i1 = _bboxEdges[e][1];
-        glVertex3f(corners[i0][0], corners[i0][1], corners[i0][2]);
-        glVertex3f(corners[i1][0], corners[i1][1], corners[i1][2]);
+    // ── Bounding box wireframe ──
+    if (_displayMode >= 1) {
+        float corners[8][3];
+        int ci = 0;
+        for (int iz = 0; iz <= 1; ++iz)
+            for (int iy = 0; iy <= 1; ++iy)
+                for (int ix = 0; ix <= 1; ++ix) {
+                    corners[ci][0] = static_cast<float>(ix ? _bboxMax[0] : _bboxMin[0]);
+                    corners[ci][1] = static_cast<float>(iy ? _bboxMax[1] : _bboxMin[1]);
+                    corners[ci][2] = static_cast<float>(iz ? _bboxMax[2] : _bboxMin[2]);
+                    ++ci;
+                }
+
+        glLineWidth(1.5f);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glBegin(GL_LINES);
+        for (int e = 0; e < 12; ++e) {
+            int i0 = _bboxEdges[e][0];
+            int i1 = _bboxEdges[e][1];
+            glVertex3f(corners[i0][0], corners[i0][1], corners[i0][2]);
+            glVertex3f(corners[i1][0], corners[i1][1], corners[i1][2]);
+        }
+        glEnd();
+
+        // Center cross
+        float cx = static_cast<float>((_bboxMin[0] + _bboxMax[0]) * 0.5);
+        float cy = static_cast<float>((_bboxMin[1] + _bboxMax[1]) * 0.5);
+        float cz = static_cast<float>((_bboxMin[2] + _bboxMax[2]) * 0.5);
+        float sz = static_cast<float>(
+            std::max({_bboxMax[0] - _bboxMin[0],
+                      _bboxMax[1] - _bboxMin[1],
+                      _bboxMax[2] - _bboxMin[2]}) * 0.05);
+        glColor3f(1.0f, 1.0f, 0.0f);
+        glBegin(GL_LINES);
+        glVertex3f(cx - sz, cy, cz); glVertex3f(cx + sz, cy, cz);
+        glVertex3f(cx, cy - sz, cz); glVertex3f(cx, cy + sz, cz);
+        glVertex3f(cx, cy, cz - sz); glVertex3f(cx, cy, cz + sz);
+        glEnd();
     }
-    glEnd();
 
-    // Draw center cross
-    float cx = static_cast<float>((_bboxMin[0] + _bboxMax[0]) * 0.5);
-    float cy = static_cast<float>((_bboxMin[1] + _bboxMax[1]) * 0.5);
-    float cz = static_cast<float>((_bboxMin[2] + _bboxMax[2]) * 0.5);
-    float sz = static_cast<float>(
-        std::max({_bboxMax[0] - _bboxMin[0],
-                  _bboxMax[1] - _bboxMin[1],
-                  _bboxMax[2] - _bboxMin[2]}) * 0.05);
+    // ── Density point cloud ──
+    if (_displayMode >= 2 && _floatGrid) {
+        // Rebuild cache if needed
+        int curFrame = static_cast<int>(outputContext().frame()) + _frameOffset;
+        std::string curPath = resolveFramePath(curFrame);
+        if (_previewPoints.empty() ||
+            _cachedDisplayMode != _displayMode ||
+            _cachedPointsPath != curPath ||
+            _cachedPointsFrame != curFrame)
+        {
+            rebuildPointCloud();
+            _cachedDisplayMode = _displayMode;
+            _cachedPointsPath  = curPath;
+            _cachedPointsFrame = curFrame;
+        }
 
-    glColor3f(1.0f, 1.0f, 0.0f); // yellow center cross
-    glBegin(GL_LINES);
-    glVertex3f(cx - sz, cy, cz); glVertex3f(cx + sz, cy, cz);
-    glVertex3f(cx, cy - sz, cz); glVertex3f(cx, cy + sz, cz);
-    glVertex3f(cx, cy, cz - sz); glVertex3f(cx, cy, cz + sz);
-    glEnd();
+        if (!_previewPoints.empty()) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE);  // additive blending
+            glPointSize(3.0f);
+            glEnable(GL_POINT_SMOOTH);
+
+            glBegin(GL_POINTS);
+            float invMax = 1.0f / _maxDensity;
+            for (const auto& pt : _previewPoints) {
+                float t = std::min(pt.density * invMax, 1.0f);
+                // Color ramp: dark orange → bright white
+                float r = 0.2f + 0.8f * t;
+                float g = 0.15f + 0.85f * t;
+                float b = 0.05f + 0.55f * t;
+                float a = 0.15f + 0.85f * t;
+                glColor4f(r, g, b, a);
+                glVertex3f(pt.x, pt.y, pt.z);
+            }
+            glEnd();
+
+            glDisable(GL_BLEND);
+        }
+    }
 
     glPopAttrib();
 }
@@ -438,49 +546,6 @@ void VDBRenderIop::_validate(bool for_real)
             }
         }
     }
-
-    // Project bbox corners to screen space for wireframe overlay
-    if (_gridValid && _camValid && _showBbox) {
-        const Format& fmt = format();
-        const int W = fmt.width();
-        const int H = fmt.height();
-        const double halfH = _halfW * static_cast<double>(H) / static_cast<double>(W);
-
-        // Build the 8 world-space corners of the bbox
-        openvdb::Vec3d wCorners[8];
-        int ci = 0;
-        for (int iz = 0; iz <= 1; ++iz)
-            for (int iy = 0; iy <= 1; ++iy)
-                for (int ix = 0; ix <= 1; ++ix)
-                    wCorners[ci++] = openvdb::Vec3d(
-                        ix ? _bboxMax[0] : _bboxMin[0],
-                        iy ? _bboxMax[1] : _bboxMin[1],
-                        iz ? _bboxMax[2] : _bboxMin[2]);
-
-        // Project each corner: world → camera-local → screen
-        for (int i = 0; i < 8; ++i) {
-            // Camera-local position
-            double dx = wCorners[i][0] - _camOrigin[0];
-            double dy = wCorners[i][1] - _camOrigin[1];
-            double dz = wCorners[i][2] - _camOrigin[2];
-            // Transform by inverse camera rotation (transpose since orthonormal)
-            double cx = _camRot[0][0]*dx + _camRot[0][1]*dy + _camRot[0][2]*dz;
-            double cy = _camRot[1][0]*dx + _camRot[1][1]*dy + _camRot[1][2]*dz;
-            double cz = _camRot[2][0]*dx + _camRot[2][1]*dy + _camRot[2][2]*dz;
-            // Behind camera?
-            if (cz >= -1e-6) {
-                _screenCorners[i] = {0, 0, false};
-                continue;
-            }
-            // Perspective divide
-            double ndcX = (cx / -cz) / _halfW;
-            double ndcY = (cy / -cz) / halfH;
-            // NDC [-1,1] → pixel coords
-            double sx = (ndcX * 0.5 + 0.5) * W;
-            double sy = (ndcY * 0.5 + 0.5) * H;
-            _screenCorners[i] = {sx, sy, true};
-        }
-    }
 }
 
 // ─── _request ────────────────────────────────────────────────────────────────
@@ -543,47 +608,6 @@ void VDBRenderIop::engine(int y, int x, int r,
         gOut[ix] = G;
         bOut[ix] = B;
         aOut[ix] = A;
-    }
-
-    // Draw wireframe bounding box overlay
-    if (_showBbox && _gridValid && _camValid) {
-        const double lineWidth = 1.5;
-        const double scanY = static_cast<double>(y);
-
-        for (int e = 0; e < 12; ++e) {
-            const ScreenPt& p0 = _screenCorners[_bboxEdges[e][0]];
-            const ScreenPt& p1 = _screenCorners[_bboxEdges[e][1]];
-            if (!p0.valid || !p1.valid) continue;
-
-            // Check if this edge's Y range covers the current scanline
-            double yMin = std::min(p0.y, p1.y) - lineWidth;
-            double yMax = std::max(p0.y, p1.y) + lineWidth;
-            if (scanY < yMin || scanY > yMax) continue;
-
-            // Find X at this scanline by lerping along the edge
-            double dy = p1.y - p0.y;
-            if (std::abs(dy) < 0.001) {
-                // Nearly horizontal edge — draw full span
-                int x0 = std::max(x, static_cast<int>(std::min(p0.x, p1.x) - lineWidth));
-                int x1 = std::min(r, static_cast<int>(std::max(p0.x, p1.x) + lineWidth + 1));
-                for (int ix = x0; ix < x1; ++ix) {
-                    if (std::abs(scanY - p0.y) <= lineWidth) {
-                        rOut[ix] = 0.0f; gOut[ix] = 1.0f;
-                        bOut[ix] = 0.0f; aOut[ix] = 1.0f;
-                    }
-                }
-            } else {
-                double t = (scanY - p0.y) / dy;
-                if (t < -0.01 || t > 1.01) continue;
-                double hitX = p0.x + t * (p1.x - p0.x);
-                int ix0 = std::max(x, static_cast<int>(hitX - lineWidth));
-                int ix1 = std::min(r, static_cast<int>(hitX + lineWidth + 1));
-                for (int ix = ix0; ix < ix1; ++ix) {
-                    rOut[ix] = 0.0f; gOut[ix] = 1.0f;
-                    bOut[ix] = 0.0f; aOut[ix] = 1.0f;
-                }
-            }
-        }
     }
 }
 

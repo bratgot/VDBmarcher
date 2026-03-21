@@ -107,14 +107,15 @@ smoke.%04d.vdb
 | **Scattering** | How much light bounces. Higher = brighter |
 | **Light Direction** | Direction vector (normalised internally) |
 | **Light Color** | Color and intensity of the light |
-| **Show Bounding Box** | Toggle green wireframe in 2D output and 3D viewport |
+| **3D Display** | Off / Bounding Box / Bbox + Points (Low/Med/High) — density point cloud in 3D viewport |
 
 ### Tips
 
 - If you see black, try **pulling the camera back** and increasing **Extinction** and **Scattering**
-- Use the **3D viewport** to see where the bounding box is relative to your camera
+- Use the **3D viewport** with "Bbox + Points" to see the density shape and aim your camera
 - For large volumes, use a bigger **Step Size** (0.5–2.0) for fast preview, then reduce for final
 - **Light Color** values above 1.0 act as intensity multipliers
+- The point cloud uses additive blending — denser areas glow brighter
 
 ## Technical Notes
 

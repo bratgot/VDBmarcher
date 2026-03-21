@@ -14,9 +14,6 @@
 #include <DDImage/Thread.h>
 #include <DDImage/CameraOp.h>
 #include <DDImage/Matrix4.h>
-#include <DDImage/Format.h>
-#include <DDImage/ViewerContext.h>
-#include <DDImage/gl.h>
 
 #include <string>
 #include <vector>
@@ -33,19 +30,11 @@ public:
     const char* Class()     const override { return CLASS; }
     const char* node_help() const override { return HELP; }
 
-    const char* input_label(int idx, char* buf) const override;
-    bool        test_input(int idx, DD::Image::Op* op) const override;
-
     void _validate(bool for_real) override;
     void _request(int x, int y, int r, int t,
                   DD::Image::ChannelMask, int count) override;
     void engine(int y, int x, int r,
                 DD::Image::ChannelMask, DD::Image::Row&) override;
-    void append(DD::Image::Hash& hash) override;
-
-    // 3D viewport bounding box
-    void build_handles(DD::Image::ViewerContext* ctx) override;
-    void draw_handle(DD::Image::ViewerContext* ctx) override;
 
     static const DD::Image::Op::Description desc;
     static const char* CLASS;
@@ -60,16 +49,12 @@ private:
     double      _scattering    = 0.5;
     double      _lightDir[3]   = { 0.577, 0.577, 0.577 };
     double      _lightColor[3] = { 1.0,   1.0,   1.0   };
-    int         _displayMode   = 2;   // 0=Off, 1=Bbox, 2=Bbox+Points Low, 3=Bbox+Points Med, 4=Bbox+Points High
-    int         _frameOffset   = 0;
-    DD::Image::FormatPair _formats;
 
     // Grid state
     openvdb::FloatGrid::Ptr     _floatGrid;
     openvdb::Vec3d              _bboxMin;
     openvdb::Vec3d              _bboxMax;
     bool                        _gridValid = false;
-    int                         _loadedFrame = -1;
 
     // Camera cache (set in _validate — CameraOp not thread-safe)
     openvdb::Vec3d  _camOrigin;
@@ -77,26 +62,7 @@ private:
     double          _halfW    = 1.0;
     bool            _camValid = false;
 
-    // 3D viewport density point cloud cache
-    struct DensityPoint { float x, y, z, density; };
-    std::vector<DensityPoint> _previewPoints;
-    float                     _maxDensity = 1.0f;
-    int                       _cachedDisplayMode = -1;
-    std::string               _cachedPointsPath;
-    int                       _cachedPointsFrame = -1;
-    void rebuildPointCloud();
-
-    // Edge indices for 3D viewport wireframe
-    static constexpr int _bboxEdges[12][2] = {
-        {0,1},{2,3},{4,5},{6,7},  // X edges
-        {0,2},{1,3},{4,6},{5,7},  // Y edges
-        {0,4},{1,5},{2,6},{3,7}   // Z edges
-    };
-
     DD::Image::CameraOp* camera() const;
-
-    // Resolve frame patterns (#### or %04d) in file path
-    std::string resolveFramePath(int frame) const;
 
     void marchRay(const openvdb::Vec3d& origin,
                   const openvdb::Vec3d& dir,
