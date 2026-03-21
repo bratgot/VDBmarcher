@@ -55,6 +55,7 @@ VDBRenderIop::Color3 VDBRenderIop::evalRamp(ColorScheme s,float t,
     t=std::clamp(t,0.0f,1.0f);
     switch(s){
     default: case kLit: case kGreyscale: return{t,t,t};
+    case kExplosion: // fall through to heat for non-lit contexts
     case kHeat:
         if(t<0.33f){float s2=t/0.33f;return{s2,0,0};}
         else if(t<0.66f){float s2=(t-0.33f)/0.33f;return{1,s2,0};}
@@ -88,139 +89,329 @@ VDBRenderIop::VDBRenderIop(Node* node):Iop(node)
 
 void VDBRenderIop::knobs(Knob_Callback f)
 {
-    // ── Title + Subheading ──
     Text_knob(f,
         "<font size='+2'><b>VDBRender</b></font>"
-        " <font color='#888' size='-1'>v1.0</font>\n"
-        "<font color='#aaa'>Single-scatter volume ray marcher for OpenVDB</font>");
+        " <font color='#888' size='-1'>v1.0</font><br>"
+        "<font color='#aaa'>Single-scatter volume ray<br>"
+        "marcher for OpenVDB</font>");
     Divider(f,"");
 
-    Format_knob(f, &_formats, "format", "Output Format");
-    Tooltip(f,"Resolution. Respects proxy/downres.");
+    Format_knob(f,&_formats,"format","Output Format");
 
-    // ━━━ FILE & SEQUENCE ━━━
-    BeginClosedGroup(f, "grp_file", "File & Sequence");
-    File_knob(f, &_vdbFilePath, "file", "VDB File");
-    Tooltip(f,"Path to .vdb file. Sequences auto-detected.\n"
-              "  smoke_0042.vdb → frame number replaced\n"
-              "  smoke.####.vdb or smoke.%04d.vdb also work");
-    String_knob(f, &_gridName, "grid_name", "Density Grid");
-    Tooltip(f,"Float density grid name. Default: density");
-    String_knob(f, &_tempGridName, "temp_grid", "Temperature Grid");
-    Tooltip(f,"Optional emission grid for fire/explosions.\n"
-              "Auto-detects if left empty:\n"
-              "  temperature · heat · flame · flames · fire · temp");
-    Int_knob(f, &_frameOffset, "frame_offset", "Frame Offset");
-    Tooltip(f,"Offset added to timeline frame. Negative = earlier.");
-    EndGroup(f);
+    Divider(f,"File & Sequence");
+    File_knob(f,&_vdbFilePath,"file","VDB File");
+    Button(f,"discover_grids","Discover Grids");
+    Tooltip(f,"Reads VDB, lists grids,\nauto-populates fields.");
+    String_knob(f,&_gridName,"grid_name","Density Grid");
+    String_knob(f,&_tempGridName,"temp_grid","Temperature Grid");
+    Tooltip(f,"Auto-detects: temperature, heat,\nflame, flames, fire, temp");
+    Int_knob(f,&_frameOffset,"frame_offset","Frame Offset");
 
-    // ━━━ RENDER MODE ━━━
-    BeginGroup(f, "grp_render", "Render Mode");
-    static const char* schemeNames[]={"Lit","Greyscale","Heat","Cool","Blackbody","Custom Gradient",nullptr};
-    Enumeration_knob(f, &_colorScheme, schemeNames, "color_scheme", "Mode");
-    Tooltip(f,"Lit — single-scatter lighting with shadow rays\n"
-              "Greyscale — density → luminance\n"
-              "Heat — black → red → yellow → white\n"
-              "Cool — black → blue → cyan → white\n"
-              "Blackbody — Planckian locus temperature color\n"
-              "Custom Gradient — two-color ramp");
-
-    Divider(f, "Blackbody");
+    BeginGroup(f,"grp_render","Render Mode");
+    Text_knob(f,
+        "<font size='-1' color='#999'>"
+        "Choose how density maps to<br>"
+        "colour. Lit uses lights and<br>"
+        "shadows. Others use colour ramps."
+        "</font>");
+    static const char*schemeNames[]={"Lit","Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
+    Enumeration_knob(f,&_colorScheme,schemeNames,"color_scheme","Mode");
+    Divider(f,"Blackbody");
     Double_knob(f,&_tempMin,"temp_min","Temp Min (K)");
     SetRange(f,0.0,15000.0);
-    Tooltip(f,"Temperature at zero density.\n"
-              "Candle: 1800K  Fire: 500K");
     Double_knob(f,&_tempMax,"temp_max","Temp Max (K)");
     SetRange(f,0.0,15000.0);
-    Tooltip(f,"Temperature at peak density.\n"
-              "Fire: 3000K  Explosion: 8000K  Plasma: 15000K");
     Double_knob(f,&_emissionIntensity,"emission_intensity","Emission Intensity");
-    SetRange(f,0.0,50.0);
-    Tooltip(f,"Multiplier for temperature grid self-illumination.\n"
-              "Only active when a temperature grid is found.");
-
-    Divider(f, "Custom Gradient");
+    SetRange(f,0.0,10.0);
+    Tooltip(f,"Multiplier for temperature grid\nemission. Requires a loaded\ntemperature grid to have effect.");
+    Divider(f,"Custom Gradient");
     Color_knob(f,_gradStart,"grad_start","Start Color");
     Color_knob(f,_gradEnd,"grad_end","End Color");
     EndGroup(f);
 
-    // ━━━ VOLUME DENSITY ━━━
-    BeginGroup(f, "grp_density", "Volume Density");
+    BeginGroup(f,"grp_density","Volume Density");
+    Text_knob(f,
+        "<font size='-1' color='#999'>"
+        "Extinction sets opacity. Scattering<br>"
+        "sets brightness. Anisotropy shapes<br>"
+        "the scatter direction."
+        "</font>");
     Double_knob(f,&_extinction,"extinction","Extinction");
     SetRange(f,0.0,100.0);
-    Tooltip(f,"Light absorption per unit density.\n"
-              "Higher = more opaque. Try 1–10 smoke, 5–50 clouds.");
     Double_knob(f,&_scattering,"scattering","Scattering");
     SetRange(f,0.0,100.0);
-    Tooltip(f,"In-scatter brightness (Lit mode only).\n"
-              "Higher = brighter volume. 0 = pure absorption.");
+    Divider(f,"Phase Function");
+    static const char*aniPresets[]={"Custom","Isotropic (0.0)","Smoke (0.4)","Dust (0.6)","Cloud (0.76)","Fog (0.8)","Rim Light (-0.4)","Strong Back (-0.7)",nullptr};
+    Enumeration_knob(f,&_anisotropyPreset,aniPresets,"aniso_preset","Preset");
     Double_knob(f,&_anisotropy,"anisotropy","Anisotropy (g)");
     SetRange(f,-1.0,1.0);
-    Tooltip(f,"Henyey-Greenstein phase function.\n"
-              "  -1.0 = strong back-scatter (lit from behind)\n"
-              "   0.0 = isotropic (uniform scatter)\n"
-              "  +1.0 = strong forward-scatter (lit from in front)\n\n"
-              "Try 0.3–0.6 for realistic smoke/cloud look.\n"
-              "Negative values give a rim-light effect.");
     EndGroup(f);
 
-    // ━━━ LIGHTING ━━━
-    BeginGroup(f, "grp_light", "Lighting");
-    Text_knob(f,"<font size='-1' color='#999'>Connect Light nodes to inputs 2–9 for scene lighting.\n"
-                 "If none connected, the fallback controls below are used.</font>");
-    Divider(f, "Fallback Light");
+    BeginGroup(f,"grp_light","Lighting");
+    Text_knob(f,
+        "<font size='-1' color='#999'>"
+        "Connect Light nodes to inputs<br>"
+        "2-9. Position and rotation both<br>"
+        "affect illumination. Fallback used<br>"
+        "when no lights are connected."
+        "</font>");
+    Divider(f,"Fallback Light");
     XYZ_knob(f,_lightDir,"light_dir","Direction");
-    Tooltip(f,"Direction FROM volume TOWARD light source.");
     Color_knob(f,_lightColor,"light_color","Color");
     Double_knob(f,&_lightIntensity,"light_intensity","Intensity");
     SetRange(f,0.0,50.0);
     EndGroup(f);
 
-    // ━━━ QUALITY ━━━
-    BeginClosedGroup(f, "grp_quality", "Quality");
+    BeginClosedGroup(f,"grp_quality","Quality");
+    Text_knob(f,
+        "<font size='-1' color='#999'>"
+        "Step size controls detail vs<br>"
+        "speed. Shadow steps control<br>"
+        "self-shadow smoothness."
+        "</font>");
     Double_knob(f,&_stepSize,"step_size","Step Size");
     SetRange(f,0.01,10.0);
-    Tooltip(f,"World-space ray march step.\n"
-              "  0.5–2.0   preview / blocking\n"
-              "  0.1–0.5   medium quality\n"
-              "  0.01–0.1  final render");
     Int_knob(f,&_shadowSteps,"shadow_steps","Shadow Steps");
-    Tooltip(f,"Shadow ray samples per light per step.\n"
-              "4–8 preview, 16–32 final.");
+    Double_knob(f,&_shadowDensity,"shadow_density","Shadow Density");
+    SetRange(f,0.0,5.0);
+    Tooltip(f,"Shadow extinction multiplier.\n1.0 = correct. <1 = lighter.\n>1 = darker. 0 = no shadows.");
     EndGroup(f);
 
-    // ━━━ 3D VIEWPORT ━━━
-    BeginClosedGroup(f, "grp_viewport", "3D Viewport");
+    BeginClosedGroup(f,"grp_viewport","3D Viewport");
+    Text_knob(f,
+        "<font size='-1' color='#999'>"
+        "Preview volume shape in 3D<br>"
+        "viewer. Point cloud shows density<br>"
+        "as coloured dots."
+        "</font>");
     Bool_knob(f,&_showBbox,"show_bbox","Bounding Box");
     Bool_knob(f,&_showPoints,"show_points","Point Cloud");
-    static const char* dLabels[]={"Low (~16k)","Medium (~64k)","High (~250k)",nullptr};
+    static const char*dLabels[]={"Low (~16k)","Medium (~64k)","High (~250k)",nullptr};
     Enumeration_knob(f,&_pointDensity,dLabels,"point_density","Point Density");
     Double_knob(f,&_pointSize,"point_size","Point Size");
     SetRange(f,1.0,20.0);
     Divider(f,"Viewport Color");
     Bool_knob(f,&_linkViewport,"link_viewport","Link to Render Mode");
-    Tooltip(f,"When on, viewport matches the render color scheme.\n"
-              "Lit mode falls back to Greyscale in the viewport.");
-    static const char*vpNames[]={"Greyscale","Heat","Cool","Blackbody","Custom Gradient",nullptr};
+    static const char*vpNames[]={"Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
     Enumeration_knob(f,&_viewportColor,vpNames,"viewport_color","Manual Color");
     EndGroup(f);
 
-    // ── Credit + Tech ──
+    BeginClosedGroup(f,"grp_technical","Technical Reference");
+    Text_knob(f,
+        "<b>Volume Rendering</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Evaluates emission-absorption<br>"
+        "radiative transfer equation<br>"
+        "via fixed-step ray marching.<br>"
+        "Beer-Lambert transmittance:<br>"
+        "T = exp(-integral extinction)."
+        "</font><br><br>"
+        "<b>Extinction</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Light removed per unit distance.<br>"
+        "Smoke: 1-5. Cloud: 10-30.<br>"
+        "Solid: 50+"
+        "</font><br><br>"
+        "<b>Scattering</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "In-scattered light per unit<br>"
+        "distance. scatter/extinction =<br>"
+        "single-scatter albedo (0 to 1)."
+        "</font><br><br>"
+        "<b>Henyey-Greenstein Phase</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Angular scatter distribution.<br>"
+        "g=0 isotropic. g>0 forward.<br>"
+        "g&lt;0 back-scatter (rim light).<br>"
+        "Smoke: 0.3-0.5. Cloud: 0.7-0.85.<br>"
+        "Dust: 0.6. Fog: 0.8."
+        "</font><br><br>"
+        "<b>Blackbody (Planckian)</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Maps Kelvin to CIE 1931 colour.<br>"
+        "1000K deep red (candle)<br>"
+        "2500K orange (fire core)<br>"
+        "4000K warm white<br>"
+        "6500K daylight (D65)<br>"
+        "10000K blue-white (plasma)"
+        "</font><br><br>"
+        "<b>Shadow Rays</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Secondary ray toward each light.<br>"
+        "Step scales to bbox diagonal.<br>"
+        "Shadow density multiplies<br>"
+        "extinction for shadow rays only."
+        "</font><br><br>"
+        "<b>OpenVDB (Museth 2013)</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Sparse B+ tree. O(1) access.<br>"
+        "Standard grids:<br>"
+        "density — scatter/absorb<br>"
+        "temperature — Kelvin emission<br>"
+        "heat — normalised 0-1<br>"
+        "flame/flames — combustion<br>"
+        "vel/v — velocity (vec3)"
+        "</font><br><br>"
+        "<b>References</b><br>"
+        "<font size='-1' color='#888'>"
+        "Museth (2013) ACM TOG 32(3)<br>"
+        "Henyey/Greenstein (1941) ApJ 93<br>"
+        "Fong+ (2017) SIGGRAPH Course<br>"
+        "Novak+ (2018) CGF 37(2)"
+        "</font>");
+    EndGroup(f);
+
     Divider(f,"");
     Text_knob(f,
-        "<font size='-1' color='#666'>Created by Marten Blumen · "
-        "github.com/bratgot/VDBmarcher</font>\n"
-        "<font size='-1' color='#555'>OpenVDB 12.0 · clang-cl 19 · C++20 · "
-        "Nuke NDK 17 · vcpkg · Cam (0) · Axis (1) · Lights (2–9)</font>");
+        "<font size='-1' color='#666'>"
+        "<b>Created by Marten Blumen</b><br>"
+        "github.com/bratgot/VDBmarcher"
+        "</font><br>"
+        "<font size='-1' color='#555'>"
+        "OpenVDB 12 · clang-cl · C++20<br>"
+        "Nuke 17 · Beer-Lambert<br>"
+        "Henyey-Greenstein · Planckian"
+        "</font>");
 }
-
 int VDBRenderIop::knob_changed(Knob* k)
 {
-    if(k->is("file")||k->is("grid_name")||k->is("temp_grid")||k->is("frame_offset")){
+    if(k->is("file")){
+        _gridValid=false;_previewPoints.clear();
+        return 1;}
+    if(k->is("grid_name")||k->is("temp_grid")
+       ||k->is("frame_offset")){
         _gridValid=false;_previewPoints.clear();return 1;}
     if(k->is("show_points")||k->is("point_density")){
         _previewPoints.clear();return 1;}
+    // Discover grids button
+    if(k->is("discover_grids")){
+        discoverGrids();
+        return 1;
+    }
+    // Anisotropy preset → set slider value
+    if(k->is("aniso_preset")){
+        static const double presetValues[]={
+            0.0, 0.0, 0.4, 0.6, 0.76, 0.8, -0.4, -0.7};
+        if(_anisotropyPreset>0 &&
+           _anisotropyPreset<(int)(sizeof(presetValues)/sizeof(double))){
+            _anisotropy=presetValues[_anisotropyPreset];
+            knob("anisotropy")->set_value(_anisotropy);
+        }
+        return 1;
+    }
     return Iop::knob_changed(k);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Grid Discovery — reads VDB file and lists all grids
+// ═══════════════════════════════════════════════════════════════════════════════
+
+void VDBRenderIop::discoverGrids()
+{
+    std::string path(_vdbFilePath ? _vdbFilePath : "");
+    if (path.empty()) { error("No VDB file specified."); return; }
+
+    int curFrame = (int)outputContext().frame() + _frameOffset;
+    std::string resolved = resolveFramePath(curFrame);
+
+    // Fallback
+    {
+        std::string tp = resolved;
+        for (auto& c : tp) if (c == '\\') c = '/';
+        FILE* f = fopen(tp.c_str(), "rb");
+        if (!f) {
+            std::string orig(path);
+            for (auto& c : orig) if (c == '\\') c = '/';
+            FILE* of = fopen(orig.c_str(), "rb");
+            if (of) { fclose(of); resolved = orig; }
+            else { error("Cannot open: %s", tp.c_str()); return; }
+        } else { fclose(f); }
+    }
+
+    std::string cleanPath = resolved;
+    for (auto& c : cleanPath) if (c == '\\') c = '/';
+
+    try {
+        openvdb::io::File file(cleanPath);
+        file.open();
+
+        // Known grid categories
+        static const char* densityNames[] = {
+            "density","density_1","smoke","soot",
+            "absorption","scatter",nullptr};
+        static const char* tempNames[] = {
+            "temperature","heat","flame","flames",
+            "fire","temp","emission","burn",
+            "fuel","incandescence",nullptr};
+
+        auto matchList = [](const std::string& name, const char** list) {
+            for (int i = 0; list[i]; ++i)
+                if (name == list[i]) return true;
+            return false;
+        };
+
+        // Collect grid names, types, and categories
+        struct GridInfo {
+            std::string name, type, category;
+        };
+        std::vector<GridInfo> grids;
+        std::string bestDensity, bestTemp;
+
+        for (auto it = file.beginName(); it != file.endName(); ++it) {
+            std::string name = it.gridName();
+            auto grid = file.readGridMetadata(name);
+            std::string type = grid->valueType();
+
+            std::string cat = "other";
+            if (matchList(name, densityNames)) cat = "density";
+            else if (matchList(name, tempNames)) cat = "emission";
+
+            grids.push_back({name, type, cat});
+
+            // Pick best auto-detect candidates
+            if (bestDensity.empty() && cat == "density" && type == "float")
+                bestDensity = name;
+            if (bestTemp.empty() && cat == "emission" && type == "float")
+                bestTemp = name;
+        }
+        file.close();
+
+        // Auto-populate knobs from C++
+        if (!bestDensity.empty())
+            knob("grid_name")->set_text(bestDensity.c_str());
+        if (!bestTemp.empty()) {
+            knob("temp_grid")->set_text(bestTemp.c_str());
+            // Auto-switch to Explosion if we found both grids
+            knob("color_scheme")->set_value(6); // kExplosion
+            knob("emission_intensity")->set_value(2.0);
+        }
+
+        // Build info message
+        std::string msg = "Grids in " + cleanPath + ":\\n\\n";
+        for (const auto& g : grids) {
+            msg += "  " + g.name + " (" + g.type + ")";
+            if (g.category != "other") msg += "  [" + g.category + "]";
+            msg += "\\n";
+        }
+        msg += "\\n";
+        if (!bestDensity.empty())
+            msg += "Density set to: " + bestDensity + "\\n";
+        if (!bestTemp.empty())
+            msg += "Temperature set to: " + bestTemp + "\\n"
+                   "Render mode set to Explosion.\\n";
+        if (bestTemp.empty())
+            msg += "No temperature grid found.\\n";
+
+        // Show in Nuke message dialog
+        std::string pyCmd = "nuke.message('" + msg + "')";
+        script_command(pyCmd.c_str());
+
+        _gridValid = false;
+        _previewPoints.clear();
+
+    } catch (const std::exception& e) {
+        error("Discover failed: %s", e.what());
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -288,6 +479,7 @@ void VDBRenderIop::append(Hash& hash)
     hash.append(_emissionIntensity);
     hash.append(_lightIntensity);
     hash.append(_anisotropy);
+    hash.append(_shadowDensity);
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
 
     // Axis and light hashes — these ops were validated in _validate(false)
@@ -373,9 +565,9 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx)
             std::memcpy(_cachedVolFwd,_volFwd,sizeof(_volFwd));}
         if(!_previewPoints.empty()){
             ColorScheme vpScheme;
-            if(_linkViewport)vpScheme=(_colorScheme==kLit)?kGreyscale:static_cast<ColorScheme>(_colorScheme);
+            if(_linkViewport)vpScheme=(_colorScheme==kLit)?kGreyscale:(_colorScheme==kExplosion)?kHeat:static_cast<ColorScheme>(_colorScheme);
             else switch(_viewportColor){default:case 0:vpScheme=kGreyscale;break;case 1:vpScheme=kHeat;break;
-                case 2:vpScheme=kCool;break;case 3:vpScheme=kBlackbody;break;case 4:vpScheme=kCustomGradient;break;}
+                case 2:vpScheme=kCool;break;case 3:vpScheme=kBlackbody;break;case 4:vpScheme=kCustomGradient;break;case 5:vpScheme=kHeat;break;}
             float gA[3]={(float)_gradStart[0],(float)_gradStart[1],(float)_gradStart[2]};
             float gB[3]={(float)_gradEnd[0],(float)_gradEnd[1],(float)_gradEnd[2]};
             float invMax=1.0f/_maxDensity;
@@ -470,9 +662,6 @@ void VDBRenderIop::_validate(bool for_real)
         cl.color[1]=lg*intensity;
         cl.color[2]=lb*intensity;
 
-        std::printf("VDBRender: Light[%d] pos=(%.1f,%.1f,%.1f) dir=(%.3f,%.3f,%.3f) color=(%.2f,%.2f,%.2f) int=%.2f\n",
-            idx-2, cl.pos[0],cl.pos[1],cl.pos[2], cl.dir[0],cl.dir[1],cl.dir[2], lr,lg,lb, intensity);
-
         _lights.push_back(cl);
     }
 
@@ -488,8 +677,6 @@ void VDBRenderIop::_validate(bool for_real)
         cl.isPoint=false;
         cl.pos[0]=cl.pos[1]=cl.pos[2]=0;
         _lights.push_back(cl);
-        std::printf("VDBRender: Using fallback light dir=(%.3f,%.3f,%.3f) color=(%.2f,%.2f,%.2f)\n",
-            cl.dir[0],cl.dir[1],cl.dir[2],cl.color[0],cl.color[1],cl.color[2]);
     }
 
     // Transform light directions + positions into volume-local space
@@ -547,7 +734,7 @@ void VDBRenderIop::_validate(bool for_real)
                     openvdb::GridBase::Ptr tbg;
                     if(!tgName.empty()){for(auto it=file.beginName();it!=file.endName();++it)
                         if(it.gridName()==tgName){tbg=file.readGrid(tgName);break;}}
-                    else{static const char*tN[]={"temperature","heat","flame","flames","fire","temp",nullptr};
+                    else{static const char*tN[]={"temperature","heat","flame","flames","fire","temp","emission","burn","fuel","incandescence",nullptr};
                         for(int i=0;tN[i];++i){for(auto it=file.beginName();it!=file.endName();++it)
                             if(it.gridName()==tN[i]){tbg=file.readGrid(tN[i]);break;}
                             if(tbg)break;}}
@@ -557,8 +744,7 @@ void VDBRenderIop::_validate(bool for_real)
                     if(!bg->isType<openvdb::FloatGrid>()){error("Grid not float.");return;}
                     _floatGrid=openvdb::gridPtrCast<openvdb::FloatGrid>(bg);
                     if(tbg&&tbg->isType<openvdb::FloatGrid>()){
-                        _tempGrid=openvdb::gridPtrCast<openvdb::FloatGrid>(tbg);_hasTempGrid=true;
-                        std::printf("VDBRender: Loaded temperature grid\n");}
+                        _tempGrid=openvdb::gridPtrCast<openvdb::FloatGrid>(tbg);_hasTempGrid=true;}
 
                     auto ab=_floatGrid->evalActiveVoxelBoundingBox();
                     if(ab.empty()){error("No active voxels.");return;}
@@ -625,6 +811,8 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row)
 
         openvdb::Vec3d rayO(ox,oy,oz),rayD(rdx,rdy,rdz);
         if(scheme==kLit){float R=0,G=0,B=0,A=0;marchRay(rayO,rayD,R,G,B,A);
+            rOut[ix]=R;gOut[ix]=G;bOut[ix]=B;aOut[ix]=A;
+        }else if(scheme==kExplosion){float R=0,G=0,B=0,A=0;marchRayExplosion(rayO,rayD,R,G,B,A);
             rOut[ix]=R;gOut[ix]=G;bOut[ix]=B;aOut[ix]=A;
         }else{float density=0,alpha=0;marchRayDensity(rayO,rayD,density,alpha);
             Color3 c=evalRamp(scheme,density,gA,gB,_tempMin,_tempMax);
@@ -715,7 +903,7 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
                     if(!inside)break;
                     auto li=xf.worldToIndex(lw);
                     lightT*=std::exp(-(double)la.getValue(
-                        openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*shadowStep);
+                        openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shadowStep);
                     if(lightT<0.001)break;}}
 
                 double contrib=ss*phaseScale*lightT*T*step;
@@ -724,13 +912,123 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
                 aB+=contrib*light.color[2];
             }
 
-            // Temperature emission
+            // Temperature emission (self-illumination)
             if(tempAcc){float tv=tempAcc->getValue(ijk);
-                if(tv>0.01f){auto normT=std::clamp((double)tv,_tempMin,_tempMax);
+                if(tv>0.001f){
+                    double normT=std::clamp((double)tv,_tempMin,_tempMax);
                     Color3 bb=blackbody(normT);
-                    double em=tv*_emissionIntensity*T*step*0.01;
-                    aR+=bb.r*em;aG+=bb.g*em;aB+=bb.b*em;}}
+                    // Emission: blackbody color * intensity * transmittance * step
+                    // tv scales by local temperature value
+                    double em=_emissionIntensity*T*step;
+                    double tScale=(tv-_tempMin)/(_tempMax-_tempMin+1e-6);
+                    tScale=std::clamp(tScale,0.0,1.0);
+                    aR+=bb.r*em*tScale;
+                    aG+=bb.g*em*tScale;
+                    aB+=bb.b*em*tScale;}}
 
+            T*=std::exp(-se*step);
+        }
+    }
+    outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1.0-T);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// marchRayExplosion — smoke (density) + fire (temperature blackbody emission)
+// Density grid: scatter + absorption (smoke)
+// Temperature grid: self-luminous blackbody emission (fire/flames)
+// Fire glows independently of scene lights.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,
+                                      float&outR,float&outG,float&outB,float&outA) const
+{
+    outR=outG=outB=outA=0;
+    double tEnter=0,tExit=1e9;
+    for(int a=0;a<3;++a){
+        double inv=(std::abs(dir[a])>1e-8)?1.0/dir[a]:1e38;
+        double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
+        if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
+    if(tEnter>=tExit||tExit<=0)return;
+
+    auto acc=_floatGrid->getConstAccessor();
+    const auto&xf=_floatGrid->transform();
+    double step=_stepSize,ext=_extinction,scat=_scattering;
+    double g=std::clamp(_anisotropy,-0.999,0.999);
+    double g2=g*g, hgNorm=(1.0-g2)/(4.0*M_PI);
+    int nShadow=std::max(1,_shadowSteps);
+    double bboxDiag=(_bboxMax-_bboxMin).length();
+    double shadowStep=bboxDiag/(nShadow*2.0);
+    double T=1.0,aR=0,aG=0,aB=0;
+
+    // Temperature grid accessor (required for explosion mode)
+    std::unique_ptr<openvdb::FloatGrid::ConstAccessor> tempAcc;
+    if(_hasTempGrid&&_tempGrid)
+        tempAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
+
+    for(double t=tEnter;t<tExit&&T>0.001;t+=step){
+        auto wPos=origin+t*dir;
+        auto iPos=xf.worldToIndex(wPos);
+        openvdb::Coord ijk((int)std::floor(iPos[0]),(int)std::floor(iPos[1]),(int)std::floor(iPos[2]));
+        float density=acc.getValue(ijk);
+
+        // ── FIRE: temperature-driven blackbody emission ──
+        // Fire emits light independently of scene lights.
+        // It glows through the smoke based on transmittance.
+        if(tempAcc){
+            float tv=tempAcc->getValue(ijk);
+            if(tv>0.001f){
+                double normT=std::clamp((double)tv,_tempMin,_tempMax);
+                Color3 bb=blackbody(normT);
+                // Normalised temperature drives emission strength
+                double tScale=std::clamp(((double)tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.0,1.0);
+                // Emission: strong, artist-controllable, transmittance-weighted
+                double em=_emissionIntensity*tScale*T*step;
+                aR+=bb.r*em;
+                aG+=bb.g*em;
+                aB+=bb.b*em;
+            }
+        }
+
+        // ── SMOKE: density-driven scatter + absorption ──
+        if(density>1e-6f){
+            double se=density*ext;
+            double ss=density*scat;
+
+            // Scatter from scene lights (same as Lit mode)
+            for(const auto&light:_lights){
+                openvdb::Vec3d lDir;
+                if(light.isPoint){
+                    lDir=openvdb::Vec3d(light.pos[0]-wPos[0],light.pos[1]-wPos[1],light.pos[2]-wPos[2]);
+                    double len=lDir.length();if(len>1e-8)lDir/=len;else lDir=openvdb::Vec3d(0,1,0);
+                }else{lDir=openvdb::Vec3d(light.dir[0],light.dir[1],light.dir[2]);}
+
+                // Phase function
+                double cosTheta=-(dir[0]*lDir[0]+dir[1]*lDir[1]+dir[2]*lDir[2]);
+                double phase;
+                if(std::abs(g)<0.001) phase=1.0/(4.0*M_PI);
+                else{double denom=1.0+g2-2.0*g*cosTheta;phase=hgNorm/std::pow(denom,1.5);}
+                double phaseScale=phase*4.0*M_PI;
+
+                // Shadow ray
+                double lightT=1.0;
+                {auto la=_floatGrid->getConstAccessor();
+                 for(int i=0;i<nShadow;++i){
+                    auto lw=wPos+((i+1)*shadowStep)*lDir;
+                    bool inside=true;
+                    for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){inside=false;break;}
+                    if(!inside)break;
+                    auto li=xf.worldToIndex(lw);
+                    lightT*=std::exp(-(double)la.getValue(
+                        openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shadowStep);
+                    if(lightT<0.001)break;}}
+
+                double contrib=ss*phaseScale*lightT*T*step;
+                aR+=contrib*light.color[0];
+                aG+=contrib*light.color[1];
+                aB+=contrib*light.color[2];
+            }
+
+            // Absorption (smoke attenuates everything behind it)
             T*=std::exp(-se*step);
         }
     }

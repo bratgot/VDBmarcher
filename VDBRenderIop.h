@@ -57,7 +57,7 @@ public:
     static const char* HELP;
 
     // ── Color schemes ──
-    enum ColorScheme { kLit=0, kGreyscale, kHeat, kCool, kBlackbody, kCustomGradient };
+    enum ColorScheme { kLit=0, kGreyscale, kHeat, kCool, kBlackbody, kCustomGradient, kExplosion };
     struct Color3 { float r, g, b; };
     static Color3 evalRamp(ColorScheme s, float t, const float* gA, const float* gB,
                            double tMin, double tMax);
@@ -75,8 +75,10 @@ private:
     double      _stepSize      = 0.5;
     double      _extinction    = 5.0;
     double      _scattering    = 3.0;
-    double      _anisotropy    = 0.0;   // Henyey-Greenstein: -1=back, 0=isotropic, +1=forward
+    double      _anisotropy    = 0.0;
+    int         _anisotropyPreset = 0;
     int         _shadowSteps   = 8;
+    double      _shadowDensity = 1.0;  // multiplier on extinction for shadow rays
 
     // ── Fallback light ──
     double      _lightDir[3]   = { 0.577, 0.577, -0.577 };
@@ -144,8 +146,13 @@ private:
     DD::Image::AxisOp*   axisInput() const;
     std::string resolveFramePath(int frame) const;
 
+    // Grid discovery
+    void discoverGrids();
+
     void marchRay(const openvdb::Vec3d& o, const openvdb::Vec3d& d,
                   float& R, float& G, float& B, float& A) const;
+    void marchRayExplosion(const openvdb::Vec3d& o, const openvdb::Vec3d& d,
+                           float& R, float& G, float& B, float& A) const;
     void marchRayDensity(const openvdb::Vec3d& o, const openvdb::Vec3d& d,
                          float& density, float& alpha) const;
 
