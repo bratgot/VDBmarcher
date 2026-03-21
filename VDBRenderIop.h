@@ -75,6 +75,7 @@ private:
     double      _stepSize      = 0.5;
     double      _extinction    = 5.0;
     double      _scattering    = 3.0;
+    double      _anisotropy    = 0.0;   // Henyey-Greenstein: -1=back, 0=isotropic, +1=forward
     int         _shadowSteps   = 8;
 
     // ── Fallback light ──
@@ -118,8 +119,10 @@ private:
 
     // ── Cached lights (populated in _validate) ──
     struct CachedLight {
-        double dir[3];     // toward-light in volume-local space
+        double dir[3];     // toward-light direction (volume-local, directional only)
         double color[3];   // color * intensity
+        double pos[3];     // position (volume-local space)
+        bool   isPoint;    // true = use position, false = use direction
     };
     std::vector<CachedLight> _lights;
 
@@ -131,6 +134,7 @@ private:
     std::string _cachedPointsPath;
     int   _cachedPointsFrame = -1;
     bool  _cachedHasXform = false;
+    double _cachedVolFwd[4][4] = {};
     void  rebuildPointCloud();
 
     static constexpr int _bboxEdges[12][2] = {
