@@ -1,0 +1,28 @@
+# Build
+build/
+out/
+cmake-build-*/
+*.dll
+*.lib
+*.obj
+*.pdb
+*.exp
+*.ilk
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+CMakeSettings.json
+
+# vcpkg
+vcpkg_installed/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# NanoVDB headers (not needed for OpenVDB build)
+nanovdb/
