@@ -1,19 +1,26 @@
 # VDBRender — OpenVDB Volume Ray Marcher for Nuke
 
-A single-scatter volumetric ray marcher that reads OpenVDB density grids directly inside the Nuke compositor. No external renderer or shader setup required.
+A single-scatter volumetric ray marcher that reads OpenVDB density, temperature, and flame grids directly inside the Nuke compositor. No external renderer or shader setup required.
 
 **Created by Marten Blumen**
 
 ## Features
 
 - **Native .vdb loading** with auto-detected frame sequences
-- **6 render modes** — Lit, Greyscale, Heat, Cool, Blackbody, Custom Gradient
+- **7 render modes** — Lit, Greyscale, Heat, Cool, Blackbody, Custom Gradient, Explosion
+- **Explosion mode** — lit smoke (density) + self-luminous fire (temperature/flames)
+- **3 grid slots** — Density, Temperature, Flames with per-grid mix sliders
+- **Discover Grids** — auto-scans VDB files and populates grid fields
+- **9 scene presets** — Thin Smoke, Dense Smoke, Fog, Cloud, Fire, Explosion, Pyroclastic, Dust Storm, Steam
+- **Henyey-Greenstein phase function** — anisotropic forward/back scatter with material presets
 - **Physically-based blackbody** — Planckian locus temperature-to-color mapping
-- **Temperature grid emission** — auto-detects `temperature`, `heat`, `flame`, `flames`, `fire`, `temp` grids
-- **Henyey-Greenstein phase function** — anisotropic forward/back scatter
-- **Up to 8 Nuke Light nodes** — point light support with per-sample direction, color, and intensity
+- **Up to 8 Nuke Light nodes** — point light support with per-sample direction
 - **Axis transform input** — move/rotate/scale volume via connected Axis node
 - **Interactive 3D viewport** — bounding box wireframe + density point cloud preview
+- **Logarithmic quality slider** — artist-friendly 1–10 range
+- **Master intensity** — global brightness for all render modes
+- **Ambient fill light** — omnidirectional scatter ignoring shadows
+- **Shadow density** — separate control for shadow darkness
 - **Proxy-aware rendering** — respects Nuke's downres settings
 
 ## Inputs
@@ -21,30 +28,32 @@ A single-scatter volumetric ray marcher that reads OpenVDB density grids directl
 | Input | Label | Type | Description |
 |-------|-------|------|-------------|
 | 0 | cam | Camera | Required — defines the render viewpoint |
-| 1 | axis | Axis/TransformGeo | Optional — transforms the volume in world space |
+| 1 | axis | Axis | Optional — transforms the volume in world space |
 | 2–9 | light1–8 | Light | Optional — point lights with position, color, intensity |
 
-## Render Modes
+## Scene Presets
 
-| Mode | Description |
-|------|-------------|
-| **Lit** | Single-scatter lighting with shadow rays and phase function |
-| **Greyscale** | Density mapped to luminance |
-| **Heat** | Black → Red → Yellow → White |
-| **Cool** | Black → Blue → Cyan → White |
-| **Blackbody** | Planckian locus. Density or temperature grid → Kelvin range |
-| **Custom Gradient** | User-defined two-color ramp |
+| Preset | Mode | Extinction | Scatter | Anisotropy | Quality |
+|--------|------|-----------|---------|------------|---------|
+| Thin Smoke | Lit | 2 | 1.5 | 0.4 | 2 |
+| Dense Smoke | Lit | 15 | 4 | 0.35 | 3 |
+| Fog / Mist | Lit | 0.5 | 0.8 | 0.8 | 1 |
+| Cumulus Cloud | Lit | 12 | 10 | 0.76 | 5 |
+| Fire | Explosion | 5 | 2 | 0.3 | 3 |
+| Explosion | Explosion | 20 | 5 | 0.4 | 5 |
+| Pyroclastic | Explosion | 30 | 6 | 0.5 | 7 |
+| Dust Storm | Lit | 4 | 3 | -0.3 | 2 |
+| Steam | Lit | 1.5 | 2 | 0.7 | 2 |
 
-## Phase Function
+## Grid Assignment
 
-The **Anisotropy (g)** parameter controls the Henyey-Greenstein phase function:
+Three independent grid slots, each with a mix slider (0–5):
 
-| Value | Effect |
-|-------|--------|
-| -1.0 | Strong back-scatter — rim-light/halo effect |
-| 0.0 | Isotropic — uniform scatter in all directions |
-| +0.3 to +0.6 | Realistic smoke/cloud look |
-| +1.0 | Strong forward-scatter — volume glows when backlit |
+- **Density** — scatter/absorption coefficient. Controls opacity and smoke shape.
+- **Temperature** — blackbody emission colour in Kelvin. Drives fire colour.
+- **Flames** — combustion emission intensity. Adds extra glow.
+
+Any combination works. Empty fields are skipped. Use **Discover Grids** to auto-scan and populate.
 
 ## Requirements
 
@@ -56,23 +65,12 @@ The **Anisotropy (g)** parameter controls the Henyey-Greenstein phase function:
 
 ## Build
 
-### 1. Install vcpkg and OpenVDB
-
 ```bat
 cd C:\
 git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg
-bootstrap-vcpkg.bat
+cd vcpkg && bootstrap-vcpkg.bat
 vcpkg install openvdb:x64-windows
 ```
-
-### 2. Install Clang-cl
-
-Visual Studio Installer → Modify → Individual Components:
-- **C++ Clang Compiler for Windows**
-- **C++ Clang-cl for v143 build tools**
-
-### 3. Build
 
 Open **x64 Native Tools Command Prompt for VS 2022**:
 
@@ -90,7 +88,7 @@ cmake .. -G "NMake Makefiles" ^
 nmake
 ```
 
-### 4. Install
+## Install
 
 Run `install_vdbrender.bat` or manually:
 
@@ -112,19 +110,8 @@ Copy `menu.py` into `%USERPROFILE%\.nuke\`.
 2. Connect a **Camera** to input 0
 3. Set **Output Format** (e.g. HD_1080)
 4. Browse to a `.vdb` file
-5. Connect a **Light** to input 2
-6. Adjust **Extinction**, **Scattering**, **Anisotropy**
-
-For fire/explosions: set **Render Mode** to Blackbody, adjust **Temp Min/Max** (try 500–3000K), and increase **Emission Intensity** if the file has a temperature grid.
-
-## Technical Notes
-
-- Built with **clang-cl** (Clang 19 / MSVC ABI) — required because OpenVDB 12 uses C++20 constexpr features unsupported by MSVC 19.44
-- OpenVDB headers must be included **before** DDImage headers (`#define foreach` collision)
-- Camera, Axis, and Light data cached in `_validate()` — `CameraOp`/`LightOp` are not thread-safe for `engine()` calls
-- All upstream 3D ops are validated early so `append()` can hash their transforms for correct cache invalidation
-- Light positions are transformed into volume-local space when an Axis is connected
-- Shadow ray step scales to the bounding box diagonal for consistent shadow quality at any volume size
+5. Click **Discover Grids** to auto-populate
+6. Select a **Scene Preset** or adjust manually
 
 ## License
 
