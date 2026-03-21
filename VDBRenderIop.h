@@ -1,8 +1,6 @@
 #pragma once
 
 // OpenVDB MUST be included before Nuke's DDImage headers.
-// Nuke's ChannelSet.h defines a macro: #define foreach(VAR, CHANNELS)
-// which collides with OpenVDB's TypeList::foreach() member functions.
 #include <openvdb/openvdb.h>
 #include <openvdb/io/File.h>
 #include <openvdb/tools/Interpolation.h>
@@ -54,6 +52,23 @@ public:
     static const char* CLASS;
     static const char* HELP;
 
+    // Color scheme enum — shared between 2D and 3D
+    enum ColorScheme {
+        kLit = 0,        // Standard ray-marched lighting (2D only, 3D falls back to greyscale)
+        kGreyscale,
+        kHeat,
+        kCool,
+        kBlackbody,
+        kCustomGradient
+    };
+
+    // Evaluate a color ramp for a normalised density value [0,1]
+    struct Color3 { float r, g, b; };
+    static Color3 evalRamp(ColorScheme scheme, float t,
+                           const float* gradA, const float* gradB,
+                           double tempMin, double tempMax);
+    static Color3 blackbody(double tempKelvin);
+
 private:
     // ── Knobs ──
     const char* _vdbFilePath   = "";
@@ -66,11 +81,19 @@ private:
     int         _frameOffset   = 0;
     DD::Image::FormatPair _formats;
 
-    // 3D display knobs
+    // Color scheme
+    int         _colorScheme   = kLit;
+    double      _tempMin       = 500.0;
+    double      _tempMax       = 6500.0;
+    double      _gradStart[3]  = { 0.0, 0.0, 0.0 };
+    double      _gradEnd[3]    = { 1.0, 0.8, 0.2 };
+
+    // 3D display
     bool        _showBbox      = true;
     bool        _showPoints    = true;
-    int         _pointDensity  = 1;    // 0=Low 1=Med 2=High
+    int         _pointDensity  = 1;
     double      _pointSize     = 3.0;
+    int         _viewportColor = kHeat;  // separate scheme for 3D
 
     // ── Grid state ──
     openvdb::FloatGrid::Ptr _floatGrid;
@@ -85,12 +108,12 @@ private:
     double          _halfW    = 1.0;
     bool            _camValid = false;
 
-    // ── Volume transform from Axis input ──
+    // ── Volume transform ──
     bool   _hasVolumeXform = false;
-    double _volFwd[4][4];     // volume local → world
-    double _volInv[4][4];     // world → volume local
+    double _volFwd[4][4];
+    double _volInv[4][4];
 
-    // ── 3D viewport point cloud ──
+    // ── 3D point cloud cache ──
     struct DensityPoint { float x, y, z, density; };
     std::vector<DensityPoint> _previewPoints;
     float                     _maxDensity = 1.0f;
@@ -114,6 +137,11 @@ private:
                   const openvdb::Vec3d& dir,
                   float& outR, float& outG,
                   float& outB, float& outA) const;
+
+    // Unlit density pass for color-mapped modes
+    void marchRayDensity(const openvdb::Vec3d& origin,
+                         const openvdb::Vec3d& dir,
+                         float& outDensity, float& outAlpha) const;
 
     DD::Image::Lock _loadLock;
     std::string     _loadedPath;
