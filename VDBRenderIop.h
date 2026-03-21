@@ -7,12 +7,13 @@
 #include <openvdb/io/File.h>
 #include <openvdb/tools/Interpolation.h>
 
-// Now include Nuke headers (the foreach macro won't affect OpenVDB anymore)
+// Now include Nuke headers
 #include <DDImage/Iop.h>
 #include <DDImage/Knobs.h>
 #include <DDImage/Row.h>
 #include <DDImage/Thread.h>
 #include <DDImage/CameraOp.h>
+#include <DDImage/AxisOp.h>
 #include <DDImage/Matrix4.h>
 #include <DDImage/Format.h>
 #include <DDImage/ViewerContext.h>
@@ -33,8 +34,11 @@ public:
     const char* Class()     const override { return CLASS; }
     const char* node_help() const override { return HELP; }
 
+    int         minimum_inputs() const override { return 1; }
+    int         maximum_inputs() const override { return 2; }
     const char* input_label(int idx, char* buf) const override;
     bool        test_input(int idx, DD::Image::Op* op) const override;
+    Op*         default_input(int idx) const override;
 
     void _validate(bool for_real) override;
     void _request(int x, int y, int r, int t,
@@ -43,7 +47,6 @@ public:
                 DD::Image::ChannelMask, DD::Image::Row&) override;
     void append(DD::Image::Hash& hash) override;
 
-    // 3D viewport bounding box
     void build_handles(DD::Image::ViewerContext* ctx) override;
     void draw_handle(DD::Image::ViewerContext* ctx) override;
 
@@ -52,50 +55,59 @@ public:
     static const char* HELP;
 
 private:
-    // Knobs
+    // ── Knobs ──
     const char* _vdbFilePath   = "";
     const char* _gridName      = "density";
-    double      _stepSize      = 0.05;
-    double      _extinction    = 1.0;
-    double      _scattering    = 0.5;
+    double      _stepSize      = 0.5;
+    double      _extinction    = 5.0;
+    double      _scattering    = 3.0;
     double      _lightDir[3]   = { 0.577, 0.577, 0.577 };
     double      _lightColor[3] = { 1.0,   1.0,   1.0   };
-    int         _displayMode   = 2;   // 0=Off, 1=Bbox, 2=Bbox+Points Low, 3=Bbox+Points Med, 4=Bbox+Points High
     int         _frameOffset   = 0;
     DD::Image::FormatPair _formats;
 
-    // Grid state
-    openvdb::FloatGrid::Ptr     _floatGrid;
-    openvdb::Vec3d              _bboxMin;
-    openvdb::Vec3d              _bboxMax;
-    bool                        _gridValid = false;
-    int                         _loadedFrame = -1;
+    // 3D display knobs
+    bool        _showBbox      = true;
+    bool        _showPoints    = true;
+    int         _pointDensity  = 1;    // 0=Low 1=Med 2=High
+    double      _pointSize     = 3.0;
 
-    // Camera cache (set in _validate — CameraOp not thread-safe)
+    // ── Grid state ──
+    openvdb::FloatGrid::Ptr _floatGrid;
+    openvdb::Vec3d          _bboxMin;
+    openvdb::Vec3d          _bboxMax;
+    bool                    _gridValid = false;
+    int                     _loadedFrame = -1;
+
+    // ── Camera cache ──
     openvdb::Vec3d  _camOrigin;
     double          _camRot[3][3];
     double          _halfW    = 1.0;
     bool            _camValid = false;
 
-    // 3D viewport density point cloud cache
+    // ── Volume transform from Axis input ──
+    bool   _hasVolumeXform = false;
+    double _volFwd[4][4];     // volume local → world
+    double _volInv[4][4];     // world → volume local
+
+    // ── 3D viewport point cloud ──
     struct DensityPoint { float x, y, z, density; };
     std::vector<DensityPoint> _previewPoints;
     float                     _maxDensity = 1.0f;
-    int                       _cachedDisplayMode = -1;
+    int                       _cachedPointDensity = -1;
     std::string               _cachedPointsPath;
     int                       _cachedPointsFrame = -1;
+    bool                      _cachedHasXform = false;
     void rebuildPointCloud();
 
-    // Edge indices for 3D viewport wireframe
     static constexpr int _bboxEdges[12][2] = {
-        {0,1},{2,3},{4,5},{6,7},  // X edges
-        {0,2},{1,3},{4,6},{5,7},  // Y edges
-        {0,4},{1,5},{2,6},{3,7}   // Z edges
+        {0,1},{2,3},{4,5},{6,7},
+        {0,2},{1,3},{4,6},{5,7},
+        {0,4},{1,5},{2,6},{3,7}
     };
 
     DD::Image::CameraOp* camera() const;
-
-    // Resolve frame patterns (#### or %04d) in file path
+    DD::Image::AxisOp*   axisInput() const;
     std::string resolveFramePath(int frame) const;
 
     void marchRay(const openvdb::Vec3d& origin,

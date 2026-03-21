@@ -28,6 +28,7 @@ target_include_directories(VDBRender PRIVATE
 target_compile_definitions(VDBRender PRIVATE
     _USE_MATH_DEFINES         # required by Nuke NDK headers on MSVC
     NOMINMAX                  # prevent Windows.h min/max macros
+    _CRT_SECURE_NO_WARNINGS   # suppress fopen deprecation warnings
     FN_SHARED_IMPORT=__declspec\(dllimport\)
     FN_SHARED_EXPORT=__declspec\(dllexport\)
 )

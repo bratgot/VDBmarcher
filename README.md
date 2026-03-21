@@ -7,15 +7,16 @@ A Nuke plugin that ray-marches OpenVDB density grids directly in the compositor.
 - **Direct .vdb loading** — reads OpenVDB float grids (density, temperature, etc.)
 - **VDB sequences** — auto-detects frame numbers, or use `####`/`%04d` patterns
 - **Single-scatter lighting** — directional light with shadow rays
-- **3D viewport bounding box** — green wireframe in 3D viewer to help aim the camera
-- **2D overlay** — optional wireframe overlay on rendered output
-- **Format control** — choose output resolution independently from project settings
-- **Frame offset** — shift sequence timing with a simple knob
+- **Axis transform input** — connect an Axis node to move/rotate/scale the volume in 3D
+- **3D viewport preview** — bounding box wireframe + density point cloud
+- **Proxy rendering** — respects Nuke's proxy/downres settings
+- **Format control** — choose output resolution independently
+- **Frame offset** — shift sequence timing
 
 ## Requirements
 
 - **Windows 11**
-- **Visual Studio 2022** with **C++ Clang-cl** compiler (Individual Components)
+- **Visual Studio 2022** with **C++ Clang-cl** compiler
 - **CMake 3.20+**
 - **Nuke 17** (tested with 17.0v1)
 - **vcpkg** with OpenVDB 12
@@ -34,15 +35,15 @@ vcpkg install openvdb:x64-windows
 
 ### 2. Install Clang-cl
 
-OpenVDB 12 requires C++20 features that MSVC doesn't fully support. Install Clang-cl through:
+OpenVDB 12 requires C++20 features that MSVC doesn't fully support. Install Clang-cl:
 
 **Visual Studio Installer → Modify → Individual Components → search "Clang"**
 - Tick **C++ Clang Compiler for Windows**
 - Tick **C++ Clang-cl for v143 build tools**
 
-### 3. Build the plugin
+### 3. Build
 
-Open an **x64 Native Tools Command Prompt for VS 2022**, then:
+Open an **x64 Native Tools Command Prompt for VS 2022**:
 
 ```bat
 cd C:\dev\VDBmarcher
@@ -60,6 +61,8 @@ nmake
 
 ### 4. Install
 
+Run `install_vdbrender.bat` or manually:
+
 ```bat
 mkdir %USERPROFILE%\.nuke\plugins
 
@@ -71,59 +74,70 @@ copy /Y C:\vcpkg\installed\x64-windows\bin\blosc.dll     %USERPROFILE%\.nuke\plu
 copy /Y C:\vcpkg\installed\x64-windows\bin\Imath-3_2.dll %USERPROFILE%\.nuke\plugins\
 ```
 
-Copy `menu.py` into `%USERPROFILE%\.nuke\` (or merge with your existing one).
+Copy `menu.py` into `%USERPROFILE%\.nuke\`.
 
 ## Usage
 
-1. Launch Nuke → **Nodes → VDB → VDBRender**
-2. Connect a **Camera** to the input
-3. Set **Output Format** (e.g. HD_1080)
-4. Point **VDB File** at your `.vdb` file
-5. Aim the camera at the volume (use the 3D viewer bounding box as a guide)
+1. **Nodes → VDB → VDBRender**
+2. Connect a **Camera** to input 0
+3. Optionally connect an **Axis** to input 1 (moves the volume)
+4. Set **Output Format** (e.g. HD_1080)
+5. Point **VDB File** at your `.vdb` file
+6. Use the 3D viewport to see the bounding box and aim the camera
+
+### Inputs
+
+| Input | Label | Type | Required |
+|-------|-------|------|----------|
+| 0 | cam | Camera | Yes |
+| 1 | axis | Axis/Transform | No — moves the volume in world space |
 
 ### Sequences
 
-Just pick any file from a numbered sequence:
+Pick any file from a numbered sequence:
 ```
 dust_impact_0099.vdb
 ```
-The node auto-detects `0099` as the frame number and replaces it with the current timeline frame. Use **Frame Offset** to shift timing.
-
-You can also use explicit patterns:
-```
-smoke.####.vdb
-smoke.%04d.vdb
-```
+The frame number is auto-detected. Also supports `####` and `%04d` patterns.
 
 ### Knobs
 
 | Knob | Description |
 |------|-------------|
+| **Output Format** | Resolution for rendered output. Respects proxy. |
 | **VDB File** | Path to .vdb file or sequence |
-| **Grid Name** | Name of the density grid (default: `density`) |
+| **Grid Name** | Density grid name (default: `density`) |
 | **Frame Offset** | Shift sequence timing |
-| **Step Size** | Ray march step in world units. Smaller = more detail, slower |
-| **Extinction** | How quickly light is absorbed. Higher = denser |
-| **Scattering** | How much light bounces. Higher = brighter |
-| **Light Direction** | Direction vector (normalised internally) |
-| **Light Color** | Color and intensity of the light |
-| **3D Display** | Off / Bounding Box / Bbox + Points (Low/Med/High) — density point cloud in 3D viewport |
+| **Step Size** | Ray march step. Start at 0.5, reduce for final. |
+| **Extinction** | Light absorption. Higher = denser. |
+| **Scattering** | Light scatter. Higher = brighter. |
+| **Light Direction** | Normalised internally. |
+| **Light Color** | Values >1 = intensity boost. |
+| **Show Bounding Box** | Green wireframe in 3D viewport |
+| **Show Point Cloud** | Density preview in 3D viewport |
+| **Point Density** | Low/Med/High (~16k/64k/250k points) |
+| **Point Size** | GL point size for preview |
 
 ### Tips
 
-- If you see black, try **pulling the camera back** and increasing **Extinction** and **Scattering**
-- Use the **3D viewport** with "Bbox + Points" to see the density shape and aim your camera
-- For large volumes, use a bigger **Step Size** (0.5–2.0) for fast preview, then reduce for final
+- If you see black, **pull the camera back** and try Extinction=5, Scattering=3
+- Use the **3D viewport** point cloud to see the volume shape
+- Use **Step Size 0.5–2.0** for fast preview, **0.05–0.1** for final
+- Connect an **Axis** to input 1 to reposition the volume without re-exporting
 - **Light Color** values above 1.0 act as intensity multipliers
-- The point cloud uses additive blending — denser areas glow brighter
+- Lowering proxy in the viewer speeds up rendering proportionally
+
+## Deep Output
+
+Deep (per-sample depth) output is planned for v2. It requires a different base class (`DeepOp`) which is a significant rewrite.
 
 ## Technical Notes
 
-- Built with **clang-cl** (Clang 19 with MSVC ABI) — needed because OpenVDB 12 uses C++20 features unsupported by MSVC 19.44
-- OpenVDB headers must be included **before** Nuke's DDImage headers to avoid a `#define foreach` macro collision in `ChannelSet.h`
-- The node is an `Iop` (2D image operator) that accepts a `CameraOp` input via `test_input()` override
-- Camera data is cached in `_validate()` since `CameraOp` is not thread-safe for `engine()` calls
-- Uses `Foundry` platform macros (`FN_SHARED_IMPORT/EXPORT`) defined via CMake for clang-cl compatibility
+- Built with **clang-cl** — needed because OpenVDB 12 uses C++20 features unsupported by MSVC 19.44
+- OpenVDB headers included **before** DDImage to avoid `#define foreach` collision
+- Camera/Axis data cached in `_validate()` since they're not thread-safe for `engine()`
+- Axis transform: rays are transformed into volume-local space via the inverse matrix
+- Point cloud uses additive GL blending with density-mapped color ramp
 
 ## License
 
