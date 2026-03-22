@@ -14,7 +14,7 @@ using namespace DD::Image;
 const char* VDBRenderIop::CLASS = "VDBRender";
 const char* VDBRenderIop::HELP =
     "VDBRender — OpenVDB Volume Ray Marcher\n\n"
-    "Inputs: Camera (0), Axis (1), Lights (2-9)\n\n"
+    "Inputs: BG (0), Camera (1), Axis (2), Lights (3-10)\n\n"
     "Created by Marten Blumen\n"
     "github.com/bratgot/VDBmarcher";
 
@@ -53,7 +53,6 @@ VDBRenderIop::Color3 VDBRenderIop::evalRamp(ColorScheme s,float t,const float*gA
 // ═══ Construction ═══
 
 VDBRenderIop::VDBRenderIop(Node*node):Iop(node) {
-    inputs(10);
     for(int c=0;c<3;++c)for(int r=0;r<3;++r)_camRot[c][r]=(c==r)?1:0;
     for(int i=0;i<4;++i)for(int j=0;j<4;++j)_volFwd[i][j]=_volInv[i][j]=(i==j)?1:0;
     std::memset(_cachedVolFwd,0,sizeof(_cachedVolFwd));
@@ -171,7 +170,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
     BeginGroup(f,"grp_light","Lighting");
     Text_knob(f,
         "<font size='-1' color='#999'>"
-        "Connect Nuke Light nodes to inputs 2-9 for scene lighting.<br>"
+        "Connect Nuke Light nodes to inputs 3-10 for scene lighting.<br>"
         "Moving and rotating lights affects the volume in real time.<br>"
         "Fallback controls below are used when no lights are connected."
         "</font>");
@@ -203,7 +202,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Shadow extinction multiplier.\n1 = correct. <1 lighter. >1 darker. 0 = none.");
     Divider(f,"Deep Output");
     Int_knob(f,&_deepSamples,"deep_samples","Deep Samples");
-    Tooltip(f,"Max deep samples per pixel. Each sample is\na depth slab with RGBA. Connect the deep output\nto DeepMerge, DeepHoldout, or DeepWrite.\n16 = fast. 64 = smooth. 128 = high quality.");
+    Tooltip(f,"Max deep samples per pixel.\nConnect deep output to DeepMerge etc.\n16 = fast. 64 = smooth. 128 = final.");
     EndGroup(f);
 
     // ── 3D Viewport ──
@@ -338,21 +337,26 @@ int VDBRenderIop::knob_changed(Knob* k)
 
 // ═══ Inputs ═══
 
-CameraOp* VDBRenderIop::camera() const{return dynamic_cast<CameraOp*>(Op::input(0));}
-AxisOp* VDBRenderIop::axisInput() const{return(inputs()<2||!input(1))?nullptr:dynamic_cast<AxisOp*>(Op::input(1));}
+CameraOp* VDBRenderIop::camera() const{return dynamic_cast<CameraOp*>(Op::input(1));}
+AxisOp* VDBRenderIop::axisInput() const{return(inputs()<3||!input(2))?nullptr:dynamic_cast<AxisOp*>(Op::input(2));}
 
 const char* VDBRenderIop::input_label(int idx,char*buf) const{
-    if(idx==0)return"cam";if(idx==1)return"axis";
-    if(idx>=2&&idx<=9){std::snprintf(buf,10,"light%d",idx-1);return buf;}
+    if(idx==0)return"bg";
+    if(idx==1)return"cam";
+    if(idx==2)return"axis";
+    if(idx>=3&&idx<=10){std::snprintf(buf,10,"light%d",idx-2);return buf;}
     return nullptr;}
 
 bool VDBRenderIop::test_input(int idx,Op*op) const{
-    if(idx==0)return dynamic_cast<CameraOp*>(op)||Iop::test_input(idx,op);
-    if(idx==1)return dynamic_cast<AxisOp*>(op)!=nullptr;
-    if(idx>=2)return dynamic_cast<LightOp*>(op)!=nullptr;
+    if(idx==0)return dynamic_cast<Iop*>(op)!=nullptr;
+    if(idx==1)return dynamic_cast<CameraOp*>(op)||Iop::test_input(idx,op);
+    if(idx==2)return dynamic_cast<AxisOp*>(op)!=nullptr;
+    if(idx>=3&&idx<=10)return dynamic_cast<LightOp*>(op)!=nullptr;
     return Iop::test_input(idx,op);}
 
-Op* VDBRenderIop::default_input(int idx) const{return(idx>=1)?nullptr:Iop::default_input(idx);}
+Op* VDBRenderIop::default_input(int idx) const{
+    if(idx==0)return Iop::default_input(idx); // BG gets default black
+    return nullptr;}
 
 // ═══ Frame Sequence ═══
 
@@ -429,7 +433,9 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_anisotropy);hash.append(_shadowDensity);hash.append(_ambientIntensity);
     hash.append(_densityMix);hash.append(_tempMix);hash.append(_flameMix);
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
-    for(int idx=1;idx<inputs();++idx){Op*op=Op::input(idx);if(op)hash.append(op->hash());}
+    for(int idx=1;idx<inputs();++idx){
+        Op*op=Op::input(idx);if(op)hash.append(op->hash());
+    }
 }
 
 // ═══ 3D Viewport ═══
@@ -503,14 +509,31 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
 
 void VDBRenderIop::_validate(bool for_real) {
     _camValid=false;_hasVolumeXform=false;_lights.clear();
-    // Validate all upstream ops early for hash freshness
-    for(int idx=0;idx<inputs();++idx){Op*op=Op::input(idx);if(op)op->validate(for_real);}
-    const Format*fmt=_formats.format();const Format*full=_formats.fullSizeFormat();if(!full)full=fmt;
-    if(fmt){info_.format(*fmt);info_.full_size_format(full?*full:*fmt);info_.set(*fmt);}
-    info_.channels(Mask_RGBA);set_out_channels(Mask_RGBA);info_.turn_on(Mask_RGBA);
-    // Deep info — same format, RGBA + depth channels
+    // Validate all upstream 3D ops (skip BG input 0)
+    for(int idx=1;idx<inputs();++idx){
+        Op*op=Op::input(idx);if(op)op->validate(for_real);
+    }
+    // BG input 0 — if connected, use its format
+    // BG input 0
+    Iop* bgIop=dynamic_cast<Iop*>(Op::input(0));
+    if(bgIop) bgIop->validate(for_real);
+    // Use BG format if a real node is connected (not default black)
+    bool bgConnected=bgIop && dynamic_cast<Iop*>(Op::input(0))!=Iop::default_input(0);
+    if(bgConnected){
+        const Format&bgFmt=bgIop->info().format();
+        const Format&bgFull=bgIop->info().full_size_format();
+        info_.format(bgFmt);info_.full_size_format(bgFull);info_.set(bgFmt);
+    }else{
+        const Format*fmt=_formats.format();const Format*full=_formats.fullSizeFormat();if(!full)full=fmt;
+        if(fmt){info_.format(*fmt);info_.full_size_format(full?*full:*fmt);info_.set(*fmt);}
+    }
+    info_.channels(Mask_RGBA);info_.turn_on(Mask_RGBA);
+    set_out_channels(Mask_RGBA);
+    // Deep info — MUST be set on both validate passes
     {ChannelSet deepChans=Mask_RGBA;deepChans+=Chan_DeepFront;deepChans+=Chan_DeepBack;
-     Box dbox(0,0,fmt?fmt->width():1,fmt?fmt->height():1);
+     const Format&outFmt=info_.format();
+     int w=outFmt.width(),h=outFmt.height();
+     Box dbox(0,0,w,h);
      DeepOp::_deepInfo=DeepInfo(_formats,dbox,deepChans);}
     if(!for_real)return;
 
@@ -519,7 +542,7 @@ void VDBRenderIop::_validate(bool for_real) {
         _camOrigin=openvdb::Vec3d(cw[3][0],cw[3][1],cw[3][2]);
         for(int c=0;c<3;++c)for(int r=0;r<3;++r)_camRot[c][r]=(double)cw[c][r];
         _halfW=(double)cam->horizontalAperture()*.5/(double)cam->focalLength();_camValid=true;
-    }else{error("Connect Camera to input 0.");return;}
+    }else{error("Connect Camera to input 1.");return;}
 
     // Axis
     if(AxisOp*axis=axisInput()){const auto axM=axis->worldTransform();
@@ -530,7 +553,7 @@ void VDBRenderIop::_validate(bool for_real) {
     }else{for(int i=0;i<4;++i)for(int j=0;j<4;++j)_volFwd[i][j]=_volInv[i][j]=(i==j)?1:0;}
 
     // Lights
-    for(int idx=2;idx<inputs();++idx){if(!input(idx))continue;
+    for(int idx=3;idx<11&&idx<inputs();++idx){if(!input(idx))continue;
         LightOp*light=dynamic_cast<LightOp*>(Op::input(idx));if(!light)continue;
         const auto lm=light->worldTransform();CachedLight cl;
         cl.pos[0]=(double)lm[3][0];cl.pos[1]=(double)lm[3][1];cl.pos[2]=(double)lm[3][2];
@@ -614,16 +637,36 @@ void VDBRenderIop::_validate(bool for_real) {
 
 // ═══ engine ═══
 
-void VDBRenderIop::_request(int,int,int,int,ChannelMask,int){}
+void VDBRenderIop::_request(int x,int y,int r,int t,ChannelMask channels,int count){
+    Iop*bg=dynamic_cast<Iop*>(Op::input(0));
+    if(bg) bg->request(x,y,r,t,channels,count);
+}
 
 void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
-    if(!_gridValid||!_camValid||(!_floatGrid&&!_tempGrid&&!_flameGrid)){foreach(z,channels){float*p=row.writable(z);for(int i=x;i<r;++i)p[i]=0;}return;}
+    // Read BG row if connected
+    Row bgRow(x,r);
+    bool hasBg=false;
+    {Iop*bg=dynamic_cast<Iop*>(Op::input(0));
+     if(bg){bg->get(y,x,r,channels,bgRow);hasBg=true;}}
+
+    if(!_gridValid||!_camValid||(!_floatGrid&&!_tempGrid&&!_flameGrid)){
+        // Pass through BG or black
+        foreach(z,channels){float*p=row.writable(z);
+            const float*bp=hasBg?bgRow[z]+x:nullptr;
+            for(int i=x;i<r;++i)p[i]=bp?bp[i-x]:0;}
+        return;}
     const Format&fmt=format();int W=fmt.width(),H=fmt.height();
     double halfW=_halfW,halfH=_halfW*(double)H/(double)W;
     float*rO=row.writable(Chan_Red),*gO=row.writable(Chan_Green),*bO=row.writable(Chan_Blue),*aO=row.writable(Chan_Alpha);
     ColorScheme scheme=static_cast<ColorScheme>(_colorScheme);
     float gA[3]={(float)_gradStart[0],(float)_gradStart[1],(float)_gradStart[2]};
     float gB[3]={(float)_gradEnd[0],(float)_gradEnd[1],(float)_gradEnd[2]};
+
+    // Get BG channel pointers
+    const float*bgR=hasBg?bgRow[Chan_Red]:nullptr;
+    const float*bgG=hasBg?bgRow[Chan_Green]:nullptr;
+    const float*bgB=hasBg?bgRow[Chan_Blue]:nullptr;
+    const float*bgA=hasBg?bgRow[Chan_Alpha]:nullptr;
     for(int ix=x;ix<r;++ix){
         double ndcX=(ix+.5)/(double)W*2-1,ndcY=(y+.5)/(double)H*2-1;
         double rcx=ndcX*halfW,rcy=ndcY*halfH,rcz=-1;
@@ -642,10 +685,22 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
             len=std::sqrt(dx2*dx2+dy2*dy2+dz2*dz2);if(len>1e-8){dx2/=len;dy2/=len;dz2/=len;}rdx=dx2;rdy=dy2;rdz=dz2;}
         openvdb::Vec3d rayO(ox,oy,oz),rayD(rdx,rdy,rdz);
         float ri=(float)_rampIntensity;
-        if(scheme==kLit){float R=0,G=0,B=0,A=0;marchRay(rayO,rayD,R,G,B,A);rO[ix]=R*ri;gO[ix]=G*ri;bO[ix]=B*ri;aO[ix]=A;}
-        else if(scheme==kExplosion){float R=0,G=0,B=0,A=0;marchRayExplosion(rayO,rayD,R,G,B,A);rO[ix]=R*ri;gO[ix]=G*ri;bO[ix]=B*ri;aO[ix]=A;}
+        float R=0,G=0,B=0,A=0;
+        if(scheme==kLit){marchRay(rayO,rayD,R,G,B,A);R*=ri;G*=ri;B*=ri;}
+        else if(scheme==kExplosion){marchRayExplosion(rayO,rayD,R,G,B,A);R*=ri;G*=ri;B*=ri;}
         else{float den=0,alpha=0;marchRayDensity(rayO,rayD,den,alpha);Color3 c=evalRamp(scheme,den,gA,gB,_tempMin,_tempMax);
-            rO[ix]=c.r*ri*alpha;gO[ix]=c.g*ri*alpha;bO[ix]=c.b*ri*alpha;aO[ix]=alpha;}
+            R=c.r*ri*alpha;G=c.g*ri*alpha;B=c.b*ri*alpha;A=alpha;}
+
+        // Composite volume OVER background (premultiplied over)
+        if(hasBg){
+            float inv=1.0f-A;
+            rO[ix]=R+bgR[ix]*inv;
+            gO[ix]=G+bgG[ix]*inv;
+            bO[ix]=B+bgB[ix]*inv;
+            aO[ix]=A+bgA[ix]*inv;
+        }else{
+            rO[ix]=R;gO[ix]=G;bO[ix]=B;aO[ix]=A;
+        }
     }
 }
 
@@ -782,17 +837,19 @@ void VDBRenderIop::marchRayDensity(const openvdb::Vec3d&origin,const openvdb::Ve
 
 void VDBRenderIop::getDeepRequests(Box box, const ChannelSet& channels,
                                     int count, std::vector<RequestData>& reqData) {
-    // No input deep data needed — we generate from scratch
 }
 
 bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
                                  DeepOutputPlane& plane) {
-    if(!_gridValid||!_camValid||(!_floatGrid&&!_tempGrid&&!_flameGrid))
+    if(!_gridValid||!_camValid||(!_floatGrid&&!_tempGrid&&!_flameGrid)){
+        ChannelSet outChans=Mask_RGBA;outChans+=Chan_DeepFront;outChans+=Chan_DeepBack;
+        plane=DeepOutputPlane(outChans,box);
+        for(int y=box.y();y<box.t();++y)for(int x=box.x();x<box.r();++x)plane.addHole();
         return true;
+    }
 
-    const Format*fmt=_formats.format();
-    if(!fmt)return false;
-    int W=fmt->width(),H=fmt->height();
+    const Format&fmt=info_.format();
+    int W=fmt.width(),H=fmt.height();
     double halfW=_halfW,halfH=_halfW*(double)H/(double)W;
 
     ChannelSet outChans=Mask_RGBA;
@@ -808,9 +865,10 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
     int maxSamples=std::max(1,_deepSamples);
     double deepStep=step*std::max(1,(int)std::ceil(bDiag/(step*maxSamples)));
 
+    
+
     for(int iy=box.y();iy<box.t();++iy){
         for(int ix=box.x();ix<box.r();++ix){
-            // Camera ray
             double ndcX=(ix+.5)/(double)W*2-1,ndcY=(iy+.5)/(double)H*2-1;
             double rcx=ndcX*halfW,rcy=ndcY*halfH,rcz=-1;
             double rdx=_camRot[0][0]*rcx+_camRot[1][0]*rcy+_camRot[2][0]*rcz;
@@ -833,7 +891,6 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
 
             openvdb::Vec3d rayO(ox,oy,oz),rayD(rdx,rdy,rdz);
 
-            // AABB intersection
             double tEnter=0,tExit=1e9;
             for(int a=0;a<3;++a){
                 double inv=(std::abs(rayD[a])>1e-8)?1./rayD[a]:1e38;
@@ -842,7 +899,6 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
 
             if(tEnter>=tExit||tExit<=0){plane.addHole();continue;}
 
-            // Grid accessors
             openvdb::FloatGrid::Ptr xfGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
             const auto&xf=xfGrid->transform();
             std::unique_ptr<openvdb::FloatGrid::ConstAccessor> dAcc,tAcc,fAcc;
@@ -850,7 +906,6 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
             if(_hasTempGrid&&_tempGrid)tAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
             if(_hasFlameGrid&&_flameGrid)fAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
 
-            // March and accumulate deep slabs
             DeepOutPixel pixel;
             double T=1.0;
             int sampleCount=0;
@@ -865,20 +920,17 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
                     auto iP=xf.worldToIndex(wP);
                     openvdb::Coord ijk((int)std::floor(iP[0]),(int)std::floor(iP[1]),(int)std::floor(iP[2]));
 
-                    // Temperature emission
                     if(tAcc){float tv=tAcc->getValue(ijk)*(float)_tempMix;if(tv>.001f){
                         double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
                         double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
                         double em=_emissionIntensity*tS*T*step;
                         slabR+=bb.r*(float)em;slabG+=bb.g*(float)em;slabB+=bb.b*(float)em;}}
 
-                    // Flame emission
                     if(fAcc){float fv=fAcc->getValue(ijk)*(float)_flameMix;if(fv>.001f){
                         Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
                         double fem=_flameIntensity*fv*T*step;
                         slabR+=fb.r*(float)fem;slabG+=fb.g*(float)fem;slabB+=fb.b*(float)fem;}}
 
-                    // Density: scatter + absorption
                     if(dAcc){float density=dAcc->getValue(ijk)*(float)_densityMix;
                         if(density>1e-6f){double se=density*ext,ss=density*scat;
                             for(const auto&lt:_lights){openvdb::Vec3d lD;
@@ -904,6 +956,13 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
                 }
 
                 float slabAlpha=(float)(slabT-T);
+                // For pure emission (no density), alpha would be zero.
+                // Synthesize alpha from emission luminance so DeepToImage works.
+                float emitLum=slabR*0.2126f+slabG*0.7152f+slabB*0.0722f;
+                if(slabAlpha<1e-6f && emitLum>1e-6f){
+                    // Clamp to reasonable alpha — emission is additive/premultiplied
+                    slabAlpha=std::min(emitLum*ri, 1.0f);
+                }
                 if(slabAlpha>1e-6f||(slabR+slabG+slabB)>1e-6f){
                     foreach(z,outChans){
                         if(z==Chan_DeepFront)     pixel.push_back((float)t);

@@ -36,13 +36,13 @@ public:
     const char* Class()     const override { return CLASS; }
     const char* node_help() const override { return HELP; }
 
-    int         minimum_inputs() const override { return 1; }
-    int         maximum_inputs() const override { return 10; }
+    int         minimum_inputs() const override { return 3; }
+    int         maximum_inputs() const override { return 11; }
     const char* input_label(int idx, char* buf) const override;
     bool        test_input(int idx, DD::Image::Op* op) const override;
     Op*         default_input(int idx) const override;
 
-    // ── 2D Iop interface ──
+    // ── 2D Iop ──
     void _validate(bool for_real) override;
     void _request(int x, int y, int r, int t, DD::Image::ChannelMask, int count) override;
     void engine(int y, int x, int r, DD::Image::ChannelMask, DD::Image::Row&) override;
@@ -50,9 +50,9 @@ public:
     void build_handles(DD::Image::ViewerContext* ctx) override;
     void draw_handle(DD::Image::ViewerContext* ctx) override;
 
-    // ── Deep interface (same node, dual output like ScanlineRender) ──
-    DD::Image::DeepOp* deepOp() { return this; }
-    DD::Image::Op* op() override { return this; }
+    // ── DeepOp interface ──
+    // DeepOp requires op() to return the Op* for this node
+    DD::Image::Op* op() override { return static_cast<DD::Image::Iop*>(this); }
     void getDeepRequests(DD::Image::Box box, const DD::Image::ChannelSet& channels,
                          int count, std::vector<DD::Image::RequestData>& reqData) override;
     bool doDeepEngine(DD::Image::Box box, const DD::Image::ChannelSet& channels,
