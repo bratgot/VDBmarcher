@@ -201,6 +201,9 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Double_knob(f,&_shadowDensity,"shadow_density","Shadow Density");
     SetRange(f,0,5);
     Tooltip(f,"Shadow extinction multiplier.\n1 = correct. <1 lighter. >1 darker. 0 = none.");
+    Divider(f,"Deep Output");
+    Int_knob(f,&_deepSamples,"deep_samples","Deep Samples");
+    Tooltip(f,"Max deep samples per pixel. Each sample is\na depth slab with RGBA. Connect the deep output\nto DeepMerge, DeepHoldout, or DeepWrite.\n16 = fast. 64 = smooth. 128 = high quality.");
     EndGroup(f);
 
     // ── 3D Viewport ──
@@ -505,6 +508,10 @@ void VDBRenderIop::_validate(bool for_real) {
     const Format*fmt=_formats.format();const Format*full=_formats.fullSizeFormat();if(!full)full=fmt;
     if(fmt){info_.format(*fmt);info_.full_size_format(full?*full:*fmt);info_.set(*fmt);}
     info_.channels(Mask_RGBA);set_out_channels(Mask_RGBA);info_.turn_on(Mask_RGBA);
+    // Deep info — same format, RGBA + depth channels
+    {ChannelSet deepChans=Mask_RGBA;deepChans+=Chan_DeepFront;deepChans+=Chan_DeepBack;
+     Box dbox(0,0,fmt?fmt->width():1,fmt?fmt->height():1);
+     DeepOp::_deepInfo=DeepInfo(_formats,dbox,deepChans);}
     if(!for_real)return;
 
     // Camera
@@ -769,6 +776,153 @@ void VDBRenderIop::marchRayDensity(const openvdb::Vec3d&origin,const openvdb::Ve
             float val=d;if(useTG){float tv=tA->getValue(ijk)*(float)_tempMix;val=(float)std::clamp((tv-_tempMin)/(_tempMax-_tempMin),0.,1.);}
             wV+=val*ab;T*=std::exp(-se*step);}
     }double alpha=1-T;outD=(alpha>1e-6)?std::clamp((float)(wV/alpha),0.f,1.f):0;outA=(float)alpha;
+}
+
+// ═══ Deep Interface ═══
+
+void VDBRenderIop::getDeepRequests(Box box, const ChannelSet& channels,
+                                    int count, std::vector<RequestData>& reqData) {
+    // No input deep data needed — we generate from scratch
+}
+
+bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
+                                 DeepOutputPlane& plane) {
+    if(!_gridValid||!_camValid||(!_floatGrid&&!_tempGrid&&!_flameGrid))
+        return true;
+
+    const Format*fmt=_formats.format();
+    if(!fmt)return false;
+    int W=fmt->width(),H=fmt->height();
+    double halfW=_halfW,halfH=_halfW*(double)H/(double)W;
+
+    ChannelSet outChans=Mask_RGBA;
+    outChans+=Chan_DeepFront;outChans+=Chan_DeepBack;
+    plane=DeepOutputPlane(outChans,box);
+
+    double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0));
+    double ext=_extinction,scat=_scattering;
+    double g=std::clamp(_anisotropy,-.999,.999),g2=g*g,hgN=(1-g2)/(4*M_PI);
+    int nSh=std::max(1,_shadowSteps);
+    double bDiag=(_bboxMax-_bboxMin).length(),shStep=bDiag/(nSh*2);
+    float ri=(float)_rampIntensity;
+    int maxSamples=std::max(1,_deepSamples);
+    double deepStep=step*std::max(1,(int)std::ceil(bDiag/(step*maxSamples)));
+
+    for(int iy=box.y();iy<box.t();++iy){
+        for(int ix=box.x();ix<box.r();++ix){
+            // Camera ray
+            double ndcX=(ix+.5)/(double)W*2-1,ndcY=(iy+.5)/(double)H*2-1;
+            double rcx=ndcX*halfW,rcy=ndcY*halfH,rcz=-1;
+            double rdx=_camRot[0][0]*rcx+_camRot[1][0]*rcy+_camRot[2][0]*rcz;
+            double rdy=_camRot[0][1]*rcx+_camRot[1][1]*rcy+_camRot[2][1]*rcz;
+            double rdz=_camRot[0][2]*rcx+_camRot[1][2]*rcy+_camRot[2][2]*rcz;
+            double len=std::sqrt(rdx*rdx+rdy*rdy+rdz*rdz);
+            if(len>1e-8){rdx/=len;rdy/=len;rdz/=len;}
+
+            double ox=_camOrigin[0],oy=_camOrigin[1],oz=_camOrigin[2];
+            if(_hasVolumeXform){
+                double tx=_volInv[0][0]*ox+_volInv[1][0]*oy+_volInv[2][0]*oz+_volInv[3][0];
+                double ty=_volInv[0][1]*ox+_volInv[1][1]*oy+_volInv[2][1]*oz+_volInv[3][1];
+                double tz=_volInv[0][2]*ox+_volInv[1][2]*oy+_volInv[2][2]*oz+_volInv[3][2];
+                ox=tx;oy=ty;oz=tz;
+                double dx2=_volInv[0][0]*rdx+_volInv[1][0]*rdy+_volInv[2][0]*rdz;
+                double dy2=_volInv[0][1]*rdx+_volInv[1][1]*rdy+_volInv[2][1]*rdz;
+                double dz2=_volInv[0][2]*rdx+_volInv[1][2]*rdy+_volInv[2][2]*rdz;
+                len=std::sqrt(dx2*dx2+dy2*dy2+dz2*dz2);
+                if(len>1e-8){dx2/=len;dy2/=len;dz2/=len;}rdx=dx2;rdy=dy2;rdz=dz2;}
+
+            openvdb::Vec3d rayO(ox,oy,oz),rayD(rdx,rdy,rdz);
+
+            // AABB intersection
+            double tEnter=0,tExit=1e9;
+            for(int a=0;a<3;++a){
+                double inv=(std::abs(rayD[a])>1e-8)?1./rayD[a]:1e38;
+                double t0=(_bboxMin[a]-rayO[a])*inv,t1=(_bboxMax[a]-rayO[a])*inv;
+                if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
+
+            if(tEnter>=tExit||tExit<=0){plane.addHole();continue;}
+
+            // Grid accessors
+            openvdb::FloatGrid::Ptr xfGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
+            const auto&xf=xfGrid->transform();
+            std::unique_ptr<openvdb::FloatGrid::ConstAccessor> dAcc,tAcc,fAcc;
+            if(_floatGrid)dAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_floatGrid->getConstAccessor());
+            if(_hasTempGrid&&_tempGrid)tAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
+            if(_hasFlameGrid&&_flameGrid)fAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
+
+            // March and accumulate deep slabs
+            DeepOutPixel pixel;
+            double T=1.0;
+            int sampleCount=0;
+
+            for(double t=tEnter;t<tExit&&T>0.001&&sampleCount<maxSamples;t+=deepStep){
+                double tEnd=std::min(t+deepStep,tExit);
+                float slabR=0,slabG=0,slabB=0;
+                double slabT=T;
+
+                for(double ts=t;ts<tEnd&&T>0.001;ts+=step){
+                    auto wP=rayO+ts*rayD;
+                    auto iP=xf.worldToIndex(wP);
+                    openvdb::Coord ijk((int)std::floor(iP[0]),(int)std::floor(iP[1]),(int)std::floor(iP[2]));
+
+                    // Temperature emission
+                    if(tAcc){float tv=tAcc->getValue(ijk)*(float)_tempMix;if(tv>.001f){
+                        double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
+                        double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
+                        double em=_emissionIntensity*tS*T*step;
+                        slabR+=bb.r*(float)em;slabG+=bb.g*(float)em;slabB+=bb.b*(float)em;}}
+
+                    // Flame emission
+                    if(fAcc){float fv=fAcc->getValue(ijk)*(float)_flameMix;if(fv>.001f){
+                        Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
+                        double fem=_flameIntensity*fv*T*step;
+                        slabR+=fb.r*(float)fem;slabG+=fb.g*(float)fem;slabB+=fb.b*(float)fem;}}
+
+                    // Density: scatter + absorption
+                    if(dAcc){float density=dAcc->getValue(ijk)*(float)_densityMix;
+                        if(density>1e-6f){double se=density*ext,ss=density*scat;
+                            for(const auto&lt:_lights){openvdb::Vec3d lD;
+                                if(lt.isPoint){lD=openvdb::Vec3d(lt.pos[0]-wP[0],lt.pos[1]-wP[1],lt.pos[2]-wP[2]);
+                                    double l2=lD.length();if(l2>1e-8)lD/=l2;else lD=openvdb::Vec3d(0,1,0);}
+                                else lD=openvdb::Vec3d(lt.dir[0],lt.dir[1],lt.dir[2]);
+                                double cosT2=-(rayD[0]*lD[0]+rayD[1]*lD[1]+rayD[2]*lD[2]);
+                                double ph;if(std::abs(g)<.001)ph=1./(4*M_PI);
+                                else{double dn=1+g2-2*g*cosT2;ph=hgN/std::pow(dn,1.5);}
+                                double phS=ph*4*M_PI;
+                                double lT=1;
+                                if(_floatGrid){auto la=_floatGrid->getConstAccessor();
+                                    for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
+                                        for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
+                                        auto li=xf.worldToIndex(lw);
+                                        lT*=std::exp(-(double)la.getValue(openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shStep);
+                                        if(lT<.001)break;}}
+                                double ctr=ss*phS*lT*T*step;
+                                slabR+=(float)(ctr*lt.color[0]);slabG+=(float)(ctr*lt.color[1]);slabB+=(float)(ctr*lt.color[2]);}
+                            if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;
+                                slabR+=(float)amb;slabG+=(float)amb;slabB+=(float)amb;}
+                            T*=std::exp(-se*step);}}
+                }
+
+                float slabAlpha=(float)(slabT-T);
+                if(slabAlpha>1e-6f||(slabR+slabG+slabB)>1e-6f){
+                    foreach(z,outChans){
+                        if(z==Chan_DeepFront)     pixel.push_back((float)t);
+                        else if(z==Chan_DeepBack) pixel.push_back((float)tEnd);
+                        else if(z==Chan_Red)      pixel.push_back(slabR*ri);
+                        else if(z==Chan_Green)    pixel.push_back(slabG*ri);
+                        else if(z==Chan_Blue)     pixel.push_back(slabB*ri);
+                        else if(z==Chan_Alpha)    pixel.push_back(slabAlpha);
+                        else                      pixel.push_back(0.0f);
+                    }
+                    ++sampleCount;
+                }
+            }
+
+            if(sampleCount>0)plane.addPixel(pixel);
+            else plane.addHole();
+        }
+    }
+    return true;
 }
 
 // ═══ Registration ═══

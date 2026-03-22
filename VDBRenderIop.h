@@ -7,6 +7,8 @@
 #include <openvdb/tools/Interpolation.h>
 
 #include <DDImage/Iop.h>
+#include <DDImage/DeepOp.h>
+#include <DDImage/DeepPlane.h>
 #include <DDImage/Knobs.h>
 #include <DDImage/Row.h>
 #include <DDImage/Thread.h>
@@ -23,7 +25,7 @@
 #include <memory>
 #include <cstring>
 
-class VDBRenderIop : public DD::Image::Iop
+class VDBRenderIop : public DD::Image::Iop, public DD::Image::DeepOp
 {
 public:
     explicit VDBRenderIop(Node* node);
@@ -40,12 +42,21 @@ public:
     bool        test_input(int idx, DD::Image::Op* op) const override;
     Op*         default_input(int idx) const override;
 
+    // ── 2D Iop interface ──
     void _validate(bool for_real) override;
     void _request(int x, int y, int r, int t, DD::Image::ChannelMask, int count) override;
     void engine(int y, int x, int r, DD::Image::ChannelMask, DD::Image::Row&) override;
     void append(DD::Image::Hash& hash) override;
     void build_handles(DD::Image::ViewerContext* ctx) override;
     void draw_handle(DD::Image::ViewerContext* ctx) override;
+
+    // ── Deep interface (same node, dual output like ScanlineRender) ──
+    DD::Image::DeepOp* deepOp() { return this; }
+    DD::Image::Op* op() override { return this; }
+    void getDeepRequests(DD::Image::Box box, const DD::Image::ChannelSet& channels,
+                         int count, std::vector<DD::Image::RequestData>& reqData) override;
+    bool doDeepEngine(DD::Image::Box box, const DD::Image::ChannelSet& channels,
+                      DD::Image::DeepOutputPlane& plane) override;
 
     static const DD::Image::Op::Description desc;
     static const char* CLASS;
@@ -90,9 +101,10 @@ private:
     double _ambientIntensity  = 0.0;
 
     // ── Quality ──
-    double _quality           = 2.0;   // internal step = 1.0 / quality
+    double _quality           = 2.0;
     int    _shadowSteps       = 8;
     double _shadowDensity     = 1.0;
+    int    _deepSamples       = 32;
 
     // ── Viewport ──
     bool   _showBbox          = true;
