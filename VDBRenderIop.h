@@ -105,6 +105,8 @@ private:
     int    _shadowSteps       = 8;
     double _shadowDensity     = 1.0;
     int    _deepSamples       = 32;
+    int    _multiBounces      = 0;    // 0=single scatter, 1-4=multi-scatter bounces
+    int    _bounceRays        = 6;    // directions per bounce
 
     // ── Viewport ──
     bool   _showBbox          = true;
