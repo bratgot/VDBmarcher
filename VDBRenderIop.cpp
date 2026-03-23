@@ -73,295 +73,174 @@ VDBRenderIop::VDBRenderIop(Node*node):Iop(node) {
 
 void VDBRenderIop::knobs(Knob_Callback f)
 {
+    // ═══════════════════════════════════════════════════
+    //  TAB: VDBRender
+    // ═══════════════════════════════════════════════════
+    Tab_knob(f,"VDBRender");
+
     Text_knob(f,
         "<font size='+2'><b>VDBRender</b></font>"
-        " <font color='#888' size='-1'>v1.0</font><br>"
-        "<font color='#aaa'>OpenVDB volume ray marcher with multi-scatter,<br>"
-        "deep output, and environment lighting</font>");
-    Divider(f,"");
+        " <font color='#888' size='-1'>v2.0</font><br>"
+        "<font color='#aaa'>OpenVDB volume ray marcher</font>");
 
-    Format_knob(f,&_formats,"format","Output Format");
-    Tooltip(f,"Used when no BG plate is connected.\nBG input overrides this resolution.");
-
-    Divider(f,"");
     File_knob(f,&_vdbFilePath,"file","VDB File");
-    Tooltip(f,"Path to .vdb file. Sequences auto-detected\nfrom filename. Also supports #### and %04d.");
     Button(f,"discover_grids","Discover Grids");
-    Tooltip(f,"Scans the VDB file and auto-populates\ngrid fields below with matching names.");
+    Format_knob(f,&_formats,"format","Format");
 
-    Divider(f,"Grid Assignment");
+    Divider(f,"Grids");
     String_knob(f,&_gridName,"grid_name","Density");
-    Tooltip(f,"Float grid for smoke opacity and scatter.\nCommon names: density, smoke, soot.\nLeave empty for emission-only rendering.");
-    Double_knob(f,&_densityMix,"density_mix","Density Mix");
-    SetRange(f,0,5);
-    Tooltip(f,"Scales density grid values before shading.\n0 = no smoke. 1 = original. 2 = twice as dense.\nAffects opacity, scatter, and shadows.");
+    Double_knob(f,&_densityMix,"density_mix","Density Mix");SetRange(f,0,5);
     String_knob(f,&_tempGridName,"temp_grid","Temperature");
-    Tooltip(f,"Float grid for blackbody emission colour.\nCommon names: temperature, heat, temp.\nDrives the colour of self-luminous fire.");
-    Double_knob(f,&_tempMix,"temp_mix","Temp Mix");
-    SetRange(f,0,5);
-    Tooltip(f,"Scales temperature values before emission.\n0 = no glow. 1 = original. >1 = brighter fire.");
+    Double_knob(f,&_tempMix,"temp_mix","Temp Mix");SetRange(f,0,5);
     String_knob(f,&_flameGridName,"flame_grid","Flames");
-    Tooltip(f,"Float grid for additional flame emission.\nCommon names: flame, flames, fire, fuel, burn.\nAdds extra glow on top of temperature.");
-    Double_knob(f,&_flameMix,"flame_mix","Flame Mix");
-    SetRange(f,0,5);
-    Tooltip(f,"Scales flame values before emission.\n0 = no flames. 1 = original. >1 = brighter.");
+    Double_knob(f,&_flameMix,"flame_mix","Flame Mix");SetRange(f,0,5);
+    String_knob(f,&_velGridName,"vel_grid","Velocity");
+    String_knob(f,&_colorGridName,"color_grid","Colour");
     Int_knob(f,&_frameOffset,"frame_offset","Frame Offset");
-    Tooltip(f,"Added to timeline frame for sequences.\nUse negative values to shift earlier.");
 
-    Divider(f,"");
+    Divider(f,"Render");
     static const char*presets[]={"Custom","Thin Smoke","Dense Smoke","Fog / Mist",
         "Cumulus Cloud","Fire","Explosion","Pyroclastic","Dust Storm","Steam",nullptr};
     Enumeration_knob(f,&_scenePreset,presets,"scene_preset","Scene Preset");
-    Tooltip(f,"One-click setup for common volume types.\nSets render mode, density, scattering,\nanisotropy, shadows, emission, and quality.\nSwitch to Custom to tweak individual values.");
-
     static const char*modes[]={"Lit","Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
     Enumeration_knob(f,&_colorScheme,modes,"color_scheme","Render Mode");
-    Tooltip(f,
-        "Lit — physically-based scatter with shadows\n"
-        "Greyscale — density mapped to luminance\n"
-        "Heat — black to red to yellow to white\n"
-        "Cool — black to blue to cyan to white\n"
-        "Blackbody — Planckian temperature colour\n"
-        "Custom Gradient — user two-colour ramp\n"
-        "Explosion — lit smoke + self-luminous fire");
-    Double_knob(f,&_rampIntensity,"ramp_intensity","Intensity");
-    SetRange(f,0,10);
-    Tooltip(f,"Master brightness for all render modes.\nMultiplies final RGB output. Does not\naffect alpha.");
+    Double_knob(f,&_rampIntensity,"ramp_intensity","Intensity");SetRange(f,0,10);
 
-    BeginGroup(f,"grp_density","Volume Density");
-    Text_knob(f,
-        "<font size='-1' color='#999'>"
-        "Controls how the density grid is shaded. Extinction<br>"
-        "sets how opaque the volume is. Scattering sets how<br>"
-        "bright it appears under lighting. Anisotropy controls<br>"
-        "whether light scatters forward or backward."
-        "</font>");
-    Double_knob(f,&_extinction,"extinction","Extinction");
-    SetRange(f,0,100);
-    Tooltip(f,"Light absorption per unit density.\nHigher = more opaque.\nThin smoke: 1-5. Cloud: 10-30. Solid: 50+.");
-    Double_knob(f,&_scattering,"scattering","Scattering");
-    SetRange(f,0,100);
-    Tooltip(f,"In-scatter brightness under lighting.\nOnly affects Lit and Explosion modes.\nHigher = brighter. 0 = pure absorption.");
-    Divider(f,"Phase Function");
+    Divider(f,"Shading");
+    Double_knob(f,&_extinction,"extinction","Extinction");SetRange(f,0,100);
+    Double_knob(f,&_scattering,"scattering","Scattering");SetRange(f,0,100);
     static const char*aniP[]={"Custom","Isotropic (0.0)","Smoke (0.4)","Dust (0.6)","Cloud (0.76)","Fog (0.8)","Rim Light (-0.4)","Strong Back (-0.7)",nullptr};
-    Enumeration_knob(f,&_anisotropyPreset,aniP,"aniso_preset","Preset");
-    Tooltip(f,"Presets for Henyey-Greenstein g value.\nSets the slider below.");
-    Double_knob(f,&_anisotropy,"anisotropy","Anisotropy (g)");
-    SetRange(f,-1,1);
-    Tooltip(f,"Henyey-Greenstein phase function.\n-1 = strong back-scatter (rim light)\n 0 = isotropic (uniform)\n+1 = strong forward-scatter (backlit glow)\nSmoke: 0.4. Cloud: 0.76. Dust: 0.6.");
-    EndGroup(f);
+    Enumeration_knob(f,&_anisotropyPreset,aniP,"aniso_preset","Anisotropy Preset");
+    Double_knob(f,&_anisotropy,"anisotropy","Anisotropy (g)");SetRange(f,-1,1);
 
-    BeginGroup(f,"grp_emission","Emission & Colour");
-    Text_knob(f,
-        "<font size='-1' color='#999'>"
-        "Controls for temperature and flame emission.<br>"
-        "Used by Blackbody, Explosion, and Lit modes<br>"
-        "when temperature or flames grids are loaded.<br>"
-        "Custom Gradient colours are set here too."
-        "</font>");
-    Divider(f,"Blackbody");
-    Double_knob(f,&_tempMin,"temp_min","Temp Min (K)");
-    SetRange(f,0,15000);
-    Tooltip(f,"Kelvin at zero intensity.\nCandle: 1800. Fire base: 500.");
-    Double_knob(f,&_tempMax,"temp_max","Temp Max (K)");
-    SetRange(f,0,15000);
-    Tooltip(f,"Kelvin at peak intensity.\nFire: 3000. Explosion: 8000. Plasma: 15000.");
-    Double_knob(f,&_emissionIntensity,"emission_intensity","Temp Emission");
-    SetRange(f,0,10);
-    Tooltip(f,"Brightness of temperature grid emission.\nOnly active when a temperature grid is\nloaded. Start with 1-5.");
-    Double_knob(f,&_flameIntensity,"flame_intensity","Flame Emission");
-    SetRange(f,0,20);
-    Tooltip(f,"Brightness of flame grid emission.\nOnly active when a flames grid is loaded.\nStart with 2-10.");
+    BeginClosedGroup(f,"grp_emission","Emission");
+    Double_knob(f,&_tempMin,"temp_min","Temp Min (K)");SetRange(f,0,15000);
+    Double_knob(f,&_tempMax,"temp_max","Temp Max (K)");SetRange(f,0,15000);
+    Double_knob(f,&_emissionIntensity,"emission_intensity","Temp Emission");SetRange(f,0,10);
+    Double_knob(f,&_flameIntensity,"flame_intensity","Flame Emission");SetRange(f,0,20);
     Divider(f,"Custom Gradient");
     Color_knob(f,_gradStart,"grad_start","Start Color");
     Color_knob(f,_gradEnd,"grad_end","End Color");
     EndGroup(f);
 
-    BeginGroup(f,"grp_light","Lighting");
-    Text_knob(f,
-        "<font size='-1' color='#999'>"
-        "Lights are gathered from the scn input. Pipe<br>"
-        "any number of Lights and an Axis into a Scene<br>"
-        "node, then connect the Scene here. All lights<br>"
-        "in the tree are found automatically.<br><br>"
-        "If no lights are found, the fallback below is<br>"
-        "used. Connect an HDRI to the env input for<br>"
-        "environment lighting."
-        "</font>");
-    Divider(f,"Fallback Light");
+    Divider(f,"Lighting");
+    Bool_knob(f,&_useFallbackLight,"use_fallback_light","Fallback Light");
     XYZ_knob(f,_lightDir,"light_dir","Direction");
-    Tooltip(f,"Direction toward the light source.\nUsed when no lights found in scene input.");
-    Color_knob(f,_lightColor,"light_color","Color");
-    Tooltip(f,"Fallback light colour.");
-    Double_knob(f,&_lightIntensity,"light_intensity","Intensity");
-    SetRange(f,0,50);
-    Tooltip(f,"Fallback light brightness.");
-    Divider(f,"Ambient");
-    Double_knob(f,&_ambientIntensity,"ambient","Ambient");
-    SetRange(f,0,5);
-    Tooltip(f,"Omnidirectional fill light, no shadows.\nLifts the darkest areas of dense volumes.\nUseful for volumes with strong self-shadowing.");
-    Divider(f,"Environment Map");
-    Text_knob(f,
-        "<font size='-1' color='#999'>"
-        "Connect a latlong HDRI to the env input.<br>"
-        "Samples the image from multiple directions<br>"
-        "with shadow rays for realistic sky lighting."
-        "</font>");
-    Double_knob(f,&_envIntensity,"env_intensity","Env Intensity");
-    SetRange(f,0,10);
-    Tooltip(f,"Brightness of environment lighting.\n0 = disabled. 1 = match image. >1 = brighter.");
-    Double_knob(f,&_envRotate,"env_rotate","Env Rotate");
-    SetRange(f,0,360);
-    Tooltip(f,"Rotates the environment map horizontally.\n0 and 360 = same orientation.\nAnimatable for spinning light setups.");
-    Double_knob(f,&_envDiffuse,"env_diffuse","Env Diffuse");
-    SetRange(f,0,1);
-    Tooltip(f,"How diffuse the environment lighting appears.\n0 = sharp, directional highlights\n0.5 = soft, natural spread\n1 = fully diffuse, even wrap\nHigher values are slower to render.");
+    Color_knob(f,_lightColor,"light_color","Light Color");
+    Double_knob(f,&_lightIntensity,"light_intensity","Light Intensity");SetRange(f,0,50);
+    Double_knob(f,&_ambientIntensity,"ambient","Ambient");SetRange(f,0,5);
+
+    BeginClosedGroup(f,"grp_env","Environment Map");
+    Double_knob(f,&_envIntensity,"env_intensity","Intensity");SetRange(f,0,10);
+    Double_knob(f,&_envRotate,"env_rotate","Rotate");SetRange(f,0,360);
+    Double_knob(f,&_envDiffuse,"env_diffuse","Diffuse");SetRange(f,0,1);
     EndGroup(f);
 
-    BeginClosedGroup(f,"grp_quality","Quality");
-    static const char*qP[]={"Custom","Draft","Preview","Production","Final","Ultra",nullptr};
-    Enumeration_knob(f,&_qualityPreset,qP,"quality_preset","Quality Preset");
-    Tooltip(f,"Sets all quality controls at once.\nDraft = fastest, rough look.\nPreview = quick turnaround.\nProduction = good for client review.\nFinal = full quality delivery.\nUltra = maximum fidelity, slowest.");
+    BeginClosedGroup(f,"grp_info","Technical Reference");
     Text_knob(f,
-        "<font size='-1' color='#999'>"
-        "Quality slider controls ray march resolution.<br>"
-        "Higher = finer detail but slower. Shadow steps<br>"
-        "control self-shadow smoothness. Multi-scatter<br>"
-        "adds light bounces for realistic clouds and fog."
-        "</font>");
-    Double_knob(f,&_quality,"quality","Quality");
-    SetRange(f,1,10);
-    Tooltip(f,"Ray march resolution (logarithmic).\n1 = fast preview\n3 = medium quality\n5 = good quality\n7 = high quality\n10 = final render");
-    Int_knob(f,&_shadowSteps,"shadow_steps","Shadow Steps");
-    Tooltip(f,"Shadow ray samples per light.\n4-8 = preview. 16-32 = final.");
-    Double_knob(f,&_shadowDensity,"shadow_density","Shadow Density");
-    SetRange(f,0,5);
-    Tooltip(f,"Multiplier on extinction for shadow rays.\n1 = physically correct.\n<1 = lighter shadows. >1 = darker.\n0 = no shadows (fully lit).");
-    Divider(f,"Multiple Scattering");
-    static const char*scP[]={"Off","Preview","Thin Volume","Cloud / Fog",
-        "Dense Volume","Ultra",nullptr};
-    Enumeration_knob(f,&_scatterPreset,scP,"scatter_preset","Preset");
-    Tooltip(f,"Quick setup for multi-scatter quality.\nOff = single scatter only (fastest).\nPreview = 1 bounce, 6 rays.\nThin Volume = 1 bounce, 14 rays.\nCloud / Fog = 2 bounces, 14 rays.\nDense Volume = 3 bounces, 26 rays.\nUltra = 4 bounces, 26 rays.");
-    Int_knob(f,&_multiBounces,"multi_bounces","Bounces");
-    Tooltip(f,"Extra light bounces through the volume.\n0 = single scatter (fastest)\n1 = one bounce (good for clouds)\n2-3 = dense fog / thick volumes\n4 = maximum realism, slowest");
-    Int_knob(f,&_bounceRays,"bounce_rays","Bounce Rays");
-    Tooltip(f,"Directions sampled per bounce.\n6 = axis-aligned (fast)\n14 = adds diagonals (smoother)\n26 = full coverage (best quality)");
-    Divider(f,"Deep Output");
-    Int_knob(f,&_deepSamples,"deep_samples","Deep Samples");
-    Tooltip(f,"Max depth slabs per pixel for deep output.\nConnect to DeepMerge, DeepHoldout, or\nDeepWrite for deep compositing.\n16 = fast. 64 = smooth. 128 = final.");
-    EndGroup(f);
-
-    BeginClosedGroup(f,"grp_viewport","3D Viewport");
-    Text_knob(f,
-        "<font size='-1' color='#999'>"
-        "Preview the volume bounding box and density<br>"
-        "as a point cloud in the 3D viewer. Useful for<br>"
-        "positioning the camera before rendering."
-        "</font>");
-    Bool_knob(f,&_showBbox,"show_bbox","Bounding Box");
-    Tooltip(f,"Green wireframe around the volume.\nFollows Axis transform from scene input.");
-    Bool_knob(f,&_showPoints,"show_points","Point Cloud");
-    Tooltip(f,"Coloured dots representing density values.\nUpdates when the volume or transform changes.");
-    static const char*dL[]={"Low (~16k)","Medium (~64k)","High (~250k)",nullptr};
-    Enumeration_knob(f,&_pointDensity,dL,"point_density","Density");
-    Tooltip(f,"Number of sample points for the preview.");
-    Double_knob(f,&_pointSize,"point_size","Size");
-    SetRange(f,1,20);
-    Tooltip(f,"GL point size in pixels.");
-    Divider(f,"Colour");
-    Bool_knob(f,&_linkViewport,"link_viewport","Link to Render Mode");
-    Tooltip(f,"Viewport colour scheme follows render mode.\nLit and Explosion fall back to Heat ramp.");
-    static const char*vp[]={"Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
-    Enumeration_knob(f,&_viewportColor,vp,"viewport_color","Manual");
-    Tooltip(f,"Override the viewport colour scheme.");
-    EndGroup(f);
-
-    BeginClosedGroup(f,"grp_tech","Technical Reference");
-    Text_knob(f,
-        "<b>Radiative Transfer</b><br>"
         "<font size='-1' color='#bbb'>"
-        "Emission-absorption volume rendering equation<br>"
-        "evaluated via fixed-step ray marching. Each step<br>"
-        "accumulates scatter, emission, and extinction.<br>"
-        "Transmittance follows Beer-Lambert: T = exp(-ext)."
+        "<b>Radiative Transfer</b> — Beer-Lambert transmittance<br>"
+        "with HDDA empty-space skipping and trilinear<br>"
+        "BoxSampler interpolation."
         "</font><br><br>"
-        "<b>Phase Function</b><br>"
         "<font size='-1' color='#bbb'>"
-        "Henyey-Greenstein angular scatter distribution.<br>"
-        "g=0 isotropic, g>0 forward scatter (backlit glow),<br>"
-        "g&lt;0 back scatter (rim light / halo effect)."
+        "<b>Phase</b> — Henyey-Greenstein. <b>Scatter</b> — N-bounce<br>"
+        "with 6-26 directions, albedo-weighted energy conservation."
         "</font><br><br>"
-        "<b>Multiple Scattering</b><br>"
         "<font size='-1' color='#bbb'>"
-        "N-bounce approximation. At each sample, light is<br>"
-        "scattered in 6-26 directions, each with abbreviated<br>"
-        "shadow rays. Energy conserved via albedo weighting.<br>"
-        "Essential for realistic clouds and thick fog."
+        "<b>Blackbody</b> — Planckian locus, 1000K red to<br>"
+        "10000K blue-white. <b>Motion Blur</b> — velocity grid<br>"
+        "ray origin offset across shutter interval."
         "</font><br><br>"
-        "<b>Blackbody Emission</b><br>"
         "<font size='-1' color='#bbb'>"
-        "Planckian locus maps Kelvin to CIE 1931 colour.<br>"
-        "1000K deep red, 2500K orange, 6500K daylight,<br>"
-        "10000K blue-white plasma."
-        "</font><br><br>"
-        "<b>Explosion Mode</b><br>"
-        "<font size='-1' color='#bbb'>"
-        "Combines density-driven scatter with shadows<br>"
-        "(smoke) and self-luminous blackbody emission<br>"
-        "(fire). Fire glows independently of scene lights."
-        "</font><br><br>"
-        "<b>Environment Lighting</b><br>"
-        "<font size='-1' color='#bbb'>"
-        "Latlong HDRI sampled from multiple directions<br>"
-        "with shadow rays. Respects volume transform."
-        "</font><br><br>"
-        "<b>Deep Output</b><br>"
-        "<font size='-1' color='#bbb'>"
-        "Outputs depth-sorted RGBA slabs for deep comp.<br>"
-        "Connect to DeepMerge for depth-correct integration<br>"
-        "with CG renders. Pure emission gets synthesised alpha."
-        "</font><br><br>"
-        "<b>Scene Input</b><br>"
-        "<font size='-1' color='#bbb'>"
-        "Recursively walks the scene tree to find lights<br>"
-        "and axis transforms. Connect any number of lights<br>"
-        "into a Scene node, pipe to scn input."
-        "</font><br><br>"
-        "<b>OpenVDB Grids</b><br>"
-        "<font size='-1' color='#bbb'>"
-        "density — scatter/absorption (float)<br>"
-        "temperature — emission Kelvin (float)<br>"
-        "heat — normalised 0-1 (float)<br>"
-        "flame/flames — combustion (float)<br>"
-        "vel/v — velocity, not yet used (vec3)"
+        "<b>Grids:</b> density (float) · temperature (float)<br>"
+        "· flame (float) · vel (vec3) · Cd (vec3)"
         "</font><br><br>"
         "<font size='-1' color='#888'>"
-        "Museth (2013) ACM TOG 32(3)<br>"
-        "Henyey/Greenstein (1941) ApJ 93<br>"
-        "Fong+ (2017) SIGGRAPH Course<br>"
-        "Novak+ (2018) CGF 37(2)"
+        "Museth (2013) · Henyey/Greenstein (1941)<br>"
+        "· Fong+ (2017) · Novak+ (2018)"
         "</font>");
     EndGroup(f);
 
     Divider(f,"");
     Text_knob(f,
         "<font size='-1' color='#666'>"
-        "<b>Created by Marten Blumen</b><br>"
-        "github.com/bratgot/VDBmarcher"
-        "</font><br>"
-        "<font size='-1' color='#555'>"
-        "OpenVDB 12 · C++20 · Nuke 17<br>"
-        "Beer-Lambert · Henyey-Greenstein · Planckian"
+        "<b>Created by Marten Blumen</b> · "
+        "github.com/bratgot/VDBmarcher<br>"
+        "OpenVDB 12 · C++20 · Nuke 17"
         "</font>");
+
+    // ═══════════════════════════════════════════════════
+    //  TAB: Output
+    // ═══════════════════════════════════════════════════
+    Tab_knob(f,"Output");
+
+    Divider(f,"AOV Passes");
+    Bool_knob(f,&_aovDensity,"aov_density","Density");
+    Tooltip(f,"vdb_density layer — greyscale RGB");
+    Bool_knob(f,&_aovEmission,"aov_emission","Emission");
+    Tooltip(f,"vdb_emission layer — colour RGB");
+    Bool_knob(f,&_aovShadow,"aov_shadow","Shadow");
+    Tooltip(f,"vdb_shadow layer — greyscale RGB");
+    Bool_knob(f,&_aovDepth,"aov_depth","Depth");
+    Tooltip(f,"vdb_depth layer — single channel");
+
+    Divider(f,"Deep");
+    Int_knob(f,&_deepSamples,"deep_samples","Deep Samples");
+
+    Divider(f,"Motion Blur");
+    Bool_knob(f,&_motionBlur,"motion_blur","Enable");
+    static const char*shutP[]={"Start (0 to 1)","Centre (-0.5 to 0.5)","End (-1 to 0)","Custom",nullptr};
+    Enumeration_knob(f,&_shutterPreset,shutP,"shutter_preset","Shutter");
+    Double_knob(f,&_shutterOpen,"shutter_open","Open");SetRange(f,-1,0);
+    Double_knob(f,&_shutterClose,"shutter_close","Close");SetRange(f,0,1);
+    Int_knob(f,&_motionSamples,"motion_samples","Samples");
+
+    // ═══════════════════════════════════════════════════
+    //  TAB: Quality
+    // ═══════════════════════════════════════════════════
+    Tab_knob(f,"Quality");
+
+    static const char*qP[]={"Custom","Draft","Preview","Production","Final","Ultra",nullptr};
+    Enumeration_knob(f,&_qualityPreset,qP,"quality_preset","Preset");
+    Double_knob(f,&_quality,"quality","Quality");SetRange(f,1,10);
+    Int_knob(f,&_shadowSteps,"shadow_steps","Shadow Steps");
+    Double_knob(f,&_shadowDensity,"shadow_density","Shadow Density");SetRange(f,0,5);
+
+    Divider(f,"Multiple Scattering");
+    static const char*scP[]={"Off","Preview","Thin Volume","Cloud / Fog","Dense Volume","Ultra",nullptr};
+    Enumeration_knob(f,&_scatterPreset,scP,"scatter_preset","Scatter Preset");
+    Int_knob(f,&_multiBounces,"multi_bounces","Bounces");
+    Int_knob(f,&_bounceRays,"bounce_rays","Bounce Rays");
+
+    Divider(f,"Optimization");
+    Bool_knob(f,&_adaptiveStep,"adaptive_step","Adaptive Step Size");
+    static const char*pxP[]={"Full","3/4","1/2","1/4",nullptr};
+    Enumeration_knob(f,&_proxyMode,pxP,"proxy_mode","Proxy");
+
+    Divider(f,"Viewport");
+    Bool_knob(f,&_showBbox,"show_bbox","Bounding Box");
+    Bool_knob(f,&_showPoints,"show_points","Point Cloud");
+    static const char*dL[]={"Low (~16k)","Medium (~64k)","High (~250k)",nullptr};
+    Enumeration_knob(f,&_pointDensity,dL,"point_density","Point Density");
+    Double_knob(f,&_pointSize,"point_size","Point Size");SetRange(f,1,20);
+    Bool_knob(f,&_linkViewport,"link_viewport","Link Colour to Render Mode");
+    static const char*vp[]={"Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
+    Enumeration_knob(f,&_viewportColor,vp,"viewport_color","Viewport Colour");
 }
 
 int VDBRenderIop::knob_changed(Knob* k)
 {
     if(k->is("file")){_gridValid=false;_previewPoints.clear();return 1;}
-    if(k->is("grid_name")||k->is("temp_grid")||k->is("flame_grid")||k->is("frame_offset")){
+    if(k->is("grid_name")||k->is("temp_grid")||k->is("flame_grid")||k->is("vel_grid")||k->is("color_grid")||k->is("frame_offset")){
         _gridValid=false;_previewPoints.clear();return 1;}
     if(k->is("show_points")||k->is("point_density")){_previewPoints.clear();return 1;}
     if(k->is("discover_grids")){discoverGrids();return 1;}
+    if(k->is("shutter_preset")&&_shutterPreset<3){
+        static const double sOpen[]={0,-0.5,-1};static const double sClose[]={1,0.5,0};
+        knob("shutter_open")->set_value(sOpen[_shutterPreset]);
+        knob("shutter_close")->set_value(sClose[_shutterPreset]);return 1;
+    }
     if(k->is("scene_preset")&&_scenePreset>0){
         // Preset values: mode, extinction, scattering, anisotropy, shadowSteps,
         //                shadowDensity, tempMin, tempMax, emissionInt, flameInt, stepSize
@@ -550,22 +429,30 @@ void VDBRenderIop::discoverGrids() {
         static const char*denN[]={"density","density_1","smoke","soot","absorption","scatter",nullptr};
         static const char*tmpN[]={"temperature","heat","temp",nullptr};
         static const char*flmN[]={"flame","flames","fire","fuel","burn","incandescence","emission",nullptr};
+        static const char*velN[]={"vel","v","velocity","motion",nullptr};
+        static const char*colN[]={"Cd","color","colour","rgb","albedo",nullptr};
         auto match=[](const std::string&n,const char**l){for(int i=0;l[i];++i)if(n==l[i])return true;return false;};
         struct GI{std::string name,type,cat;};
-        std::vector<GI> grids;std::string bestD,bestT,bestF;
+        std::vector<GI> grids;std::string bestD,bestT,bestF,bestV,bestC;
         for(auto it=file.beginName();it!=file.endName();++it){
             std::string n=it.gridName();auto g=file.readGridMetadata(n);std::string ty=g->valueType();
             std::string cat="other";
-            if(match(n,denN))cat="density";else if(match(n,tmpN))cat="temperature";else if(match(n,flmN))cat="flames";
+            if(match(n,denN))cat="density";else if(match(n,tmpN))cat="temperature";
+            else if(match(n,flmN))cat="flames";else if(match(n,velN))cat="velocity";
+            else if(match(n,colN))cat="colour";
             grids.push_back({n,ty,cat});
             if(bestD.empty()&&cat=="density"&&ty=="float")bestD=n;
             if(bestT.empty()&&cat=="temperature"&&ty=="float")bestT=n;
             if(bestF.empty()&&cat=="flames"&&ty=="float")bestF=n;
+            if(bestV.empty()&&cat=="velocity"&&(ty=="vec3s"||ty=="vec3f"))bestV=n;
+            if(bestC.empty()&&cat=="colour"&&(ty=="vec3s"||ty=="vec3f"))bestC=n;
         }
         file.close();
         if(!bestD.empty())knob("grid_name")->set_text(bestD.c_str());
         if(!bestT.empty())knob("temp_grid")->set_text(bestT.c_str());
         if(!bestF.empty())knob("flame_grid")->set_text(bestF.c_str());
+        if(!bestV.empty())knob("vel_grid")->set_text(bestV.c_str());
+        if(!bestC.empty())knob("color_grid")->set_text(bestC.c_str());
         // Auto-set mode
         if(!bestT.empty()||!bestF.empty()){knob("color_scheme")->set_value(6);knob("emission_intensity")->set_value(2.0);}
         std::string msg;
@@ -574,6 +461,8 @@ void VDBRenderIop::discoverGrids() {
         if(!bestD.empty())msg+="Density: "+bestD+"\\n";
         if(!bestT.empty())msg+="Temperature: "+bestT+"\\n";
         if(!bestF.empty())msg+="Flames: "+bestF+"\\n";
+        if(!bestV.empty())msg+="Velocity: "+bestV+"\\n";
+        if(!bestC.empty())msg+="Colour: "+bestC+"\\n";
         if(!bestT.empty()||!bestF.empty())msg+="\\nRender mode set to Explosion.";
         script_command(("nuke.message('"+msg+"')").c_str());
         _gridValid=false;_previewPoints.clear();
@@ -589,8 +478,10 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_multiBounces);hash.append(_bounceRays);
     hash.append(_envIntensity);hash.append(_envDiffuse);hash.append(_envRotate);
     hash.append(_densityMix);hash.append(_tempMix);hash.append(_flameMix);
+    hash.append(_adaptiveStep);hash.append(_proxyMode);hash.append(_useFallbackLight);
+    hash.append(_motionBlur);hash.append(_shutterOpen);hash.append(_shutterClose);hash.append(_motionSamples);
+    hash.append(_aovDensity);hash.append(_aovEmission);hash.append(_aovShadow);hash.append(_aovDepth);
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
-    // Hash cam, scene tree, and env inputs
     if(input(1))hash.append(Op::input(1)->hash());
     if(input(2))hash.append(Op::input(2)->hash());
     if(inputs()>3&&input(3))hash.append(Op::input(3)->hash());
@@ -684,8 +575,14 @@ void VDBRenderIop::_validate(bool for_real) {
         const Format*fmt=_formats.format();const Format*full=_formats.fullSizeFormat();if(!full)full=fmt;
         if(fmt){info_.format(*fmt);info_.full_size_format(full?*full:*fmt);info_.set(*fmt);}
     }
-    info_.channels(Mask_RGBA);info_.turn_on(Mask_RGBA);
-    set_out_channels(Mask_RGBA);
+    ChannelSet outChans=Mask_RGBA;
+    // AOV channels — each AOV gets its own layer
+    if(_aovDensity){outChans+=channel("vdb_density.red");outChans+=channel("vdb_density.green");outChans+=channel("vdb_density.blue");}
+    if(_aovEmission){outChans+=channel("vdb_emission.red");outChans+=channel("vdb_emission.green");outChans+=channel("vdb_emission.blue");}
+    if(_aovShadow){outChans+=channel("vdb_shadow.red");outChans+=channel("vdb_shadow.green");outChans+=channel("vdb_shadow.blue");}
+    if(_aovDepth){outChans+=channel("vdb_depth.red");}
+    info_.channels(outChans);info_.turn_on(outChans);
+    set_out_channels(outChans);
     // Deep info — MUST be set on both validate passes
     {ChannelSet deepChans=Mask_RGBA;deepChans+=Chan_DeepFront;deepChans+=Chan_DeepBack;
      const Format&outFmt=info_.format();
@@ -699,14 +596,15 @@ void VDBRenderIop::_validate(bool for_real) {
         _camOrigin=openvdb::Vec3d(cw[3][0],cw[3][1],cw[3][2]);
         for(int c=0;c<3;++c)for(int r=0;r<3;++r)_camRot[c][r]=(double)cw[c][r];
         _halfW=(double)cam->horizontalAperture()*.5/(double)cam->focalLength();_camValid=true;
-    }else{return;}
+    }
+    // No early return — grid loading must proceed for viewport preview
 
     // Scene input (2): gather lights + axis from scene tree
     for(int i=0;i<4;++i)for(int j=0;j<4;++j)_volFwd[i][j]=_volInv[i][j]=(i==j)?1:0;
     if(input(2)) gatherLights(Op::input(2));
 
-    // Fallback light if none found in scene
-    if(_lights.empty()){CachedLight cl;
+    // Fallback light if none found in scene and checkbox is enabled
+    if(_lights.empty()&&_useFallbackLight){CachedLight cl;
         cl.dir[0]=_lightDir[0];cl.dir[1]=_lightDir[1];cl.dir[2]=_lightDir[2];
         double len=std::sqrt(cl.dir[0]*cl.dir[0]+cl.dir[1]*cl.dir[1]+cl.dir[2]*cl.dir[2]);
         if(len>1e-8){cl.dir[0]/=len;cl.dir[1]/=len;cl.dir[2]/=len;}
@@ -746,8 +644,8 @@ void VDBRenderIop::_validate(bool for_real) {
      if(!f){std::string orig(_vdbFilePath?_vdbFilePath:"");if(orig!=path2){for(auto&c:orig)if(c=='\\')c='/';
          FILE*of=fopen(orig.c_str(),"rb");if(of){fclose(of);path2=orig;}}}else fclose(f);}
     if(!_gridValid||path2!=_loadedPath||grid!=_loadedGrid||curFrame!=_loadedFrame){
-        _floatGrid.reset();_tempGrid.reset();_flameGrid.reset();
-        _gridValid=false;_hasTempGrid=false;_hasFlameGrid=false;_previewPoints.clear();
+        _floatGrid.reset();_tempGrid.reset();_flameGrid.reset();_velGrid.reset();_colorGrid.reset();
+        _gridValid=false;_hasTempGrid=false;_hasFlameGrid=false;_hasVelGrid=false;_hasColorGrid=false;_previewPoints.clear();
         if(!path2.empty()){try{
             std::string cp2=path2;for(auto&c:cp2)if(c=='\\')c='/';
             openvdb::io::File file(cp2);file.open();
@@ -766,15 +664,27 @@ void VDBRenderIop::_validate(bool for_real) {
             std::string fgN(_flameGridName?_flameGridName:"");openvdb::GridBase::Ptr fbg;
             if(!fgN.empty()){for(auto it=file.beginName();it!=file.endName();++it)
                 if(it.gridName()==fgN){fbg=file.readGrid(fgN);break;}}
+            // Velocity grid — Vec3 for motion blur
+            std::string vgN(_velGridName?_velGridName:"");openvdb::GridBase::Ptr vbg;
+            if(!vgN.empty()){for(auto it=file.beginName();it!=file.endName();++it)
+                if(it.gridName()==vgN){vbg=file.readGrid(vgN);break;}}
+            // Colour grid — Vec3 direct RGB
+            std::string cgN(_colorGridName?_colorGridName:"");openvdb::GridBase::Ptr cbg;
+            if(!cgN.empty()){for(auto it=file.beginName();it!=file.endName();++it)
+                if(it.gridName()==cgN){cbg=file.readGrid(cgN);break;}}
             file.close();
             // Need at least one grid
             bool hasDensity=found&&bg&&bg->isType<openvdb::FloatGrid>();
             bool hasTemp=tbg&&tbg->isType<openvdb::FloatGrid>();
             bool hasFlame=fbg&&fbg->isType<openvdb::FloatGrid>();
-            if(!hasDensity&&!hasTemp&&!hasFlame){error("No valid grids found. Set grid names or use Discover Grids.");return;}
+            bool hasVel=vbg&&vbg->isType<openvdb::Vec3SGrid>();
+            bool hasColor=cbg&&cbg->isType<openvdb::Vec3SGrid>();
+            if(!hasDensity&&!hasTemp&&!hasFlame&&!hasColor){error("No valid grids found. Set grid names or use Discover Grids.");return;}
             if(hasDensity) _floatGrid=openvdb::gridPtrCast<openvdb::FloatGrid>(bg);
             if(hasTemp){_tempGrid=openvdb::gridPtrCast<openvdb::FloatGrid>(tbg);_hasTempGrid=true;}
             if(hasFlame){_flameGrid=openvdb::gridPtrCast<openvdb::FloatGrid>(fbg);_hasFlameGrid=true;}
+            if(hasVel){_velGrid=openvdb::gridPtrCast<openvdb::Vec3SGrid>(vbg);_hasVelGrid=true;}
+            if(hasColor){_colorGrid=openvdb::gridPtrCast<openvdb::Vec3SGrid>(cbg);_hasColorGrid=true;}
             // Compute bbox from whichever grid we have (prefer density, fallback to temp/flame)
             openvdb::FloatGrid::Ptr bboxGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
             auto ab=bboxGrid->evalActiveVoxelBoundingBox();if(ab.empty()){error("No active voxels.");return;}
@@ -817,32 +727,56 @@ void VDBRenderIop::_open() {
 }
 
 void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
+    // Proxy scaling — map pixel coords to lower-res render
+    static const double kProxyScales[]={1.0, 0.75, 0.5, 0.25};
+    double pxScale=kProxyScales[std::clamp(_proxyMode,0,3)];
+
     // Read BG row if connected
     Row bgRow(x,r);
     bool hasBg=false;
     {Iop*bg=dynamic_cast<Iop*>(Op::input(0));
      if(bg){bg->get(y,x,r,channels,bgRow);hasBg=true;}}
 
-    if(!_gridValid||!_camValid||(!_floatGrid&&!_tempGrid&&!_flameGrid)){
-        // Pass through BG or black
+    if(!_gridValid||!_camValid||(!_floatGrid&&!_tempGrid&&!_flameGrid&&!_hasColorGrid)){
         foreach(z,channels){float*p=row.writable(z);
             const float*bp=hasBg?bgRow[z]+x:nullptr;
             for(int i=x;i<r;++i)p[i]=bp?bp[i-x]:0;}
         return;}
     const Format&fmt=format();int W=fmt.width(),H=fmt.height();
+    // Proxy: effective render resolution
+    int pW=(int)(W*pxScale),pH=(int)(H*pxScale);if(pW<1)pW=1;if(pH<1)pH=1;
     double halfW=_halfW,halfH=_halfW*(double)H/(double)W;
     float*rO=row.writable(Chan_Red),*gO=row.writable(Chan_Green),*bO=row.writable(Chan_Blue),*aO=row.writable(Chan_Alpha);
     ColorScheme scheme=static_cast<ColorScheme>(_colorScheme);
     float gA[3]={(float)_gradStart[0],(float)_gradStart[1],(float)_gradStart[2]};
     float gB[3]={(float)_gradEnd[0],(float)_gradEnd[1],(float)_gradEnd[2]};
 
-    // Get BG channel pointers
+    // AOV channel pointers — density and shadow are greyscale RGB
+    float*aovDenR=_aovDensity?row.writable(channel("vdb_density.red")):nullptr;
+    float*aovDenG=_aovDensity?row.writable(channel("vdb_density.green")):nullptr;
+    float*aovDenB=_aovDensity?row.writable(channel("vdb_density.blue")):nullptr;
+    float*aovEmR=_aovEmission?row.writable(channel("vdb_emission.red")):nullptr;
+    float*aovEmG=_aovEmission?row.writable(channel("vdb_emission.green")):nullptr;
+    float*aovEmB=_aovEmission?row.writable(channel("vdb_emission.blue")):nullptr;
+    float*aovShR=_aovShadow?row.writable(channel("vdb_shadow.red")):nullptr;
+    float*aovShG=_aovShadow?row.writable(channel("vdb_shadow.green")):nullptr;
+    float*aovShB=_aovShadow?row.writable(channel("vdb_shadow.blue")):nullptr;
+    float*aovDpP=_aovDepth?row.writable(channel("vdb_depth.red")):nullptr;
+
     const float*bgR=hasBg?bgRow[Chan_Red]:nullptr;
     const float*bgG=hasBg?bgRow[Chan_Green]:nullptr;
     const float*bgB=hasBg?bgRow[Chan_Blue]:nullptr;
     const float*bgA=hasBg?bgRow[Chan_Alpha]:nullptr;
+
+    // Motion blur time samples
+    int nTimeSamples=(_motionBlur&&_hasVelGrid)?std::max(1,_motionSamples):1;
+    double shutterSpan=_shutterClose-_shutterOpen;
+
     for(int ix=x;ix<r;++ix){
-        double ndcX=(ix+.5)/(double)W*2-1,ndcY=(y+.5)/(double)H*2-1;
+        // Proxy: map output pixel to effective resolution
+        double px=(pxScale<1.0)?((int)(ix*pxScale)+0.5)/pxScale:ix+0.5;
+        double py=(pxScale<1.0)?((int)(y*pxScale)+0.5)/pxScale:y+0.5;
+        double ndcX=px/(double)W*2-1,ndcY=py/(double)H*2-1;
         double rcx=ndcX*halfW,rcy=ndcY*halfH,rcz=-1;
         double rdx=_camRot[0][0]*rcx+_camRot[1][0]*rcy+_camRot[2][0]*rcz;
         double rdy=_camRot[0][1]*rcx+_camRot[1][1]*rcy+_camRot[2][1]*rcz;
@@ -859,22 +793,57 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
             len=std::sqrt(dx2*dx2+dy2*dy2+dz2*dz2);if(len>1e-8){dx2/=len;dy2/=len;dz2/=len;}rdx=dx2;rdy=dy2;rdz=dz2;}
         openvdb::Vec3d rayO(ox,oy,oz),rayD(rdx,rdy,rdz);
         float ri=(float)_rampIntensity;
-        float R=0,G=0,B=0,A=0;
-        if(scheme==kLit){marchRay(rayO,rayD,R,G,B,A);R*=ri;G*=ri;B*=ri;}
-        else if(scheme==kExplosion){marchRayExplosion(rayO,rayD,R,G,B,A);R*=ri;G*=ri;B*=ri;}
-        else{float den=0,alpha=0;marchRayDensity(rayO,rayD,den,alpha);Color3 c=evalRamp(scheme,den,gA,gB,_tempMin,_tempMax);
-            R=c.r*ri*alpha;G=c.g*ri*alpha;B=c.b*ri*alpha;A=alpha;}
 
-        // Composite volume OVER background (premultiplied over)
+        // Accumulate across motion blur time samples
+        float R=0,G=0,B=0,A=0;
+        float aovDen=0,aovEmRv=0,aovEmGv=0,aovEmBv=0,aovSh=0,aovDp=0;
+
+        for(int ts=0;ts<nTimeSamples;++ts){
+            // Motion blur: offset ray origin by velocity * time
+            openvdb::Vec3d mO=rayO;
+            if(nTimeSamples>1&&_velGrid){
+                double tNorm=(nTimeSamples>1)?(double)ts/(nTimeSamples-1):0.5;
+                double tSample=_shutterOpen+tNorm*shutterSpan;
+                // Sample velocity at ray origin
+                auto iP=_velGrid->transform().worldToIndex(rayO);
+                openvdb::Vec3s vel=openvdb::tools::BoxSampler::sample(_velGrid->getConstAccessor(),iP);
+                mO=rayO+openvdb::Vec3d(vel[0],vel[1],vel[2])*tSample;
+            }
+
+            float sR=0,sG=0,sB=0,sA=0;
+            if(scheme==kLit){marchRay(mO,rayD,sR,sG,sB,sA);sR*=ri;sG*=ri;sB*=ri;}
+            else if(scheme==kExplosion){marchRayExplosion(mO,rayD,sR,sG,sB,sA);sR*=ri;sG*=ri;sB*=ri;}
+            else{float den=0,alpha=0;marchRayDensity(mO,rayD,den,alpha);
+                // Vec3 colour grid override
+                if(_hasColorGrid&&_colorGrid&&alpha>1e-6f){
+                    auto iPC=_colorGrid->transform().worldToIndex(mO);
+                    openvdb::Vec3s cv=openvdb::tools::BoxSampler::sample(_colorGrid->getConstAccessor(),iPC);
+                    sR=cv[0]*ri*alpha;sG=cv[1]*ri*alpha;sB=cv[2]*ri*alpha;sA=alpha;
+                }else{
+                    Color3 c=evalRamp(scheme,den,gA,gB,_tempMin,_tempMax);
+                    sR=c.r*ri*alpha;sG=c.g*ri*alpha;sB=c.b*ri*alpha;sA=alpha;
+                }
+            }
+            R+=sR;G+=sG;B+=sB;A+=sA;
+        }
+
+        // Average motion blur samples
+        if(nTimeSamples>1){float inv=1.0f/nTimeSamples;R*=inv;G*=inv;B*=inv;A*=inv;}
+
+        // Composite volume OVER background
         if(hasBg){
             float inv=1.0f-A;
-            rO[ix]=R+bgR[ix]*inv;
-            gO[ix]=G+bgG[ix]*inv;
-            bO[ix]=B+bgB[ix]*inv;
-            aO[ix]=A+bgA[ix]*inv;
+            rO[ix]=R+bgR[ix]*inv;gO[ix]=G+bgG[ix]*inv;
+            bO[ix]=B+bgB[ix]*inv;aO[ix]=A+bgA[ix]*inv;
         }else{
             rO[ix]=R;gO[ix]=G;bO[ix]=B;aO[ix]=A;
         }
+
+        // AOV writes
+        if(aovDenR){aovDenR[ix]=A;aovDenG[ix]=A;aovDenB[ix]=A;}
+        if(aovEmR){aovEmR[ix]=R;aovEmG[ix]=G;aovEmB[ix]=B;}
+        if(aovShR){float sh=1.0f-A;aovShR[ix]=sh;aovShG[ix]=sh;aovShB[ix]=sh;}
+        if(aovDpP) aovDpP[ix]=0;
     }
 }
 
@@ -1043,6 +1012,7 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
     };
 
     // HDDA traversal: skip empty space between active leaf nodes
+    double lastDen=0; // for adaptive stepping
     if(_volRI){
         VRI vri(*_volRI); // thread-safe shallow copy
         openvdb::math::Ray<double> wRay(origin,dir);
@@ -1052,9 +1022,13 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
             auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
             double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
             if(wT1<=0)continue;if(wT0<0)wT0=0;
-            for(double t2=wT0;t2<wT1&&T>.001;t2+=step){
+            for(double t2=wT0;t2<wT1&&T>.001;){
                 auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-                shadeSample(wP,iP);}
+                lastDen=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
+                shadeSample(wP,iP);
+                double curStep=step;
+                if(_adaptiveStep){curStep=step*(lastDen<0.01?4.0:lastDen<0.1?2.0:1.0);}
+                t2+=curStep;}
         }
     }else{
         // Fallback: manual AABB (shouldn't happen if grid is valid)
@@ -1063,9 +1037,13 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
             double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
             if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
         if(tEnter>=tExit||tExit<=0)return;
-        for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
+        for(double t2=tEnter;t2<tExit&&T>.001;){
             auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-            shadeSample(wP,iP);}
+            lastDen=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
+            shadeSample(wP,iP);
+            double curStep=step;
+            if(_adaptiveStep){curStep=step*(lastDen<0.01?4.0:lastDen<0.1?2.0:1.0);}
+            t2+=curStep;}
     }
     outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1-T);
 }
@@ -1179,9 +1157,13 @@ void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::
             auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
             double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
             if(wT1<=0)continue;if(wT0<0)wT0=0;
-            for(double t2=wT0;t2<wT1&&T>.001;t2+=step){
+            for(double t2=wT0;t2<wT1&&T>.001;){
                 auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-                shadeSampleExplosion(wP,iP);}
+                shadeSampleExplosion(wP,iP);
+                double curStep=step;
+                if(_adaptiveStep&&dAcc){float ld=openvdb::tools::BoxSampler::sample(*dAcc,iP)*(float)_densityMix;
+                    curStep=step*(ld<0.01?4.0:ld<0.1?2.0:1.0);}
+                t2+=curStep;}
         }
     }else{
         double tEnter=0,tExit=1e9;
@@ -1189,9 +1171,13 @@ void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::
             double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
             if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
         if(tEnter>=tExit||tExit<=0)return;
-        for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
+        for(double t2=tEnter;t2<tExit&&T>.001;){
             auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-            shadeSampleExplosion(wP,iP);}
+            shadeSampleExplosion(wP,iP);
+            double curStep=step;
+            if(_adaptiveStep&&dAcc){float ld=openvdb::tools::BoxSampler::sample(*dAcc,iP)*(float)_densityMix;
+                curStep=step*(ld<0.01?4.0:ld<0.1?2.0:1.0);}
+            t2+=curStep;}
     }
     outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1-T);
 }
@@ -1206,12 +1192,13 @@ void VDBRenderIop::marchRayDensity(const openvdb::Vec3d&origin,const openvdb::Ve
     if(useTG)tA=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
     double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0)),ext=_extinction,T=1,wV=0;
 
-    auto shadeDensity=[&](const openvdb::Vec3d&iP){
+    auto shadeDensity=[&](const openvdb::Vec3d&iP)->float{
         float d=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
         if(d>1e-6f){double se=d*ext,ab=T*(1-std::exp(-se*step));
             float val=d;if(useTG){float tv=openvdb::tools::BoxSampler::sample(*tA,iP)*(float)_tempMix;
                 val=(float)std::clamp((tv-_tempMin)/(_tempMax-_tempMin),0.,1.);}
             wV+=val*ab;T*=std::exp(-se*step);}
+        return d;
     };
 
     if(_volRI){
@@ -1222,8 +1209,11 @@ void VDBRenderIop::marchRayDensity(const openvdb::Vec3d&origin,const openvdb::Ve
             auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
             double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
             if(wT1<=0)continue;if(wT0<0)wT0=0;
-            for(double t2=wT0;t2<wT1&&T>.001;t2+=step){
-                auto iP=xf.worldToIndex(origin+t2*dir);shadeDensity(iP);}
+            for(double t2=wT0;t2<wT1&&T>.001;){
+                auto iP=xf.worldToIndex(origin+t2*dir);float ld=shadeDensity(iP);
+                double curStep=step;
+                if(_adaptiveStep){curStep=step*(ld<0.01?4.0:ld<0.1?2.0:1.0);}
+                t2+=curStep;}
         }
     }else{
         double tEnter=0,tExit=1e9;
@@ -1231,8 +1221,11 @@ void VDBRenderIop::marchRayDensity(const openvdb::Vec3d&origin,const openvdb::Ve
             double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
             if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
         if(tEnter>=tExit||tExit<=0)return;
-        for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
-            auto iP=xf.worldToIndex(origin+t2*dir);shadeDensity(iP);}
+        for(double t2=tEnter;t2<tExit&&T>.001;){
+            auto iP=xf.worldToIndex(origin+t2*dir);float ld=shadeDensity(iP);
+            double curStep=step;
+            if(_adaptiveStep){curStep=step*(ld<0.01?4.0:ld<0.1?2.0:1.0);}
+            t2+=curStep;}
     }
     double alpha=1-T;outD=(alpha>1e-6)?std::clamp((float)(wV/alpha),0.f,1.f):0;outA=(float)alpha;
 }

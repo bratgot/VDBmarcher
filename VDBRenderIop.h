@@ -105,6 +105,7 @@ private:
     double _lightDir[3]       = {0.577, 0.577, -0.577};
     double _lightColor[3]     = {1,1,1};
     double _lightIntensity    = 1.0;
+    bool   _useFallbackLight  = true;
     double _ambientIntensity  = 0.0;
     double _envIntensity      = 1.0;
     double _envDiffuse        = 0.5;  // 0=sharp, 1=fully diffuse
@@ -119,6 +120,27 @@ private:
     int    _bounceRays        = 6;
     int    _scatterPreset     = 0;
     int    _qualityPreset     = 0;
+    bool   _adaptiveStep      = false;
+    int    _proxyMode         = 0;     // 0=full, 1=3/4, 2=1/2, 3=1/4
+
+    // ── Motion blur ──
+    const char* _velGridName  = "";
+    bool   _motionBlur        = false;
+    int    _shutterPreset     = 1;   // 0=start, 1=center, 2=end, 3=custom
+    double _shutterOpen       = -0.5;
+    double _shutterClose      = 0.5;
+    int    _motionSamples     = 3;
+
+    // ── AOV / extra outputs ──
+    bool   _aovDensity        = false;
+    bool   _aovEmission       = false;
+    bool   _aovShadow         = false;
+    bool   _aovDepth          = false;
+
+    // ── Vec3 colour grid ──
+    const char* _colorGridName = "";
+    openvdb::Vec3SGrid::Ptr _colorGrid;
+    bool _hasColorGrid        = false;
 
     // ── Viewport ──
     bool   _showBbox          = true;
@@ -130,8 +152,10 @@ private:
 
     // ── Grid state ──
     openvdb::FloatGrid::Ptr _floatGrid, _tempGrid, _flameGrid;
+    openvdb::Vec3SGrid::Ptr _velGrid;
     openvdb::Vec3d _bboxMin, _bboxMax;
     bool _gridValid=false, _hasTempGrid=false, _hasFlameGrid=false;
+    bool _hasVelGrid=false;
     int  _loadedFrame=-1;
 
     // ── Ray acceleration (HDDA empty-space skipping) ──
