@@ -1,12 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 project(VDBRender CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard (17 for Nuke 14-15, 20 for 16+)")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ── Nuke install path ──────────────────────────────────────────────────────────
-set(NUKE_ROOT "C:/Program Files/Nuke17.0v1"
-    CACHE PATH "Nuke install directory")
+set(NUKE_ROOT "" CACHE PATH "Nuke install directory (e.g. C:/Program Files/Nuke17.0v1)")
 
 set(NDK_INCLUDE_DIR "${NUKE_ROOT}/include")
 set(NDK_LIB         "${NUKE_ROOT}/DDImage.lib")

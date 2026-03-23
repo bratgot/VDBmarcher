@@ -1,0 +1,6 @@
+C:/dev/VDBmarcher/build_nuke17/CMakeFiles/VDBRender.dir
+C:/dev/VDBmarcher/build_nuke17/CMakeFiles/edit_cache.dir
+C:/dev/VDBmarcher/build_nuke17/CMakeFiles/rebuild_cache.dir
+C:/dev/VDBmarcher/build_nuke17/CMakeFiles/list_install_components.dir
+C:/dev/VDBmarcher/build_nuke17/CMakeFiles/install.dir
+C:/dev/VDBmarcher/build_nuke17/CMakeFiles/install/local.dir

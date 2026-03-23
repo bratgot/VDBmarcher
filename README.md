@@ -1,6 +1,6 @@
 # VDBRender
 
-OpenVDB volume ray marcher for Nuke 17. Physically-based volume rendering with multi-scatter lighting, deep output, environment lighting, motion blur, and AOV passes.
+OpenVDB volume ray marcher for Nuke 14–17. Physically-based volume rendering with multi-scatter lighting, deep output, environment lighting, motion blur, and AOV passes.
 
 Created by **Marten Blumen**
 
@@ -67,14 +67,35 @@ Created by **Marten Blumen**
 ### Requirements
 
 - Windows 11
-- Nuke 17 (NDK headers)
+- Nuke 14, 15, 16, or 17 (NDK headers)
 - OpenVDB 12 via vcpkg
 - clang-cl (Visual Studio 2022)
 - CMake
 
-### Build Commands
+### Build All Versions
 
 Open an **x64 Native Tools Command Prompt** and run:
+
+```bat
+cd C:\dev\VDBmarcher
+build_all.bat
+```
+
+This auto-detects all installed Nuke versions and builds a DLL for each. Output goes to:
+
+```
+%USERPROFILE%\.nuke\
+    menu.py
+    plugins\VDBRender\
+        nuke14\VDBRender.dll
+        nuke15\VDBRender.dll
+        nuke16\VDBRender.dll
+        nuke17\VDBRender.dll
+```
+
+The `menu.py` auto-detects the running Nuke version and loads the matching DLL.
+
+### Build Single Version
 
 ```bat
 cd C:\dev\VDBmarcher
@@ -91,9 +112,13 @@ nmake
 copy /Y VDBRender.dll %USERPROFILE%\.nuke\plugins\
 ```
 
+For Nuke 14–15, add `-DCMAKE_CXX_STANDARD=17`.
+
 ### Install
 
-Copy `VDBRender.dll` and `menu.py` to `~/.nuke/plugins/`. The node appears in the Nuke menu automatically.
+**Multi-version:** Run `build_all.bat` — it copies everything automatically.
+
+**Single version:** Copy `VDBRender.dll` to `~/.nuke/plugins/` and `menu.py` to `~/.nuke/`.
 
 ## Multi-Volume Compositing
 
@@ -104,6 +129,17 @@ Camera ──┬── VDBRender (smoke.vdb) ──┐
          │                            ├── DeepMerge ── DeepToImage
          ├── VDBRender (fire.vdb)  ──┘
 ```
+
+## Nuke Compatibility
+
+| Nuke | C++ Standard | Status |
+|------|-------------|--------|
+| 14.x | C++17 | Supported |
+| 15.x | C++17 | Supported |
+| 16.x | C++20 | Supported |
+| 17.x | C++20 | Primary target |
+
+Same source code across all versions. The DDImage API surface used (Iop, DeepOp, CameraOp, LightOp, AxisOp, knobs) is stable from Nuke 14 through 17.
 
 ## Architecture
 
