@@ -79,6 +79,7 @@ public:
 private:
     // ── File ──
     const char* _vdbFilePath   = "";
+    bool   _autoSequence       = false;
     const char* _gridName      = "density";
     const char* _tempGridName  = "";
     const char* _flameGridName = "";

@@ -84,56 +84,190 @@ void VDBRenderIop::knobs(Knob_Callback f)
         "<font color='#aaa'>OpenVDB volume ray marcher</font>");
 
     File_knob(f,&_vdbFilePath,"file","VDB File");
-    Button(f,"discover_grids","Discover Grids");
+    Tooltip(f,"Path to your .vdb file from Houdini, Ember, or other VDB exporters.\n"
+              "Sequences: use #### or %04d in the filename for frame padding.\n"
+              "Tip: Enable 'Auto Sequence' to convert numbered files automatically.");
+    Bool_knob(f,&_autoSequence,"auto_sequence","Auto Sequence");
+    Tooltip(f,"Converts frame numbers in the filename to #### padding.\n"
+              "e.g. explosion_0001.vdb becomes explosion_####.vdb\n"
+              "and explosion_1.vdb becomes explosion_####.vdb\n"
+              "Enable this if your VDB sequence isn't animating.");
     Format_knob(f,&_formats,"format","Format");
+    Tooltip(f,"Output resolution when no background plate is connected.\n"
+              "If a BG is connected to input 0, its format is used instead.");
 
     Divider(f,"Grids");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Set the grid names from your VDB file, or click Discover Grids<br>"
+        "to auto-detect them. Mix sliders scale values before rendering."
+        "</font>");
+    Button(f,"discover_grids","Discover Grids");
+    Tooltip(f,"Scans the VDB file and auto-fills all grid fields.\n"
+              "Finds density, temperature, flame, velocity, and colour grids.\n"
+              "Also sets Render Mode to Explosion if fire grids are found.");
     String_knob(f,&_gridName,"grid_name","Density");
+    Tooltip(f,"Float grid for smoke opacity and light scattering.\n"
+              "Common names from Houdini: density, smoke, soot\n"
+              "Leave empty for emission-only rendering (fire without smoke).");
     Double_knob(f,&_densityMix,"density_mix","Density Mix");SetRange(f,0,5);
+    Tooltip(f,"Multiplier on density values before shading.\n"
+              "0 = invisible. 1 = as exported. 2 = twice as dense.\n"
+              "Useful for tweaking without re-simulating.");
     String_knob(f,&_tempGridName,"temp_grid","Temperature");
+    Tooltip(f,"Float grid for blackbody emission colour.\n"
+              "Common names: temperature, heat, temp\n"
+              "Values in Kelvin drive fire colour (orange→white).");
     Double_knob(f,&_tempMix,"temp_mix","Temp Mix");SetRange(f,0,5);
+    Tooltip(f,"Multiplier on temperature values.\n"
+              "0 = no glow. 1 = original. Higher = brighter fire.");
     String_knob(f,&_flameGridName,"flame_grid","Flames");
+    Tooltip(f,"Float grid for additional flame emission.\n"
+              "Common names: flame, flames, fire, fuel, burn\n"
+              "Adds glow on top of temperature emission.");
     Double_knob(f,&_flameMix,"flame_mix","Flame Mix");SetRange(f,0,5);
+    Tooltip(f,"Multiplier on flame values.\n"
+              "0 = no flames. 1 = original. Higher = brighter.");
     String_knob(f,&_velGridName,"vel_grid","Velocity");
+    Tooltip(f,"Vec3 grid for motion blur.\n"
+              "Common names: vel, v, velocity\n"
+              "Enable motion blur in the Output tab to use this.");
     String_knob(f,&_colorGridName,"color_grid","Colour");
+    Tooltip(f,"Vec3 grid for direct RGB colour from your simulation.\n"
+              "Common names: Cd, color, colour, rgb, albedo\n"
+              "Overrides the render mode colour when loaded.");
     Int_knob(f,&_frameOffset,"frame_offset","Frame Offset");
+    Tooltip(f,"Offsets the timeline frame for sequences.\n"
+              "Use negative values to shift the sequence earlier.\n"
+              "e.g. -10 makes frame 20 read file frame 10.");
 
     Divider(f,"Render");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Scene Presets configure all shading values for common volume types.<br>"
+        "Switch to Custom to fine-tune individual settings."
+        "</font>");
     static const char*presets[]={"Custom","Thin Smoke","Dense Smoke","Fog / Mist",
         "Cumulus Cloud","Fire","Explosion","Pyroclastic","Dust Storm","Steam",nullptr};
     Enumeration_knob(f,&_scenePreset,presets,"scene_preset","Scene Preset");
+    Tooltip(f,"One-click setup for common volume types.\n"
+              "Sets render mode, extinction, scattering, anisotropy,\n"
+              "shadows, emission, and quality all at once.\n"
+              "Choose Custom to adjust settings manually.");
     static const char*modes[]={"Lit","Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
     Enumeration_knob(f,&_colorScheme,modes,"color_scheme","Render Mode");
+    Tooltip(f,"Lit — full lighting with shadows and phase function\n"
+              "Greyscale — quick density preview, no lighting\n"
+              "Heat/Cool — artistic temperature ramps\n"
+              "Blackbody — physically accurate fire colour\n"
+              "Custom Gradient — your own two-colour ramp\n"
+              "Explosion — smoke + self-luminous fire combined");
     Double_knob(f,&_rampIntensity,"ramp_intensity","Intensity");SetRange(f,0,10);
+    Tooltip(f,"Master brightness for all render modes.\n"
+              "Multiplies the final RGB output.\n"
+              "Does not affect alpha/opacity.");
 
     Divider(f,"Shading");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Extinction controls opacity. Scattering controls brightness under<br>"
+        "lighting. Anisotropy shifts the scatter direction for backlit or rim effects."
+        "</font>");
     Double_knob(f,&_extinction,"extinction","Extinction");SetRange(f,0,100);
+    Tooltip(f,"How quickly light is absorbed per unit density.\n"
+              "Higher = more opaque volume.\n"
+              "Thin smoke: 1-5. Cloud: 10-30. Solid: 50+");
     Double_knob(f,&_scattering,"scattering","Scattering");SetRange(f,0,100);
+    Tooltip(f,"How bright the volume appears under direct lighting.\n"
+              "Only used in Lit and Explosion modes.\n"
+              "0 = pure absorption (dark). Higher = brighter.");
     static const char*aniP[]={"Custom","Isotropic (0.0)","Smoke (0.4)","Dust (0.6)","Cloud (0.76)","Fog (0.8)","Rim Light (-0.4)","Strong Back (-0.7)",nullptr};
     Enumeration_knob(f,&_anisotropyPreset,aniP,"aniso_preset","Anisotropy Preset");
+    Tooltip(f,"Quick presets for the Henyey-Greenstein g value.\n"
+              "Sets the Anisotropy slider below automatically.");
     Double_knob(f,&_anisotropy,"anisotropy","Anisotropy (g)");SetRange(f,-1,1);
+    Tooltip(f,"Controls the direction light scatters through the volume.\n"
+              "-1 = backward scatter (rim light / halo effect)\n"
+              " 0 = even scatter in all directions\n"
+              "+1 = forward scatter (backlit glow, silver lining)\n"
+              "Smoke: 0.4, Cloud: 0.76, Dust: 0.6");
 
     BeginClosedGroup(f,"grp_emission","Emission");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Temperature and flame emission controls for fire and explosion<br>"
+        "rendering. Only active when temperature or flame grids are loaded."
+        "</font>");
     Double_knob(f,&_tempMin,"temp_min","Temp Min (K)");SetRange(f,0,15000);
+    Tooltip(f,"Kelvin temperature at zero emission.\n"
+              "Sets the cold/dark end of the temperature range.\n"
+              "Candle: 1800K. Fire base: 500K.");
     Double_knob(f,&_tempMax,"temp_max","Temp Max (K)");SetRange(f,0,15000);
+    Tooltip(f,"Kelvin temperature at peak emission.\n"
+              "Sets the hot/bright end of the temperature range.\n"
+              "Fire: 3000K. Explosion: 8000K. Plasma: 15000K.");
     Double_knob(f,&_emissionIntensity,"emission_intensity","Temp Emission");SetRange(f,0,10);
+    Tooltip(f,"Brightness of temperature grid emission.\n"
+              "Only active when a temperature grid is loaded.\n"
+              "Start with 1-5 and adjust to taste.");
     Double_knob(f,&_flameIntensity,"flame_intensity","Flame Emission");SetRange(f,0,20);
+    Tooltip(f,"Brightness of flame grid emission.\n"
+              "Only active when a flames grid is loaded.\n"
+              "Start with 2-10 for visible fire.");
     Divider(f,"Custom Gradient");
     Color_knob(f,_gradStart,"grad_start","Start Color");
+    Tooltip(f,"Low density colour for the Custom Gradient render mode.\n"
+              "This is the colour at zero density (transparent end).");
     Color_knob(f,_gradEnd,"grad_end","End Color");
+    Tooltip(f,"High density colour for the Custom Gradient render mode.\n"
+              "This is the colour at peak density (opaque end).");
     EndGroup(f);
 
     Divider(f,"Lighting");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Connect lights via the scn input (Scene node). If no lights<br>"
+        "are found, the fallback light below is used instead."
+        "</font>");
     Bool_knob(f,&_useFallbackLight,"use_fallback_light","Fallback Light");
+    Tooltip(f,"Enable a default directional light when no scene lights\n"
+              "are connected. Disable this to light with environment\n"
+              "and ambient only.");
     XYZ_knob(f,_lightDir,"light_dir","Direction");
+    Tooltip(f,"Direction toward the fallback light source.\n"
+              "Only used when no lights are found in the scene input.\n"
+              "Tip: use the 3D viewer to visualize the light direction.");
     Color_knob(f,_lightColor,"light_color","Light Color");
+    Tooltip(f,"Fallback light colour.\n"
+              "Only used when no scene lights are connected.");
     Double_knob(f,&_lightIntensity,"light_intensity","Light Intensity");SetRange(f,0,50);
+    Tooltip(f,"Fallback light brightness.\n"
+              "Only used when no scene lights are connected.");
     Double_knob(f,&_ambientIntensity,"ambient","Ambient");SetRange(f,0,5);
+    Tooltip(f,"Omnidirectional fill light with no shadows.\n"
+              "Lifts the darkest self-shadowed areas of dense volumes.\n"
+              "Useful for smoke that looks too dark on the shadow side.");
 
     BeginClosedGroup(f,"grp_env","Environment Map");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Connect a latlong HDRI to the env input for realistic sky lighting.<br>"
+        "The map is sampled from multiple directions with shadow rays."
+        "</font>");
     Double_knob(f,&_envIntensity,"env_intensity","Intensity");SetRange(f,0,10);
+    Tooltip(f,"Brightness of environment lighting.\n"
+              "0 = disabled. 1 = match the HDRI values.\n"
+              "Values above 1 boost the environment contribution.");
     Double_knob(f,&_envRotate,"env_rotate","Rotate");SetRange(f,0,360);
+    Tooltip(f,"Rotates the environment map horizontally in degrees.\n"
+              "0 and 360 are the same. Animatable for spinning setups.\n"
+              "Useful for adjusting where the key light falls on the volume.");
     Double_knob(f,&_envDiffuse,"env_diffuse","Diffuse");SetRange(f,0,1);
+    Tooltip(f,"How soft or spread out the environment lighting is.\n"
+              "0 = sharp directional highlights from the HDRI hotspots\n"
+              "0.5 = soft natural spread\n"
+              "1 = fully diffuse, even light from all directions\n"
+              "Higher values use more samples and render slower.");
     EndGroup(f);
 
     BeginClosedGroup(f,"grp_info","Technical Reference");
@@ -176,62 +310,197 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tab_knob(f,"Output");
 
     Divider(f,"AOV Passes");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Enable extra output layers for compositing. Each pass<br>"
+        "appears as a separate layer in the channel viewer.<br>"
+        "Access them with Shuffle or Copy nodes downstream."
+        "</font>");
     Bool_knob(f,&_aovDensity,"aov_density","Density");
-    Tooltip(f,"vdb_density layer — greyscale RGB");
+    Tooltip(f,"Outputs integrated volume density as the vdb_density layer.\n"
+              "Greyscale value written to R, G, B channels.\n"
+              "Equivalent to the beauty alpha — useful for holdout mattes.");
     Bool_knob(f,&_aovEmission,"aov_emission","Emission");
-    Tooltip(f,"vdb_emission layer — colour RGB");
+    Tooltip(f,"Outputs emission contribution as the vdb_emission layer.\n"
+              "Full colour RGB — the pre-composite beauty before BG layering.\n"
+              "Useful for adjusting fire brightness in comp.");
     Bool_knob(f,&_aovShadow,"aov_shadow","Shadow");
-    Tooltip(f,"vdb_shadow layer — greyscale RGB");
+    Tooltip(f,"Outputs shadow transmittance as the vdb_shadow layer.\n"
+              "1.0 = fully lit, 0.0 = fully occluded.\n"
+              "Greyscale across R, G, B. Useful for shadow manipulation.");
     Bool_knob(f,&_aovDepth,"aov_depth","Depth");
-    Tooltip(f,"vdb_depth layer — single channel");
+    Tooltip(f,"Outputs first-hit depth as the vdb_depth layer.\n"
+              "Camera distance to the first significant density sample.\n"
+              "Single channel (red). Useful for depth-of-field or fog cards.");
 
-    Divider(f,"Deep");
+    Divider(f,"Deep Output");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Deep output generates depth-sorted RGBA slabs for compositing<br>"
+        "with CG renders. Connect to DeepMerge for multi-volume or<br>"
+        "volume-over-geometry setups."
+        "</font>");
     Int_knob(f,&_deepSamples,"deep_samples","Deep Samples");
+    Tooltip(f,"Maximum number of depth slabs per pixel.\n"
+              "16 = fast preview. 64 = smooth gradients.\n"
+              "128 = final quality for deep compositing.");
 
     Divider(f,"Motion Blur");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Velocity-based motion blur. Set the Velocity grid name<br>"
+        "in the VDBRender tab, then enable and configure here."
+        "</font>");
     Bool_knob(f,&_motionBlur,"motion_blur","Enable");
+    Tooltip(f,"Enable velocity-based motion blur.\n"
+              "Requires a velocity grid (vel/v) to be set in the VDBRender tab.\n"
+              "Offsets the ray origin across the shutter interval.");
     static const char*shutP[]={"Start (0 to 1)","Centre (-0.5 to 0.5)","End (-1 to 0)","Custom",nullptr};
     Enumeration_knob(f,&_shutterPreset,shutP,"shutter_preset","Shutter");
+    Tooltip(f,"Quick shutter presets:\n"
+              "Start — blur trails behind the motion direction\n"
+              "Centre — blur centred on the current frame\n"
+              "End — blur leads ahead of the motion direction\n"
+              "Custom — set Open and Close manually below.");
     Double_knob(f,&_shutterOpen,"shutter_open","Open");SetRange(f,-1,0);
+    Tooltip(f,"Shutter opening time relative to the current frame.\n"
+              "-0.5 = half frame before. -1.0 = one full frame before.\n"
+              "Set by the Shutter preset, or use Custom to edit.");
     Double_knob(f,&_shutterClose,"shutter_close","Close");SetRange(f,0,1);
+    Tooltip(f,"Shutter closing time relative to the current frame.\n"
+              "0.5 = half frame after. 1.0 = one full frame after.\n"
+              "Set by the Shutter preset, or use Custom to edit.");
     Int_knob(f,&_motionSamples,"motion_samples","Samples");
+    Tooltip(f,"Number of time samples across the shutter interval.\n"
+              "2 = fast linear blur. 3 = good quality.\n"
+              "5 = very smooth. More = slower render.");
 
     // ═══════════════════════════════════════════════════
     //  TAB: Quality
     // ═══════════════════════════════════════════════════
     Tab_knob(f,"Quality");
 
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Start with a Quality Preset, then fine-tune individual settings.<br>"
+        "Draft for layout, Production for review, Final for delivery."
+        "</font>");
     static const char*qP[]={"Custom","Draft","Preview","Production","Final","Ultra",nullptr};
     Enumeration_knob(f,&_qualityPreset,qP,"quality_preset","Preset");
+    Tooltip(f,"Sets all quality controls at once.\n"
+              "Draft = fastest, rough look for layout\n"
+              "Preview = quick turnaround for review\n"
+              "Production = good quality for client review\n"
+              "Final = full quality for delivery\n"
+              "Ultra = maximum fidelity, slowest render");
     Double_knob(f,&_quality,"quality","Quality");SetRange(f,1,10);
+    Tooltip(f,"Ray march step resolution on a logarithmic scale.\n"
+              "Step size = 1/(quality squared).\n"
+              "1 = fast preview. 5 = good quality.\n"
+              "7 = high quality. 10 = final render.");
     Int_knob(f,&_shadowSteps,"shadow_steps","Shadow Steps");
+    Tooltip(f,"Number of shadow ray samples per light source.\n"
+              "Controls self-shadow smoothness inside the volume.\n"
+              "4-8 = preview. 16-32 = final render.");
     Double_knob(f,&_shadowDensity,"shadow_density","Shadow Density");SetRange(f,0,5);
+    Tooltip(f,"Multiplier on extinction for shadow rays.\n"
+              "1 = physically correct shadows.\n"
+              "Below 1 = lighter, more transparent shadows.\n"
+              "Above 1 = darker, heavier shadows.\n"
+              "0 = no self-shadowing at all (fully lit volume).");
 
     Divider(f,"Multiple Scattering");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Simulates light bouncing through the volume. Essential for<br>"
+        "realistic clouds and thick fog. More bounces = slower render."
+        "</font>");
     static const char*scP[]={"Off","Preview","Thin Volume","Cloud / Fog","Dense Volume","Ultra",nullptr};
     Enumeration_knob(f,&_scatterPreset,scP,"scatter_preset","Scatter Preset");
+    Tooltip(f,"Quick scatter quality presets:\n"
+              "Off — single scatter only, fastest\n"
+              "Preview — 1 bounce, 6 rays\n"
+              "Thin Volume — 1 bounce, 14 rays\n"
+              "Cloud / Fog — 2 bounces, 14 rays\n"
+              "Dense Volume — 3 bounces, 26 rays\n"
+              "Ultra — 4 bounces, 26 rays, slowest");
     Int_knob(f,&_multiBounces,"multi_bounces","Bounces");
+    Tooltip(f,"Number of extra light bounces through the volume.\n"
+              "0 = single scatter only (fastest)\n"
+              "1 = one bounce, good for clouds\n"
+              "2-3 = dense fog and thick volumes\n"
+              "4 = maximum physical realism, slowest");
     Int_knob(f,&_bounceRays,"bounce_rays","Bounce Rays");
+    Tooltip(f,"Directions sampled per bounce.\n"
+              "6 = axis-aligned (fast but blocky)\n"
+              "14 = adds diagonals (smoother)\n"
+              "26 = full directional coverage (best quality)");
 
     Divider(f,"Optimization");
     Bool_knob(f,&_adaptiveStep,"adaptive_step","Adaptive Step Size");
+    Tooltip(f,"Automatically takes larger steps in thin regions\n"
+              "and smaller steps near dense surfaces.\n"
+              "4x in very thin areas, 2x in medium, normal in dense.\n"
+              "Typical 2-4x speedup with minimal quality loss.\n"
+              "Safe to leave on for most renders.");
     static const char*pxP[]={"Full","3/4","1/2","1/4",nullptr};
     Enumeration_knob(f,&_proxyMode,pxP,"proxy_mode","Proxy");
+    Tooltip(f,"Downscale the render for faster interactive preview.\n"
+              "Full = 100% resolution.\n"
+              "3/4, 1/2, 1/4 = progressively lower resolution.\n"
+              "Set back to Full before final render.");
 
-    Divider(f,"Viewport");
+    Divider(f,"3D Viewport");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Preview the volume in the 3D viewer for camera placement.<br>"
+        "No camera required — works as soon as a VDB is loaded."
+        "</font>");
     Bool_knob(f,&_showBbox,"show_bbox","Bounding Box");
+    Tooltip(f,"Shows a green wireframe around the volume bounding box.\n"
+              "Follows the Axis transform from the scene input.\n"
+              "Useful for checking volume position and scale.");
     Bool_knob(f,&_showPoints,"show_points","Point Cloud");
+    Tooltip(f,"Shows coloured dots representing density values.\n"
+              "Updates when the volume data or transform changes.\n"
+              "Useful for seeing the volume shape before rendering.");
     static const char*dL[]={"Low (~16k)","Medium (~64k)","High (~250k)",nullptr};
     Enumeration_knob(f,&_pointDensity,dL,"point_density","Point Density");
+    Tooltip(f,"Number of sample points for the 3D preview cloud.\n"
+              "Low = fast, good for positioning.\n"
+              "High = detailed volume shape preview.");
     Double_knob(f,&_pointSize,"point_size","Point Size");SetRange(f,1,20);
+    Tooltip(f,"OpenGL point size in pixels for the preview cloud.\n"
+              "Increase on high-DPI displays for visibility.");
     Bool_knob(f,&_linkViewport,"link_viewport","Link Colour to Render Mode");
+    Tooltip(f,"Viewport colour scheme follows the current render mode.\n"
+              "Lit and Explosion modes use the Heat ramp for preview.");
     static const char*vp[]={"Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
     Enumeration_knob(f,&_viewportColor,vp,"viewport_color","Viewport Colour");
+    Tooltip(f,"Override the viewport colour scheme manually.\n"
+              "Only applies when 'Link Colour to Render Mode' is off.");
 }
 
 int VDBRenderIop::knob_changed(Knob* k)
 {
     if(k->is("file")){_gridValid=false;_previewPoints.clear();return 1;}
+    if(k->is("auto_sequence")&&_autoSequence){
+        std::string p(_vdbFilePath?_vdbFilePath:"");
+        if(!p.empty()){
+            size_t dot=p.rfind(".vdb");if(dot==std::string::npos)dot=p.rfind(".VDB");
+            if(dot!=std::string::npos){
+                size_t end=dot;size_t start=end;
+                while(start>0&&p[start-1]>='0'&&p[start-1]<='9')--start;
+                if(start<end){
+                    int ndig=(int)(end-start);if(ndig<4)ndig=4;
+                    std::string padded(ndig,'#');
+                    p=p.substr(0,start)+padded+p.substr(end);
+                    knob("file")->set_text(p.c_str());
+                }
+            }
+        }
+        _gridValid=false;_previewPoints.clear();return 1;
+    }
     if(k->is("grid_name")||k->is("temp_grid")||k->is("flame_grid")||k->is("vel_grid")||k->is("color_grid")||k->is("frame_offset")){
         _gridValid=false;_previewPoints.clear();return 1;}
     if(k->is("show_points")||k->is("point_density")){_previewPoints.clear();return 1;}

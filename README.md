@@ -1,6 +1,6 @@
 # VDBRender
 
-OpenVDB volume ray marcher for Nuke 14–17. Physically-based volume rendering with multi-scatter lighting, deep output, environment lighting, motion blur, and AOV passes.
+OpenVDB volume ray marcher for Nuke 16–17. Physically-based volume rendering with multi-scatter lighting, deep output, environment lighting, motion blur, and AOV passes.
 
 Created by **Marten Blumen**
 
@@ -62,13 +62,24 @@ Created by **Marten Blumen**
 | Shadow | vdb_shadow | Greyscale RGB |
 | Depth | vdb_depth | Single channel (red) |
 
+## Nuke Compatibility
+
+| Nuke | Status | Notes |
+|------|--------|-------|
+| 14.x | **Not supported** | Ships old TBB incompatible with OpenVDB 12 |
+| 15.x | **Not supported** | Same TBB conflict |
+| 16.x | Supported | Ships oneAPI TBB (tbb12) |
+| 17.x | Primary target | Fully tested |
+
+Nuke 14–15 ship a pre-oneAPI version of TBB (`tbb.dll`) that conflicts with the oneAPI TBB (`tbb12.dll`) required by OpenVDB 12. This causes crashes at load time regardless of static or dynamic linking. The conflict is in TBB's process-wide global state and cannot be resolved without rebuilding OpenVDB against the old TBB (which OpenVDB 12 no longer supports).
+
 ## Building
 
 ### Requirements
 
 - Windows 11
-- Nuke 14, 15, 16, or 17 (NDK headers)
-- OpenVDB 12 via vcpkg
+- Nuke 16 or 17 (NDK headers)
+- OpenVDB 12 via vcpkg (`vcpkg install openvdb:x64-windows`)
 - clang-cl (Visual Studio 2022)
 - CMake
 
@@ -81,19 +92,17 @@ cd C:\dev\VDBmarcher
 build_all.bat
 ```
 
-This auto-detects all installed Nuke versions and builds a DLL for each. Output goes to:
+Auto-detects installed Nuke 16+ versions and builds a DLL for each. Output:
 
 ```
 %USERPROFILE%\.nuke\
-    menu.py
+    menu.py              (appended, never overwritten)
     plugins\VDBRender\
-        nuke14\VDBRender.dll
-        nuke15\VDBRender.dll
-        nuke16\VDBRender.dll
-        nuke17\VDBRender.dll
+        nuke16\VDBRender.dll + dependency DLLs
+        nuke17\VDBRender.dll + dependency DLLs
 ```
 
-The `menu.py` auto-detects the running Nuke version and loads the matching DLL.
+The `menu.py` snippet auto-detects the running Nuke version and loads the matching DLL.
 
 ### Build Single Version
 
@@ -112,13 +121,14 @@ nmake
 copy /Y VDBRender.dll %USERPROFILE%\.nuke\plugins\
 ```
 
-For Nuke 14–15, add `-DCMAKE_CXX_STANDARD=17`.
-
 ### Install
 
-**Multi-version:** Run `build_all.bat` — it copies everything automatically.
+**Multi-version:** Run `build_all.bat` — copies everything automatically and appends the menu snippet.
 
-**Single version:** Copy `VDBRender.dll` to `~/.nuke/plugins/` and `menu.py` to `~/.nuke/`.
+**Single version:** Copy `VDBRender.dll` and dependency DLLs to `~/.nuke/plugins/`, append `VDBRender_menu.py` to your `~/.nuke/menu.py`.
+
+**Dependency DLLs** (must be alongside `VDBRender.dll`):
+`openvdb.dll`, `tbb12.dll`, `tbbmalloc.dll`, `Imath-3_2.dll`, `blosc.dll`, `zlib1.dll`, `zstd.dll`, `lz4.dll`
 
 ## Multi-Volume Compositing
 
@@ -129,17 +139,6 @@ Camera ──┬── VDBRender (smoke.vdb) ──┐
          │                            ├── DeepMerge ── DeepToImage
          ├── VDBRender (fire.vdb)  ──┘
 ```
-
-## Nuke Compatibility
-
-| Nuke | C++ Standard | Status |
-|------|-------------|--------|
-| 14.x | C++17 | Supported |
-| 15.x | C++17 | Supported |
-| 16.x | C++20 | Supported |
-| 17.x | C++20 | Primary target |
-
-Same source code across all versions. The DDImage API surface used (Iop, DeepOp, CameraOp, LightOp, AxisOp, knobs) is stable from Nuke 14 through 17.
 
 ## Architecture
 
@@ -158,4 +157,6 @@ Same source code across all versions. The DDImage API surface used (Iop, DeepOp,
 
 ## License
 
-Apache 2.0
+Apache 2.0 — see `LICENSE`
+
+Bundled dependency licenses — see `THIRD_PARTY_LICENSES.txt`
