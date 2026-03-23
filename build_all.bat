@@ -1,6 +1,7 @@
 @echo off
 REM  VDBRender — Build for all installed Nuke versions
-REM  Run from VDBmarcher source dir in x64 Native Tools Command Prompt.
+REM  Nuke 14-15: static link — no dependency DLLs
+REM  Nuke 16+:   dynamic link — bundles dependency DLLs
 setlocal enabledelayedexpansion
 
 set "SRC=%CD%"
@@ -22,14 +23,27 @@ for /d %%D in ("C:\Program Files\Nuke*") do (
         echo  ---- !NN! ----
 
         set STD=20
-        if !MJ! LEQ 15 set STD=17
+        set "TRIPLET=x64-windows"
+        set "STATIC=0"
+        if !MJ! LEQ 15 (
+            set STD=17
+            set "TRIPLET=x64-windows-static-md"
+            set "STATIC=1"
+        )
 
         set "BD=!SRC!\build_nuke!MJ!"
         if exist "!BD!" rmdir /s /q "!BD!"
         mkdir "!BD!"
         pushd "!BD!"
 
-        cmake "!SRC!" -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_TOOLCHAIN_FILE="!VCPKG!" -DNUKE_ROOT="!ND!" -DCMAKE_CXX_STANDARD=!STD!
+        echo    C++!STD!, triplet=!TRIPLET!
+
+        if "!STATIC!"=="1" (
+            cmake "!SRC!" -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_TOOLCHAIN_FILE="!VCPKG!" -DVCPKG_TARGET_TRIPLET=!TRIPLET! -DNUKE_ROOT="!ND!" -DCMAKE_CXX_STANDARD=!STD! -DOPENVDB_STATIC=ON
+        )
+        if "!STATIC!"=="0" (
+            cmake "!SRC!" -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_TOOLCHAIN_FILE="!VCPKG!" -DVCPKG_TARGET_TRIPLET=!TRIPLET! -DNUKE_ROOT="!ND!" -DCMAKE_CXX_STANDARD=!STD!
+        )
 
         nmake
 
@@ -37,14 +51,18 @@ for /d %%D in ("C:\Program Files\Nuke*") do (
             if not exist "!DEST!\nuke!MJ!" mkdir "!DEST!\nuke!MJ!"
             copy /Y VDBRender.dll "!DEST!\nuke!MJ!\" >nul
 
-            REM Copy vcpkg dependency DLLs alongside the plugin
-            for %%F in (openvdb.dll tbb12.dll tbbmalloc.dll Imath-3_2.dll blosc.dll zlib1.dll) do (
-                if exist "!VCPKG_BIN!\%%F" copy /Y "!VCPKG_BIN!\%%F" "!DEST!\nuke!MJ!\" >nul
+            if "!STATIC!"=="0" (
+                for %%F in (openvdb.dll tbb12.dll tbbmalloc.dll Imath-3_2.dll blosc.dll zlib1.dll zstd.dll lz4.dll) do (
+                    if exist "!VCPKG_BIN!\%%F" copy /Y "!VCPKG_BIN!\%%F" "!DEST!\nuke!MJ!\" >nul
+                )
+                echo  [OK] !NN! dynamic + DLLs
             )
-
-            echo  [OK] !NN! -^> nuke!MJ!\
+            if "!STATIC!"=="1" (
+                echo  [OK] !NN! static
+            )
             set /a N+=1
-        ) else (
+        )
+        if not exist "VDBRender.dll" (
             echo  [FAIL] !NN!
         )
         popd
@@ -52,7 +70,6 @@ for /d %%D in ("C:\Program Files\Nuke*") do (
     )
 )
 
-REM Append VDBRender menu snippet to menu.py (never overwrite)
 set "MENUPY=%USERPROFILE%\.nuke\menu.py"
 if !N! GTR 0 (
     findstr /c:"_load_vdbrender" "!MENUPY!" >nul 2>&1
@@ -60,8 +77,6 @@ if !N! GTR 0 (
         echo.>> "!MENUPY!"
         type "!SRC!\VDBRender_menu.py" >> "!MENUPY!"
         echo  VDBRender block appended to !MENUPY!
-    ) else (
-        echo  VDBRender block already in !MENUPY! — skipped.
     )
 )
 

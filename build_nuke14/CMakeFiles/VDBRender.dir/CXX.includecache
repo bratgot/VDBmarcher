@@ -1584,29 +1584,29 @@ memory
 cstring
 -
 
-C:/vcpkg/installed/x64-windows/include/Imath/ImathConfig.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathConfig.h
 
-C:/vcpkg/installed/x64-windows/include/Imath/ImathExport.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathExport.h
 ImathConfig.h
-C:/vcpkg/installed/x64-windows/include/Imath/ImathConfig.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathConfig.h
 
-C:/vcpkg/installed/x64-windows/include/Imath/ImathNamespace.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathNamespace.h
 ImathConfig.h
-C:/vcpkg/installed/x64-windows/include/Imath/ImathConfig.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathConfig.h
 
-C:/vcpkg/installed/x64-windows/include/Imath/ImathPlatform.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathPlatform.h
 math.h
 -
 ImathNamespace.h
-C:/vcpkg/installed/x64-windows/include/Imath/ImathNamespace.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathNamespace.h
 
-C:/vcpkg/installed/x64-windows/include/Imath/half.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/half.h
 ImathExport.h
-C:/vcpkg/installed/x64-windows/include/Imath/ImathExport.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathExport.h
 ImathNamespace.h
-C:/vcpkg/installed/x64-windows/include/Imath/ImathNamespace.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathNamespace.h
 ImathPlatform.h
-C:/vcpkg/installed/x64-windows/include/Imath/ImathPlatform.h
+C:/vcpkg/installed/x64-windows-static-md/include/Imath/ImathPlatform.h
 intrin.h
 -
 x86intrin.h
@@ -1628,21 +1628,21 @@ cuda_fp16.h
 hip/amd_detail/amd_hip_fp16.h
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/blocked_range.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/blocked_range.h
 cstddef
 -
 detail/_range_common.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_range_common.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_range_common.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 version.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/version.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/version.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/cache_aligned_allocator.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/cache_aligned_allocator.h
 detail/_utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 cstdlib
 -
 utility
@@ -1650,27 +1650,27 @@ utility
 memory_resource
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/concurrent_hash_map.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/concurrent_hash_map.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 detail/_assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 detail/_allocator_traits.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_allocator_traits.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_allocator_traits.h
 detail/_containers_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_containers_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_containers_helpers.h
 detail/_template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 detail/_hash_compare.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_hash_compare.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_hash_compare.h
 detail/_range_common.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_range_common.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_range_common.h
 tbb_allocator.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/tbb_allocator.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/tbb_allocator.h
 spin_rw_mutex.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/spin_rw_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/spin_rw_mutex.h
 atomic
 -
 initializer_list
@@ -1684,23 +1684,23 @@ utility
 cstring
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/concurrent_vector.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/concurrent_vector.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 detail/_assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 detail/_allocator_traits.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_allocator_traits.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_allocator_traits.h
 detail/_segment_table.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_segment_table.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_segment_table.h
 detail/_containers_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_containers_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_containers_helpers.h
 blocked_range.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/blocked_range.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/blocked_range.h
 cache_aligned_allocator.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/cache_aligned_allocator.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/cache_aligned_allocator.h
 algorithm
 -
 utility
@@ -1710,47 +1710,47 @@ algorithm
 compare
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_aligned_space.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_aligned_space.h
 cstddef
 -
 _template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_allocator_traits.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_allocator_traits.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 memory
 -
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_attach.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_attach.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 cstddef
 -
 version
 -
 _export.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_export.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_export.h
 cstddef
 -
 android/api-level.h
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_containers_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_containers_helpers.h
 _template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 _allocator_traits.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_allocator_traits.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_allocator_traits.h
 type_traits
 -
 memory
@@ -1758,9 +1758,9 @@ memory
 functional
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_exception.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_exception.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 new
 -
 exception
@@ -1768,21 +1768,21 @@ exception
 stdexcept
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_export.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_export.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_hash_compare.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_hash_compare.h
 functional
 -
 _containers_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_containers_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_containers_helpers.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_intrusive_list_node.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_intrusive_list_node.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_machine.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_machine.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 atomic
 -
 climits
@@ -1808,61 +1808,61 @@ fenv.h
 cstring
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_mutex_common.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_mutex_common.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 concepts
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_range_common.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_range_common.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 concepts
 -
 iterator
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_rtm_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_rtm_mutex.h
 _assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 _utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 ../spin_mutex.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/spin_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/spin_mutex.h
 ../profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_rtm_rw_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_rtm_rw_mutex.h
 _assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 _utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 ../spin_rw_mutex.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/spin_rw_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/spin_rw_mutex.h
 atomic
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_scoped_lock.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_scoped_lock.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_segment_table.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_segment_table.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _allocator_traits.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_allocator_traits.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_allocator_traits.h
 _template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 _utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 _assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 _exception.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_exception.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_exception.h
 atomic
 -
 type_traits
@@ -1872,13 +1872,13 @@ memory
 cstring
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_small_object_pool.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_small_object_pool.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 ../profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 cstddef
 -
 cstdint
@@ -1886,19 +1886,19 @@ cstdint
 atomic
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_string_resource.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_string_resource.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 _template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 _small_object_pool.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_small_object_pool.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_small_object_pool.h
 ../profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 cstddef
 -
 cstdint
@@ -1912,23 +1912,23 @@ atomic
 mutex
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task_handle.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task_handle.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task.h
 _small_object_pool.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_small_object_pool.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_small_object_pool.h
 _utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 memory
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 _utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 cstddef
 -
 cstdint
@@ -1942,7 +1942,7 @@ memory
 iterator
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 type_traits
 -
 cstdint
@@ -1952,31 +1952,31 @@ atomic
 functional
 -
 _config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 _assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 _machine.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_machine.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_machine.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/enumerable_thread_specific.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/enumerable_thread_specific.h
 detail/_config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 detail/_template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 detail/_aligned_space.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_aligned_space.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_aligned_space.h
 concurrent_vector.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/concurrent_vector.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/concurrent_vector.h
 tbb_allocator.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/tbb_allocator.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/tbb_allocator.h
 cache_aligned_allocator.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/cache_aligned_allocator.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/cache_aligned_allocator.h
 profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 atomic
 -
 thread
@@ -1986,89 +1986,89 @@ cstring
 cstddef
 -
 task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task.h
 windows.h
 -
 pthread.h
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/info.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/info.h
 detail/_config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 vector
 -
 cstdint
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/parallel_for.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/parallel_for.h
 detail/_config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_exception.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_exception.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_exception.h
 detail/_task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task.h
 detail/_small_object_pool.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_small_object_pool.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_small_object_pool.h
 profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 partitioner.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/partitioner.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/partitioner.h
 blocked_range.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/blocked_range.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/blocked_range.h
 task_group.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_group.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_group.h
 cstddef
 -
 new
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/parallel_reduce.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/parallel_reduce.h
 new
 -
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task.h
 detail/_aligned_space.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_aligned_space.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_aligned_space.h
 detail/_small_object_pool.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_small_object_pool.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_small_object_pool.h
 detail/_range_common.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_range_common.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_range_common.h
 task_group.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_group.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_group.h
 partitioner.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/partitioner.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/partitioner.h
 profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/partitioner.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/partitioner.h
 detail/_config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_aligned_space.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_aligned_space.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_aligned_space.h
 detail/_utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 detail/_template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 detail/_range_common.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_range_common.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_range_common.h
 detail/_task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task.h
 detail/_small_object_pool.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_small_object_pool.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_small_object_pool.h
 cache_aligned_allocator.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/cache_aligned_allocator.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/cache_aligned_allocator.h
 task_group.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_group.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_group.h
 task_arena.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_arena.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_arena.h
 algorithm
 -
 atomic
@@ -2076,117 +2076,117 @@ atomic
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 detail/_config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 cstdint
 -
 string
 -
 detail/_string_resource.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_string_resource.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_string_resource.h
 atomic
 -
 stdlib.h
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/spin_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/spin_mutex.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_mutex_common.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_mutex_common.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_mutex_common.h
 profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 detail/_assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 detail/_utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 detail/_scoped_lock.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_scoped_lock.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_scoped_lock.h
 atomic
 -
 detail/_rtm_mutex.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_rtm_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_rtm_mutex.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/spin_rw_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/spin_rw_mutex.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_mutex_common.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_mutex_common.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_mutex_common.h
 profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 detail/_assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 detail/_utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 detail/_scoped_lock.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_scoped_lock.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_scoped_lock.h
 atomic
 -
 detail/_rtm_rw_mutex.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_rtm_rw_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_rtm_rw_mutex.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task.h
 detail/_config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_arena.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_arena.h
 detail/_config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 detail/_aligned_space.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_aligned_space.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_aligned_space.h
 detail/_attach.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_attach.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_attach.h
 detail/_exception.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_exception.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_exception.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_small_object_pool.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_small_object_pool.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_small_object_pool.h
 detail/_task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task.h
 detail/_task_handle.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task_handle.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task_handle.h
 info.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/info.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/info.h
 task_group.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_group.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_group.h
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_group.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_group.h
 detail/_config.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_config.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_config.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 detail/_assert.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_assert.h
 detail/_utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_utils.h
 detail/_template_helpers.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_template_helpers.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_template_helpers.h
 detail/_exception.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_exception.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_exception.h
 detail/_task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task.h
 detail/_small_object_pool.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_small_object_pool.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_small_object_pool.h
 detail/_intrusive_list_node.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_intrusive_list_node.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_intrusive_list_node.h
 detail/_task_handle.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_task_handle.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_task_handle.h
 profiling.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/profiling.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/profiling.h
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/tbb_allocator.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/tbb_allocator.h
 oneapi/tbb/detail/_utils.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/oneapi/tbb/detail/_utils.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/oneapi/tbb/detail/_utils.h
 detail/_namespace_injection.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/detail/_namespace_injection.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/detail/_namespace_injection.h
 cstdlib
 -
 utility
@@ -2194,9 +2194,9 @@ utility
 memory_resource
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/Exceptions.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Exceptions.h
 version.h
-C:/vcpkg/installed/x64-windows/include/openvdb/version.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/version.h
 exception
 -
 sstream
@@ -2204,25 +2204,25 @@ sstream
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/Grid.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Grid.h
 Exceptions.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Exceptions.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Exceptions.h
 MetaMap.h
-C:/vcpkg/installed/x64-windows/include/openvdb/MetaMap.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/MetaMap.h
 Types.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Types.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Types.h
 io/io.h
-C:/vcpkg/installed/x64-windows/include/openvdb/io/io.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/io.h
 math/Transform.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Transform.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Transform.h
 tree/Tree.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/Tree.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/Tree.h
 util/Assert.h
-C:/vcpkg/installed/x64-windows/include/openvdb/util/Assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/Assert.h
 util/logging.h
-C:/vcpkg/installed/x64-windows/include/openvdb/util/logging.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/logging.h
 util/Name.h
-C:/vcpkg/installed/x64-windows/include/openvdb/util/Name.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/Name.h
 iostream
 -
 set
@@ -2232,31 +2232,31 @@ type_traits
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/MetaMap.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/MetaMap.h
 Metadata.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Metadata.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Metadata.h
 Types.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Types.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Types.h
 Exceptions.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Exceptions.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Exceptions.h
 iosfwd
 -
 map
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/Metadata.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Metadata.h
 version.h
-C:/vcpkg/installed/x64-windows/include/openvdb/version.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/version.h
 Exceptions.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Exceptions.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Exceptions.h
 Types.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Types.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Types.h
 math/Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 util/Name.h
-C:/vcpkg/installed/x64-windows/include/openvdb/util/Name.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/Name.h
 util/Assert.h
-C:/vcpkg/installed/x64-windows/include/openvdb/util/Assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/Assert.h
 cstdint
 -
 iostream
@@ -2266,7 +2266,7 @@ string
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/Platform.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Platform.h
 intrin.h
 -
 x86intrin.h
@@ -2274,21 +2274,21 @@ x86intrin.h
 arm_neon.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/TypeList.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/TypeList.h
 version.h
-C:/vcpkg/installed/x64-windows/include/openvdb/version.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/version.h
 tuple
 -
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/Types.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Types.h
 version.h
-C:/vcpkg/installed/x64-windows/include/openvdb/version.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/version.h
 Platform.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Platform.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Platform.h
 TypeList.h
-C:/vcpkg/installed/x64-windows/include/openvdb/TypeList.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/TypeList.h
 Imath/half.h
 -
 OpenEXR/half.h
@@ -2320,11 +2320,11 @@ memory
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/io/Archive.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/Archive.h
 openvdb/version.h
 -
 Compression.h
-C:/vcpkg/installed/x64-windows/include/openvdb/io/Compression.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/Compression.h
 openvdb/Grid.h
 -
 openvdb/MetaMap.h
@@ -2344,7 +2344,7 @@ memory
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/io/Compression.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/Compression.h
 openvdb/Types.h
 -
 openvdb/MetaMap.h
@@ -2354,9 +2354,9 @@ openvdb/math/Math.h
 openvdb/util/Assert.h
 -
 io.h
-C:/vcpkg/installed/x64-windows/include/openvdb/io/io.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/io.h
 DelayedLoadMetadata.h
-C:/vcpkg/installed/x64-windows/include/openvdb/io/DelayedLoadMetadata.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/DelayedLoadMetadata.h
 algorithm
 -
 iostream
@@ -2368,7 +2368,7 @@ string
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/io/DelayedLoadMetadata.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/DelayedLoadMetadata.h
 openvdb/Metadata.h
 -
 cstdint
@@ -2380,15 +2380,15 @@ string
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/io/File.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/File.h
 openvdb/version.h
 -
 io.h
-C:/vcpkg/installed/x64-windows/include/openvdb/io/io.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/io.h
 Archive.h
-C:/vcpkg/installed/x64-windows/include/openvdb/io/Archive.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/Archive.h
 GridDescriptor.h
-C:/vcpkg/installed/x64-windows/include/openvdb/io/GridDescriptor.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/GridDescriptor.h
 algorithm
 -
 iosfwd
@@ -2402,7 +2402,7 @@ memory
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/io/GridDescriptor.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/GridDescriptor.h
 openvdb/Grid.h
 -
 iostream
@@ -2410,7 +2410,7 @@ iostream
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/io/io.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/io.h
 openvdb/Platform.h
 -
 openvdb/Types.h
@@ -2430,11 +2430,11 @@ memory
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/BBox.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/BBox.h
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 algorithm
 -
 cmath
@@ -2446,7 +2446,7 @@ limits
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Coord.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Coord.h
 functional
 -
 algorithm
@@ -2462,19 +2462,19 @@ openvdb/Platform.h
 openvdb/util/Assert.h
 -
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 tbb/blocked_range.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/DDA.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/DDA.h
 Coord.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Coord.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Coord.h
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 openvdb/Types.h
 -
 openvdb/util/Assert.h
@@ -2484,23 +2484,23 @@ iostream
 limits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/FiniteDifference.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/FiniteDifference.h
 openvdb/Types.h
 -
 openvdb/util/Name.h
 -
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Coord.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Coord.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Coord.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 string
 -
 simd/Simd.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Half.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Half.h
 openvdb/Platform.h
 -
 openvdb/version.h
@@ -2522,17 +2522,17 @@ fenv.h
 limits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Maps.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Maps.h
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Mat4.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Mat4.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Mat4.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 BBox.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/BBox.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/BBox.h
 Coord.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Coord.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Coord.h
 openvdb/io/io.h
 -
 openvdb/util/Name.h
@@ -2548,9 +2548,9 @@ map
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Mat.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Mat.h
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 openvdb/Exceptions.h
 -
 algorithm
@@ -2562,15 +2562,15 @@ iostream
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Mat3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Mat3.h
 openvdb/Exceptions.h
 -
 openvdb/util/Assert.h
 -
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 Mat.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Mat.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Mat.h
 algorithm
 -
 cmath
@@ -2578,7 +2578,7 @@ cmath
 iomanip
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Mat4.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Mat4.h
 openvdb/Exceptions.h
 -
 openvdb/Platform.h
@@ -2586,13 +2586,13 @@ openvdb/Platform.h
 openvdb/util/Assert.h
 -
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Mat3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Mat3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Mat3.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 Vec4.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec4.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec4.h
 algorithm
 -
 iomanip
@@ -2600,7 +2600,7 @@ iomanip
 cmath
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 openvdb/Platform.h
 -
 openvdb/version.h
@@ -2624,23 +2624,23 @@ string
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/QuantizedUnitVec.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/QuantizedUnitVec.h
 openvdb/Platform.h
 -
 openvdb/version.h
 -
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Quat.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Quat.h
 Mat.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Mat.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Mat.h
 Mat3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Mat3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Mat3.h
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 openvdb/Exceptions.h
 -
 openvdb/util/Assert.h
@@ -2654,13 +2654,13 @@ sstream
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Ray.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Ray.h
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 Transform.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Transform.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Transform.h
 openvdb/util/Assert.h
 -
 algorithm
@@ -2670,7 +2670,7 @@ iostream
 limits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Stats.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Stats.h
 iosfwd
 -
 openvdb/version.h
@@ -2690,9 +2690,9 @@ vector
 functional
 -
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Stencils.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Stencils.h
 algorithm
 -
 vector
@@ -2704,23 +2704,23 @@ openvdb/Types.h
 openvdb/tree/ValueAccessor.h
 -
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Coord.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Coord.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Coord.h
 FiniteDifference.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/FiniteDifference.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/FiniteDifference.h
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Transform.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Transform.h
 Maps.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Maps.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Maps.h
 openvdb/Types.h
 -
 iosfwd
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Tuple.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Tuple.h
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 openvdb/util/Assert.h
 -
 cmath
@@ -2732,13 +2732,13 @@ string
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec2.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec2.h
 openvdb/Exceptions.h
 -
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Tuple.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Tuple.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Tuple.h
 algorithm
 -
 cmath
@@ -2746,15 +2746,15 @@ cmath
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 openvdb/Exceptions.h
 -
 openvdb/util/Assert.h
 -
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Tuple.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Tuple.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Tuple.h
 algorithm
 -
 cmath
@@ -2762,15 +2762,15 @@ cmath
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec4.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec4.h
 openvdb/Exceptions.h
 -
 Math.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Math.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Math.h
 Tuple.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Tuple.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Tuple.h
 Vec3.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Vec3.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Vec3.h
 algorithm
 -
 cmath
@@ -2778,29 +2778,29 @@ cmath
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/openvdb.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/openvdb.h
 Platform.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Platform.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Platform.h
 Types.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Types.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Types.h
 TypeList.h
-C:/vcpkg/installed/x64-windows/include/openvdb/TypeList.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/TypeList.h
 Metadata.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Metadata.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Metadata.h
 math/Maps.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Maps.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Maps.h
 math/Transform.h
-C:/vcpkg/installed/x64-windows/include/openvdb/math/Transform.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/math/Transform.h
 Grid.h
-C:/vcpkg/installed/x64-windows/include/openvdb/Grid.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/Grid.h
 tree/Tree.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/Tree.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/Tree.h
 points/PointDataGrid.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/PointDataGrid.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/PointDataGrid.h
 io/File.h
-C:/vcpkg/installed/x64-windows/include/openvdb/io/File.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/io/File.h
 
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeArray.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeArray.h
 openvdb/Types.h
 -
 openvdb/math/QuantizedUnitVec.h
@@ -2816,9 +2816,9 @@ openvdb/io/io.h
 openvdb/io/Compression.h
 -
 IndexIterator.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/IndexIterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/IndexIterator.h
 StreamCompression.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/StreamCompression.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/StreamCompression.h
 tbb/spin_mutex.h
 -
 atomic
@@ -2832,9 +2832,9 @@ string
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeArrayString.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeArrayString.h
 AttributeArray.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeArray.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeArray.h
 memory
 -
 deque
@@ -2842,19 +2842,19 @@ deque
 unordered_map
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeGroup.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeGroup.h
 AttributeArray.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeArray.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeArray.h
 AttributeSet.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeSet.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeSet.h
 openvdb/util/Assert.h
 -
 memory
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeSet.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeSet.h
 AttributeArray.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeArray.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeArray.h
 openvdb/version.h
 -
 openvdb/MetaMap.h
@@ -2868,7 +2868,7 @@ memory
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/points/IndexIterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/IndexIterator.h
 openvdb/version.h
 -
 openvdb/Types.h
@@ -2876,7 +2876,7 @@ openvdb/Types.h
 openvdb/util/Assert.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/points/PointDataGrid.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/PointDataGrid.h
 openvdb/version.h
 -
 openvdb/Grid.h
@@ -2890,15 +2890,15 @@ openvdb/tools/PointIndexGrid.h
 openvdb/util/Assert.h
 -
 AttributeArray.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeArray.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeArray.h
 AttributeArrayString.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeArrayString.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeArrayString.h
 AttributeGroup.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeGroup.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeGroup.h
 AttributeSet.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/AttributeSet.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/AttributeSet.h
 StreamCompression.h
-C:/vcpkg/installed/x64-windows/include/openvdb/points/StreamCompression.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/StreamCompression.h
 cstring
 -
 iostream
@@ -2914,7 +2914,7 @@ utility
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/points/StreamCompression.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/points/StreamCompression.h
 openvdb/io/io.h
 -
 openvdb/util/Assert.h
@@ -2926,7 +2926,7 @@ memory
 string
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/thread/Threading.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/thread/Threading.h
 openvdb/version.h
 -
 tbb/blocked_range.h
@@ -2936,7 +2936,7 @@ tbb/task.h
 tbb/task_group.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/Activate.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/Activate.h
 openvdb/Types.h
 -
 openvdb/Grid.h
@@ -2952,7 +2952,7 @@ openvdb/points/PointDataGrid.h
 openvdb/util/ExplicitInstantiation.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/Count.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/Count.h
 openvdb/version.h
 -
 openvdb/math/Stats.h
@@ -2962,7 +2962,7 @@ openvdb/tree/LeafManager.h
 openvdb/tree/NodeManager.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/Interpolation.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/Interpolation.h
 openvdb/version.h
 -
 openvdb/Platform.h
@@ -2982,13 +2982,13 @@ cmath
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/Morphology.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/Morphology.h
 Activate.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/Activate.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/Activate.h
 Prune.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/Prune.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/Prune.h
 ValueTransformer.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/ValueTransformer.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/ValueTransformer.h
 openvdb/Types.h
 -
 openvdb/Grid.h
@@ -3016,9 +3016,9 @@ vector
 openvdb/util/ExplicitInstantiation.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/PointIndexGrid.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/PointIndexGrid.h
 PointPartitioner.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/PointPartitioner.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/PointPartitioner.h
 openvdb/thread/Threading.h
 -
 openvdb/version.h
@@ -3060,7 +3060,7 @@ utility
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/PointPartitioner.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/PointPartitioner.h
 openvdb/Types.h
 -
 openvdb/math/Transform.h
@@ -3088,7 +3088,7 @@ utility
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/Prune.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/Prune.h
 openvdb/math/Math.h
 -
 openvdb/Types.h
@@ -3104,7 +3104,7 @@ type_traits
 openvdb/util/ExplicitInstantiation.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/RayIntersector.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/RayIntersector.h
 openvdb/math/DDA.h
 -
 openvdb/math/Math.h
@@ -3120,13 +3120,13 @@ openvdb/Types.h
 openvdb/util/Assert.h
 -
 Morphology.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/Morphology.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/Morphology.h
 iostream
 -
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tools/ValueTransformer.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tools/ValueTransformer.h
 algorithm
 -
 tbb/parallel_for.h
@@ -3142,7 +3142,7 @@ openvdb/openvdb.h
 openvdb/util/ExplicitInstantiation.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/InternalNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/InternalNode.h
 openvdb/Platform.h
 -
 openvdb/util/NodeMasks.h
@@ -3158,9 +3158,9 @@ openvdb/version.h
 openvdb/Types.h
 -
 Iterator.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/Iterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/Iterator.h
 NodeUnion.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/NodeUnion.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/NodeUnion.h
 tbb/parallel_for.h
 -
 memory
@@ -3168,7 +3168,7 @@ memory
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/Iterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/Iterator.h
 sstream
 -
 type_traits
@@ -3178,7 +3178,7 @@ openvdb/util/NodeMasks.h
 openvdb/Exceptions.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafBuffer.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafBuffer.h
 openvdb/Types.h
 -
 openvdb/io/Compression.h
@@ -3202,13 +3202,13 @@ memory
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafManager.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafManager.h
 openvdb/Types.h
 -
 openvdb/util/Assert.h
 -
 RootNode.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/RootNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/RootNode.h
 tbb/blocked_range.h
 -
 tbb/parallel_for.h
@@ -3222,7 +3222,7 @@ functional
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafNode.h
 openvdb/Types.h
 -
 openvdb/util/NodeMasks.h
@@ -3232,9 +3232,9 @@ openvdb/util/Assert.h
 openvdb/io/Compression.h
 -
 Iterator.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/Iterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/Iterator.h
 LeafBuffer.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafBuffer.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafBuffer.h
 algorithm
 -
 iostream
@@ -3250,11 +3250,11 @@ type_traits
 vector
 -
 LeafNodeBool.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafNodeBool.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafNodeBool.h
 LeafNodeMask.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafNodeMask.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafNodeMask.h
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafNodeBool.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafNodeBool.h
 openvdb/Types.h
 -
 openvdb/io/Compression.h
@@ -3266,9 +3266,9 @@ openvdb/math/Math.h
 openvdb/util/NodeMasks.h
 -
 LeafNode.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafNode.h
 Iterator.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/Iterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/Iterator.h
 iostream
 -
 sstream
@@ -3280,7 +3280,7 @@ type_traits
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafNodeMask.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafNodeMask.h
 openvdb/version.h
 -
 openvdb/Types.h
@@ -3294,9 +3294,9 @@ openvdb/util/NodeMasks.h
 openvdb/util/Assert.h
 -
 LeafNode.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafNode.h
 Iterator.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/Iterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/Iterator.h
 iostream
 -
 sstream
@@ -3308,7 +3308,7 @@ type_traits
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/NodeManager.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/NodeManager.h
 openvdb/Types.h
 -
 openvdb/util/Assert.h
@@ -3320,7 +3320,7 @@ tbb/parallel_reduce.h
 deque
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/NodeUnion.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/NodeUnion.h
 openvdb/version.h
 -
 openvdb/Types.h
@@ -3330,7 +3330,7 @@ cstring
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/RootNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/RootNode.h
 openvdb/Exceptions.h
 -
 openvdb/Types.h
@@ -3358,7 +3358,7 @@ sstream
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/Tree.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/Tree.h
 openvdb/Types.h
 -
 openvdb/Metadata.h
@@ -3378,15 +3378,15 @@ openvdb/util/Assert.h
 openvdb/Platform.h
 -
 RootNode.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/RootNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/RootNode.h
 InternalNode.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/InternalNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/InternalNode.h
 LeafNode.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/LeafNode.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/LeafNode.h
 TreeIterator.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/TreeIterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/TreeIterator.h
 ValueAccessor.h
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/ValueAccessor.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/ValueAccessor.h
 tbb/concurrent_hash_map.h
 -
 cstdint
@@ -3400,7 +3400,7 @@ sstream
 vector
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/TreeIterator.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/TreeIterator.h
 tbb/blocked_range.h
 -
 tbb/parallel_for.h
@@ -3420,7 +3420,7 @@ string
 type_traits
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/tree/ValueAccessor.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/tree/ValueAccessor.h
 openvdb/version.h
 -
 openvdb/Types.h
@@ -3436,15 +3436,15 @@ type_traits
 mutex
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/util/Assert.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/Assert.h
 openvdb/Platform.h
 -
 openvdb/version.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/util/ExplicitInstantiation.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/ExplicitInstantiation.h
 
-C:/vcpkg/installed/x64-windows/include/openvdb/util/Formats.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/Formats.h
 iosfwd
 -
 sstream
@@ -3456,7 +3456,7 @@ openvdb/version.h
 openvdb/Platform.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/util/Name.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/Name.h
 openvdb/Platform.h
 -
 openvdb/version.h
@@ -3472,7 +3472,7 @@ set
 algorithm
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/util/NodeMasks.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/NodeMasks.h
 algorithm
 -
 cstring
@@ -3486,7 +3486,7 @@ openvdb/Types.h
 openvdb/util/Assert.h
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/util/logging.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/util/logging.h
 openvdb/version.h
 -
 log4cplus/appender.h
@@ -3516,47 +3516,47 @@ vector
 iostream
 -
 
-C:/vcpkg/installed/x64-windows/include/openvdb/version.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/version.h
 openvdb/Platform.h
-C:/vcpkg/installed/x64-windows/include/openvdb/openvdb/Platform.h
+C:/vcpkg/installed/x64-windows-static-md/include/openvdb/openvdb/Platform.h
 cstddef
 -
 cstdint
 -
 
-C:/vcpkg/installed/x64-windows/include/tbb/blocked_range.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/blocked_range.h
 ../oneapi/tbb/blocked_range.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/blocked_range.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/blocked_range.h
 
-C:/vcpkg/installed/x64-windows/include/tbb/concurrent_hash_map.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/concurrent_hash_map.h
 ../oneapi/tbb/concurrent_hash_map.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/concurrent_hash_map.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/concurrent_hash_map.h
 
-C:/vcpkg/installed/x64-windows/include/tbb/enumerable_thread_specific.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/enumerable_thread_specific.h
 ../oneapi/tbb/enumerable_thread_specific.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/enumerable_thread_specific.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/enumerable_thread_specific.h
 
-C:/vcpkg/installed/x64-windows/include/tbb/parallel_for.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/parallel_for.h
 ../oneapi/tbb/parallel_for.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/parallel_for.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/parallel_for.h
 
-C:/vcpkg/installed/x64-windows/include/tbb/parallel_reduce.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/parallel_reduce.h
 ../oneapi/tbb/parallel_reduce.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/parallel_reduce.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/parallel_reduce.h
 
-C:/vcpkg/installed/x64-windows/include/tbb/spin_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/spin_mutex.h
 ../oneapi/tbb/spin_mutex.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/spin_mutex.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/spin_mutex.h
 
-C:/vcpkg/installed/x64-windows/include/tbb/task.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/task.h
 ../oneapi/tbb/task.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task.h
 
-C:/vcpkg/installed/x64-windows/include/tbb/task_arena.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/task_arena.h
 ../oneapi/tbb/task_arena.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_arena.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_arena.h
 
-C:/vcpkg/installed/x64-windows/include/tbb/task_group.h
+C:/vcpkg/installed/x64-windows-static-md/include/tbb/task_group.h
 ../oneapi/tbb/task_group.h
-C:/vcpkg/installed/x64-windows/include/oneapi/tbb/task_group.h
+C:/vcpkg/installed/x64-windows-static-md/include/oneapi/tbb/task_group.h
 

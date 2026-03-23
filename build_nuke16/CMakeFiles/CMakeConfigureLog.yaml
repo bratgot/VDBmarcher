@@ -61,8 +61,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-holp52"
-      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-holp52"
+      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-g36gjy"
+      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-g36gjy"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
@@ -76,27 +76,27 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-holp52'
+        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-g36gjy'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_4d505\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_4d505.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_4d505.dir\\build
-        Building CXX object CMakeFiles/cmTC_4d505.dir/CMakeCXXCompilerABI.cpp.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC343.tmp
-        Linking CXX executable cmTC_4d505.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_4d505.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_4d505.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC392.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_4028d\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_4028d.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_4028d.dir\\build
+        Building CXX object CMakeFiles/cmTC_4028d.dir/CMakeCXXCompilerABI.cpp.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm8996.tmp
+        Linking CXX executable cmTC_4028d.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_4028d.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_4028d.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm89C6.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_4d505.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_4d505.dir/embed.manifest
+        Create CMakeFiles\\cmTC_4028d.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_4028d.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_4d505.dir/manifest.res CMakeFiles\\cmTC_4d505.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_4028d.dir/manifest.res CMakeFiles\\cmTC_4028d.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_4d505.dir\\objects1.rsp /out:cmTC_4d505.exe /implib:cmTC_4d505.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-holp52\\cmTC_4d505.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_4d505.dir/intermediate.manifest CMakeFiles\\cmTC_4d505.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_4028d.dir\\objects1.rsp /out:cmTC_4028d.exe /implib:cmTC_4028d.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-g36gjy\\cmTC_4028d.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_4028d.dir/intermediate.manifest CMakeFiles\\cmTC_4028d.dir/manifest.res
         MT:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_4d505.dir/intermediate.manifest /out:CMakeFiles\\cmTC_4d505.dir/embed.manifest /notify_update
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_4028d.dir/intermediate.manifest /out:CMakeFiles\\cmTC_4028d.dir/embed.manifest /notify_update
         RC Pass 2:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_4d505.dir/manifest.res CMakeFiles\\cmTC_4d505.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_4028d.dir/manifest.res CMakeFiles\\cmTC_4028d.dir/manifest.rc
         FINAL LINK:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_4d505.dir\\objects1.rsp /out:cmTC_4d505.exe /implib:cmTC_4d505.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-holp52\\cmTC_4d505.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_4d505.dir/intermediate.manifest CMakeFiles\\cmTC_4d505.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_4028d.dir\\objects1.rsp /out:cmTC_4028d.exe /implib:cmTC_4028d.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-g36gjy\\cmTC_4028d.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_4028d.dir/intermediate.manifest CMakeFiles\\cmTC_4028d.dir/manifest.res
         
       exitCode: 0
   -
@@ -111,8 +111,8 @@ events:
     checks:
       - "Detecting CXX compile features"
     directories:
-      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-vl87xy"
-      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-vl87xy"
+      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-joza4a"
+      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-joza4a"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
@@ -126,27 +126,27 @@ events:
       variable: "CMAKE_CXX_FEATURE_TEST"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-vl87xy'
+        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-joza4a'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_6b874\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_6b874.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_6b874.dir\\build
-        Building CXX object CMakeFiles/cmTC_6b874.dir/feature_tests.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC527.tmp
-        Linking CXX executable cmTC_6b874.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_6b874.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_6b874.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC567.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_0bd0c\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_0bd0c.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_0bd0c.dir\\build
+        Building CXX object CMakeFiles/cmTC_0bd0c.dir/feature_tests.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm8B6B.tmp
+        Linking CXX executable cmTC_0bd0c.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_0bd0c.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_0bd0c.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm8BAB.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_6b874.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_6b874.dir/embed.manifest
+        Create CMakeFiles\\cmTC_0bd0c.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_0bd0c.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_6b874.dir/manifest.res CMakeFiles\\cmTC_6b874.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_0bd0c.dir/manifest.res CMakeFiles\\cmTC_0bd0c.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_6b874.dir\\objects1.rsp /out:cmTC_6b874.exe /implib:cmTC_6b874.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-vl87xy\\cmTC_6b874.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_6b874.dir/intermediate.manifest CMakeFiles\\cmTC_6b874.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_0bd0c.dir\\objects1.rsp /out:cmTC_0bd0c.exe /implib:cmTC_0bd0c.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-joza4a\\cmTC_0bd0c.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_0bd0c.dir/intermediate.manifest CMakeFiles\\cmTC_0bd0c.dir/manifest.res
         MT:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_6b874.dir/intermediate.manifest /out:CMakeFiles\\cmTC_6b874.dir/embed.manifest /notify_update
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_0bd0c.dir/intermediate.manifest /out:CMakeFiles\\cmTC_0bd0c.dir/embed.manifest /notify_update
         RC Pass 2:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_6b874.dir/manifest.res CMakeFiles\\cmTC_6b874.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_0bd0c.dir/manifest.res CMakeFiles\\cmTC_0bd0c.dir/manifest.rc
         FINAL LINK:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_6b874.dir\\objects1.rsp /out:cmTC_6b874.exe /implib:cmTC_6b874.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-vl87xy\\cmTC_6b874.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_6b874.dir/intermediate.manifest CMakeFiles\\cmTC_6b874.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_0bd0c.dir\\objects1.rsp /out:cmTC_0bd0c.exe /implib:cmTC_0bd0c.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-joza4a\\cmTC_0bd0c.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_0bd0c.dir/intermediate.manifest CMakeFiles\\cmTC_0bd0c.dir/manifest.res
         
       exitCode: 0
   -
@@ -161,8 +161,8 @@ events:
     checks:
       - "Detecting CXX compile features"
     directories:
-      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-1l7bs3"
-      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-1l7bs3"
+      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-zfsd2i"
+      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-zfsd2i"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
@@ -176,27 +176,27 @@ events:
       variable: "CMAKE_CXX_FEATURE_TEST"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-1l7bs3'
+        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-zfsd2i'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_0bdc2\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_0bdc2.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_0bdc2.dir\\build
-        Building CXX object CMakeFiles/cmTC_0bdc2.dir/feature_tests.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC71B.tmp
-        Linking CXX executable cmTC_0bdc2.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_0bdc2.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_0bdc2.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC75B.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_da6df\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_da6df.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_da6df.dir\\build
+        Building CXX object CMakeFiles/cmTC_da6df.dir/feature_tests.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm8D9E.tmp
+        Linking CXX executable cmTC_da6df.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_da6df.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_da6df.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm8DDD.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_0bdc2.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_0bdc2.dir/embed.manifest
+        Create CMakeFiles\\cmTC_da6df.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_da6df.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_0bdc2.dir/manifest.res CMakeFiles\\cmTC_0bdc2.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_da6df.dir/manifest.res CMakeFiles\\cmTC_da6df.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_0bdc2.dir\\objects1.rsp /out:cmTC_0bdc2.exe /implib:cmTC_0bdc2.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-1l7bs3\\cmTC_0bdc2.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_0bdc2.dir/intermediate.manifest CMakeFiles\\cmTC_0bdc2.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_da6df.dir\\objects1.rsp /out:cmTC_da6df.exe /implib:cmTC_da6df.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-zfsd2i\\cmTC_da6df.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_da6df.dir/intermediate.manifest CMakeFiles\\cmTC_da6df.dir/manifest.res
         MT:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_0bdc2.dir/intermediate.manifest /out:CMakeFiles\\cmTC_0bdc2.dir/embed.manifest /notify_update
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_da6df.dir/intermediate.manifest /out:CMakeFiles\\cmTC_da6df.dir/embed.manifest /notify_update
         RC Pass 2:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_0bdc2.dir/manifest.res CMakeFiles\\cmTC_0bdc2.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_da6df.dir/manifest.res CMakeFiles\\cmTC_da6df.dir/manifest.rc
         FINAL LINK:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_0bdc2.dir\\objects1.rsp /out:cmTC_0bdc2.exe /implib:cmTC_0bdc2.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-1l7bs3\\cmTC_0bdc2.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_0bdc2.dir/intermediate.manifest CMakeFiles\\cmTC_0bdc2.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_da6df.dir\\objects1.rsp /out:cmTC_da6df.exe /implib:cmTC_da6df.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-zfsd2i\\cmTC_da6df.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_da6df.dir/intermediate.manifest CMakeFiles\\cmTC_da6df.dir/manifest.res
         
       exitCode: 0
   -
@@ -217,8 +217,8 @@ events:
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-gqrftg"
-      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-gqrftg"
+      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-2hkv3l"
+      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-2hkv3l"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
@@ -233,19 +233,19 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-gqrftg'
+        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-2hkv3l'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_befff\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_befff.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_befff.dir\\build
-        Building CXX object CMakeFiles/cmTC_befff.dir/src.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC90F.tmp
-        C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-gqrftg\\src.cxx(1,10): fatal error: 'pthread.h' file not found
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_e37b0\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_e37b0.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_e37b0.dir\\build
+        Building CXX object CMakeFiles/cmTC_e37b0.dir/src.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm8F92.tmp
+        C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-2hkv3l\\src.cxx(1,10): fatal error: 'pthread.h' file not found
             1 | #include <pthread.h>
               |          ^~~~~~~~~~~
         1 error generated.
-        NMAKE : fatal error U1077: 'C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC90F.tmp' : return code '0x1'
+        NMAKE : fatal error U1077: 'C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm8F92.tmp' : return code '0x1'
         Stop.
-        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_befff.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_befff.dir\\build' : return code '0x2'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_e37b0.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_e37b0.dir\\build' : return code '0x2'
         Stop.
         
       exitCode: 2
@@ -266,8 +266,8 @@ events:
     checks:
       - "Looking for pthread_create in pthreads"
     directories:
-      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-gftvxg"
-      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-gftvxg"
+      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-kxlwfo"
+      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-kxlwfo"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
@@ -282,26 +282,26 @@ events:
       variable: "CMAKE_HAVE_PTHREADS_CREATE"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-gftvxg'
+        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-kxlwfo'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_192fe\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_192fe.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_192fe.dir\\build
-        Building CXX object CMakeFiles/cmTC_192fe.dir/CheckFunctionExists.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmC9EA.tmp
-        Linking CXX executable cmTC_192fe.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_192fe.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_192fe.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmCA1A.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_b17fd\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_b17fd.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_b17fd.dir\\build
+        Building CXX object CMakeFiles/cmTC_b17fd.dir/CheckFunctionExists.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm905D.tmp
+        Linking CXX executable cmTC_b17fd.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_b17fd.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_b17fd.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm909C.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_192fe.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_192fe.dir/embed.manifest
+        Create CMakeFiles\\cmTC_b17fd.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_b17fd.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_192fe.dir/manifest.res CMakeFiles\\cmTC_192fe.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_b17fd.dir/manifest.res CMakeFiles\\cmTC_b17fd.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_192fe.dir\\objects1.rsp /out:cmTC_192fe.exe /implib:cmTC_192fe.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-gftvxg\\cmTC_192fe.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_192fe.dir/intermediate.manifest CMakeFiles\\cmTC_192fe.dir/manifest.res
-        LINK Pass 1: command "C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_192fe.dir\\objects1.rsp /out:cmTC_192fe.exe /implib:cmTC_192fe.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-gftvxg\\cmTC_192fe.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_192fe.dir/intermediate.manifest CMakeFiles\\cmTC_192fe.dir/manifest.res" failed (exit code 1) with the following output:
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_b17fd.dir\\objects1.rsp /out:cmTC_b17fd.exe /implib:cmTC_b17fd.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-kxlwfo\\cmTC_b17fd.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_b17fd.dir/intermediate.manifest CMakeFiles\\cmTC_b17fd.dir/manifest.res
+        LINK Pass 1: command "C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_b17fd.dir\\objects1.rsp /out:cmTC_b17fd.exe /implib:cmTC_b17fd.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-kxlwfo\\cmTC_b17fd.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_b17fd.dir/intermediate.manifest CMakeFiles\\cmTC_b17fd.dir/manifest.res" failed (exit code 1) with the following output:
         lld-link: error: could not open 'pthreads.lib': no such file or directory
-        NMAKE : fatal error U1077: '"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_192fe.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_192fe.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmCA1A.tmp' : return code '0xffffffff'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_b17fd.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_b17fd.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm909C.tmp' : return code '0xffffffff'
         Stop.
-        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_192fe.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_192fe.dir\\build' : return code '0x2'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_b17fd.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_b17fd.dir\\build' : return code '0x2'
         Stop.
         
       exitCode: 2
@@ -322,8 +322,8 @@ events:
     checks:
       - "Looking for pthread_create in pthread"
     directories:
-      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-jh61qt"
-      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-jh61qt"
+      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-plscc3"
+      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-plscc3"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
@@ -338,26 +338,26 @@ events:
       variable: "CMAKE_HAVE_PTHREAD_CREATE"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-jh61qt'
+        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-plscc3'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_56efc\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_56efc.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_56efc.dir\\build
-        Building CXX object CMakeFiles/cmTC_56efc.dir/CheckFunctionExists.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmCB23.tmp
-        Linking CXX executable cmTC_56efc.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_56efc.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_56efc.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmCB62.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_d49b9\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_d49b9.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_d49b9.dir\\build
+        Building CXX object CMakeFiles/cmTC_d49b9.dir/CheckFunctionExists.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm91F3.tmp
+        Linking CXX executable cmTC_d49b9.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_d49b9.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d49b9.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm9232.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_56efc.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_56efc.dir/embed.manifest
+        Create CMakeFiles\\cmTC_d49b9.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_d49b9.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_56efc.dir/manifest.res CMakeFiles\\cmTC_56efc.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_d49b9.dir/manifest.res CMakeFiles\\cmTC_d49b9.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_56efc.dir\\objects1.rsp /out:cmTC_56efc.exe /implib:cmTC_56efc.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-jh61qt\\cmTC_56efc.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_56efc.dir/intermediate.manifest CMakeFiles\\cmTC_56efc.dir/manifest.res
-        LINK Pass 1: command "C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_56efc.dir\\objects1.rsp /out:cmTC_56efc.exe /implib:cmTC_56efc.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-jh61qt\\cmTC_56efc.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_56efc.dir/intermediate.manifest CMakeFiles\\cmTC_56efc.dir/manifest.res" failed (exit code 1) with the following output:
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d49b9.dir\\objects1.rsp /out:cmTC_d49b9.exe /implib:cmTC_d49b9.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-plscc3\\cmTC_d49b9.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_d49b9.dir/intermediate.manifest CMakeFiles\\cmTC_d49b9.dir/manifest.res
+        LINK Pass 1: command "C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d49b9.dir\\objects1.rsp /out:cmTC_d49b9.exe /implib:cmTC_d49b9.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-plscc3\\cmTC_d49b9.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_d49b9.dir/intermediate.manifest CMakeFiles\\cmTC_d49b9.dir/manifest.res" failed (exit code 1) with the following output:
         lld-link: error: could not open 'pthread.lib': no such file or directory
-        NMAKE : fatal error U1077: '"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_56efc.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_56efc.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmCB62.tmp' : return code '0xffffffff'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_d49b9.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d49b9.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm9232.tmp' : return code '0xffffffff'
         Stop.
-        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_56efc.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_56efc.dir\\build' : return code '0x2'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_d49b9.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_d49b9.dir\\build' : return code '0x2'
         Stop.
         
       exitCode: 2
@@ -383,8 +383,8 @@ events:
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
       - "CMakeLists.txt:16 (find_package)"
     directories:
-      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-f7bna1"
-      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-f7bna1"
+      source: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-a4h3dl"
+      binary: "C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-a4h3dl"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
@@ -399,27 +399,27 @@ events:
       variable: "BZIP2_NEED_PREFIX"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-f7bna1'
+        Change Dir: 'C:/dev/VDBmarcher/build_nuke16/CMakeFiles/CMakeScratch/TryCompile-a4h3dl'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_2adb8\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_2adb8.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_2adb8.dir\\build
-        Building CXX object CMakeFiles/cmTC_2adb8.dir/CheckSymbolExists.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmCD26.tmp
-        Linking CXX executable cmTC_2adb8.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_2adb8.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_2adb8.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmCD75.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_8f050\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_8f050.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_8f050.dir\\build
+        Building CXX object CMakeFiles/cmTC_8f050.dir/CheckSymbolExists.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm93F7.tmp
+        Linking CXX executable cmTC_8f050.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_8f050.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_8f050.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm9446.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_2adb8.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_2adb8.dir/embed.manifest
+        Create CMakeFiles\\cmTC_8f050.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_8f050.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_2adb8.dir/manifest.res CMakeFiles\\cmTC_2adb8.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_8f050.dir/manifest.res CMakeFiles\\cmTC_8f050.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_2adb8.dir\\objects1.rsp /out:cmTC_2adb8.exe /implib:cmTC_2adb8.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-f7bna1\\cmTC_2adb8.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\vcpkg\\installed\\x64-windows\\debug\\lib\\bz2d.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_2adb8.dir/intermediate.manifest CMakeFiles\\cmTC_2adb8.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_8f050.dir\\objects1.rsp /out:cmTC_8f050.exe /implib:cmTC_8f050.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-a4h3dl\\cmTC_8f050.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\vcpkg\\installed\\x64-windows\\debug\\lib\\bz2d.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_8f050.dir/intermediate.manifest CMakeFiles\\cmTC_8f050.dir/manifest.res
         MT:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_2adb8.dir/intermediate.manifest /out:CMakeFiles\\cmTC_2adb8.dir/embed.manifest /notify_update
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_8f050.dir/intermediate.manifest /out:CMakeFiles\\cmTC_8f050.dir/embed.manifest /notify_update
         RC Pass 2:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_2adb8.dir/manifest.res CMakeFiles\\cmTC_2adb8.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_8f050.dir/manifest.res CMakeFiles\\cmTC_8f050.dir/manifest.rc
         FINAL LINK:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_2adb8.dir\\objects1.rsp /out:cmTC_2adb8.exe /implib:cmTC_2adb8.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-f7bna1\\cmTC_2adb8.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\vcpkg\\installed\\x64-windows\\debug\\lib\\bz2d.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_2adb8.dir/intermediate.manifest CMakeFiles\\cmTC_2adb8.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_8f050.dir\\objects1.rsp /out:cmTC_8f050.exe /implib:cmTC_8f050.lib /pdb:C:\\dev\\VDBmarcher\\build_nuke16\\CMakeFiles\\CMakeScratch\\TryCompile-a4h3dl\\cmTC_8f050.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\vcpkg\\installed\\x64-windows\\debug\\lib\\bz2d.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_8f050.dir/intermediate.manifest CMakeFiles\\cmTC_8f050.dir/manifest.res
         
       exitCode: 0
 ...

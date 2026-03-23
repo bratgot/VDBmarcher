@@ -14,28 +14,19 @@ set(CMAKE_CXX_COMPILER_ID "Clang")
 
 # Preprocessor definitions for this target.
 set(CMAKE_TARGET_DEFINITIONS_CXX
-  "BOOST_IOSTREAMS_DYN_LINK"
-  "BOOST_IOSTREAMS_NO_LIB"
-  "BOOST_RANDOM_DYN_LINK"
-  "BOOST_RANDOM_NO_LIB"
   "FN_SHARED_EXPORT=__declspec(dllexport)"
   "FN_SHARED_IMPORT=__declspec(dllimport)"
-  "IMATH_DLL"
   "NOMINMAX"
-  "OPENVDB_ABI_VERSION_NUMBER=12"
-  "OPENVDB_DLL"
-  "OPENVDB_USE_DELAYED_LOADING"
+  "OPENVDB_STATICLIB"
   "VDBRender_EXPORTS"
   "_CRT_SECURE_NO_WARNINGS"
   "_USE_MATH_DEFINES"
-  "_WIN32"
   )
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "C:/Program Files/Nuke14.1v8/include"
-  "C:/vcpkg/installed/x64-windows/include"
-  "C:/vcpkg/installed/x64-windows/include/Imath"
+  "C:/vcpkg/installed/x64-windows-static-md/include"
   )
 
 # The set of dependency files which are needed:

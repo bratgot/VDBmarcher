@@ -354,9 +354,6 @@ ZLIB_LIBRARY_RELEASE:FILEPATH=C:/vcpkg/installed/x64-windows/lib/zlib.lib
 Z_VCPKG_BUILTIN_POWERSHELL_PATH:FILEPATH=C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
 
 //Path to a program.
-Z_VCPKG_CL:FILEPATH=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
-
-//Path to a program.
 Z_VCPKG_PWSH_PATH:FILEPATH=Z_VCPKG_PWSH_PATH-NOTFOUND
 
 //The directory which contains the installed libraries for each
