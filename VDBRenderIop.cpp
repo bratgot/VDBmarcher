@@ -20,10 +20,10 @@ const char* VDBRenderIop::HELP =
     "Inputs:\n"
     "  bg  (0) — Background plate (sets resolution)\n"
     "  cam (1) — Camera\n"
-    "  scn (2) — Scene (lights, axis, transforms)\n"
+    "  axs (2) — Scene (lights, axis, transforms)\n"
     "  env (3) — Environment HDRI (optional)\n\n"
     "Pipe lights and an Axis into a Scene node,\n"
-    "then connect the Scene to the scn input.\n"
+    "then connect the Scene to the axs input.\n"
     "All lights in the tree are auto-detected.\n\n"
     "Created by Marten Blumen\n"
     "github.com/bratgot/VDBmarcher";
@@ -226,7 +226,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Divider(f,"Lighting");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Connect lights via the scn input (Scene node). If no lights<br>"
+        "Connect lights via the axs input (Scene node). If no lights<br>"
         "are found, the fallback light below is used instead."
         "</font>");
     Bool_knob(f,&_useFallbackLight,"use_fallback_light","Fallback Light");
@@ -599,7 +599,7 @@ CameraOp* VDBRenderIop::camera() const{return dynamic_cast<CameraOp*>(Op::input(
 const char* VDBRenderIop::input_label(int idx,char*buf) const{
     if(idx==0)return"bg";
     if(idx==1)return"cam";
-    if(idx==2)return"scn";
+    if(idx==2)return"axs/scn";
     if(idx==3)return"env";
     return nullptr;}
 

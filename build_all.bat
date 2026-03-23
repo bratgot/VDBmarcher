@@ -1,7 +1,6 @@
 @echo off
-REM  VDBRender — Build for compatible Nuke versions (16+)
+REM  VDBRender build script - Nuke 17+
 REM  Run from VDBmarcher source dir in x64 Native Tools Command Prompt.
-REM  Skips Nuke installs that don't ship tbb12 (Nuke 14-15).
 setlocal enabledelayedexpansion
 
 set "SRC=%CD%"
@@ -17,17 +16,17 @@ echo.
 for /d %%D in ("C:\Program Files\Nuke*") do call :build "%%~D"
 
 set "MENUPY=%USERPROFILE%\.nuke\menu.py"
-if !N! GTR 0 (
-    findstr /c:"_load_vdbrender" "!MENUPY!" >nul 2>&1
+if %N% GTR 0 (
+    findstr /c:"_load_vdbrender" "%MENUPY%" >nul 2>&1
     if errorlevel 1 (
-        echo.>> "!MENUPY!"
-        type "!SRC!\VDBRender_menu.py" >> "!MENUPY!"
-        echo  VDBRender block appended to !MENUPY!
+        echo.>> "%MENUPY%"
+        type "%SRC%\VDBRender_menu.py" >> "%MENUPY%"
+        echo  Menu block appended to %MENUPY%
     )
 )
 
 echo.
-echo  Done: %N% version(s) built to %DEST%
+echo  Built %N% version(s) to %DEST%
 echo.
 goto :eof
 
@@ -35,20 +34,16 @@ goto :eof
 set "ND=%~1"
 set "NN=%~nx1"
 
-REM Skip if no NDK
 if not exist "%ND%\include\DDImage\Iop.h" goto :eof
 
-REM Skip Nuke 14-15 (no tbb12)
 if not exist "%ND%\tbb12.dll" (
-    echo  ---- %NN% skipped, no tbb12 ----
-    echo.
+    echo  SKIP %NN% [old TBB]
     goto :eof
 )
 
-REM Extract major version
 for /f "tokens=1 delims=." %%V in ("%NN:Nuke=%") do set "MJ=%%V"
 
-echo  ---- %NN% ----
+echo  BUILD %NN%
 
 set "BD=%SRC%\build_nuke%MJ%"
 if exist "%BD%" rmdir /s /q "%BD%"
@@ -65,12 +60,11 @@ if exist "VDBRender.dll" (
     for %%F in (openvdb.dll tbb12.dll tbbmalloc.dll Imath-3_2.dll blosc.dll zlib1.dll zstd.dll lz4.dll) do (
         if exist "%VCPKG_BIN%\%%F" copy /Y "%VCPKG_BIN%\%%F" "%DEST%\nuke%MJ%\" >nul
     )
-    echo  [OK] %NN% -^> nuke%MJ%\
+    echo  OK %NN%
     set /a N+=1
 ) else (
-    echo  [FAIL] %NN%
+    echo  FAIL %NN%
 )
 
 popd
-echo.
 goto :eof

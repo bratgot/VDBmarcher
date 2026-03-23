@@ -1,6 +1,6 @@
 # VDBRender
 
-OpenVDB volume ray marcher for Nuke 16–17. Physically-based volume rendering with multi-scatter lighting, deep output, environment lighting, motion blur, and AOV passes.
+OpenVDB volume ray marcher for Nuke 17. Physically-based volume rendering with multi-scatter lighting, deep output, environment lighting, motion blur, and AOV passes.
 
 Created by **Marten Blumen**
 
@@ -17,15 +17,28 @@ Created by **Marten Blumen**
 - **Adaptive step size** — automatic 2-4x speedup on sparse volumes
 - **Proxy rendering** — 1/4, 1/2, 3/4 downscale for interactive preview
 - **Vec3 colour grids** — direct RGB from Houdini Cd/color grids
+- **Auto sequence** — converts numbered VDB filenames to #### padding automatically
 - **Scene presets** — one-click setups for smoke, cloud, fire, explosion, fog, dust, steam
-- **3D viewport** — bounding box wireframe and density point cloud preview
+- **3D viewport** — bounding box wireframe and density point cloud preview (no camera required)
+
+## Nuke Compatibility
+
+| Nuke | Status | Reason |
+|------|--------|--------|
+| 14.x | Not supported | Ships old TBB (`tbb.dll`), incompatible with OpenVDB 12 |
+| 15.x | Not supported | Same TBB conflict |
+| 16.0 | Not supported | Same TBB conflict |
+| 16.1 | Not supported | Same TBB conflict |
+| **17.x** | **Supported** | Ships oneAPI TBB (`tbb12.dll`) |
+
+Nuke 14–16 ship a pre-oneAPI version of TBB that conflicts with the oneAPI TBB required by OpenVDB 12. This causes crashes at load time regardless of static or dynamic linking due to TBB's process-wide global state. Future Nuke versions shipping `tbb12.dll` will work automatically.
 
 ## Inputs
 
 | Input | Type | Description |
 |-------|------|-------------|
 | `bg` | Iop | Optional background plate. Sets output resolution. Composited under the volume. |
-| `cam` | CameraOp | Required. Provides view matrix and focal length for ray generation. |
+| `cam` | CameraOp | Required for rendering. Provides view matrix and focal length. |
 | `scn` | Any Op | Scene node with lights and Axis transforms. Recursively walked. |
 | `env` | Iop | Latlong HDRI for environment lighting. |
 
@@ -62,28 +75,17 @@ Created by **Marten Blumen**
 | Shadow | vdb_shadow | Greyscale RGB |
 | Depth | vdb_depth | Single channel (red) |
 
-## Nuke Compatibility
-
-| Nuke | Status | Notes |
-|------|--------|-------|
-| 14.x | **Not supported** | Ships old TBB incompatible with OpenVDB 12 |
-| 15.x | **Not supported** | Same TBB conflict |
-| 16.x | Supported | Ships oneAPI TBB (tbb12) |
-| 17.x | Primary target | Fully tested |
-
-Nuke 14–15 ship a pre-oneAPI version of TBB (`tbb.dll`) that conflicts with the oneAPI TBB (`tbb12.dll`) required by OpenVDB 12. This causes crashes at load time regardless of static or dynamic linking. The conflict is in TBB's process-wide global state and cannot be resolved without rebuilding OpenVDB against the old TBB (which OpenVDB 12 no longer supports).
-
 ## Building
 
 ### Requirements
 
 - Windows 11
-- Nuke 16 or 17 (NDK headers)
+- Nuke 17 (NDK headers)
 - OpenVDB 12 via vcpkg (`vcpkg install openvdb:x64-windows`)
 - clang-cl (Visual Studio 2022)
 - CMake
 
-### Build All Versions
+### Build
 
 Open an **x64 Native Tools Command Prompt** and run:
 
@@ -92,19 +94,16 @@ cd C:\dev\VDBmarcher
 build_all.bat
 ```
 
-Auto-detects installed Nuke 16+ versions and builds a DLL for each. Output:
+Auto-detects Nuke installations with `tbb12.dll` and builds for each. Output:
 
 ```
 %USERPROFILE%\.nuke\
     menu.py              (appended, never overwritten)
     plugins\VDBRender\
-        nuke16\VDBRender.dll + dependency DLLs
         nuke17\VDBRender.dll + dependency DLLs
 ```
 
-The `menu.py` snippet auto-detects the running Nuke version and loads the matching DLL.
-
-### Build Single Version
+### Manual Build
 
 ```bat
 cd C:\dev\VDBmarcher
@@ -118,14 +117,13 @@ cmake .. -G "NMake Makefiles" ^
     -DNUKE_ROOT="C:/Program Files/Nuke17.0v1"
 
 nmake
-copy /Y VDBRender.dll %USERPROFILE%\.nuke\plugins\
 ```
 
 ### Install
 
-**Multi-version:** Run `build_all.bat` — copies everything automatically and appends the menu snippet.
+**Automatic:** Run `build_all.bat` — copies everything and appends the menu snippet.
 
-**Single version:** Copy `VDBRender.dll` and dependency DLLs to `~/.nuke/plugins/`, append `VDBRender_menu.py` to your `~/.nuke/menu.py`.
+**Manual:** Copy `VDBRender.dll` and all dependency DLLs to `~/.nuke/plugins/`, append `VDBRender_menu.py` to your `~/.nuke/menu.py`.
 
 **Dependency DLLs** (must be alongside `VDBRender.dll`):
 `openvdb.dll`, `tbb12.dll`, `tbbmalloc.dll`, `Imath-3_2.dll`, `blosc.dll`, `zlib1.dll`, `zstd.dll`, `lz4.dll`
