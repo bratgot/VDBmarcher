@@ -1,82 +1,84 @@
-# VDBRender — OpenVDB Volume Ray Marcher for Nuke
+# VDBRender
 
-A single-scatter volumetric ray marcher that reads OpenVDB density, temperature, and flame grids directly inside the Nuke compositor. No external renderer or shader setup required.
+OpenVDB volume ray marcher for Nuke 17. Physically-based volume rendering with multi-scatter lighting, deep output, environment lighting, motion blur, and AOV passes.
 
-**Created by Marten Blumen**
+Created by **Marten Blumen**
 
 ## Features
 
-- **Native .vdb loading** with auto-detected frame sequences
-- **7 render modes** — Lit, Greyscale, Heat, Cool, Blackbody, Custom Gradient, Explosion
-- **Explosion mode** — lit smoke (density) + self-luminous fire (temperature/flames)
-- **3 grid slots** — Density, Temperature, Flames with per-grid mix sliders
-- **Discover Grids** — auto-scans VDB files and populates grid fields
-- **9 scene presets** — Thin Smoke, Dense Smoke, Fog, Cloud, Fire, Explosion, Pyroclastic, Dust Storm, Steam
-- **Henyey-Greenstein phase function** — anisotropic forward/back scatter with material presets
-- **Physically-based blackbody** — Planckian locus temperature-to-color mapping
-- **Up to 8 Nuke Light nodes** — point light support with per-sample direction
-- **Axis transform input** — move/rotate/scale volume via connected Axis node
-- **Interactive 3D viewport** — bounding box wireframe + density point cloud preview
-- **Logarithmic quality slider** — artist-friendly 1–10 range
-- **Master intensity** — global brightness for all render modes
-- **Ambient fill light** — omnidirectional scatter ignoring shadows
-- **Shadow density** — separate control for shadow darkness
-- **Proxy-aware rendering** — respects Nuke's downres settings
+- **Physically-based volume rendering** — Beer-Lambert transmittance with Henyey-Greenstein phase function
+- **HDDA empty-space skipping** — VolumeRayIntersector skips inactive tree nodes, 5-20x faster on sparse volumes
+- **Trilinear interpolation** — BoxSampler for smooth density, shadow, and emission lookups
+- **Multiple scattering** — 1-4 bounce approximation with 6-26 sample directions per bounce
+- **Environment lighting** — latlong HDRI sampled with shadow rays from multiple directions
+- **Deep output** — depth-sorted RGBA slabs for deep compositing via DeepMerge
+- **Motion blur** — velocity grid ray-origin offset across configurable shutter interval
+- **AOV passes** — density, emission, shadow, and depth as separate output layers
+- **Adaptive step size** — automatic 2-4x speedup on sparse volumes
+- **Proxy rendering** — 1/4, 1/2, 3/4 downscale for interactive preview
+- **Vec3 colour grids** — direct RGB from Houdini Cd/color grids
+- **Scene presets** — one-click setups for smoke, cloud, fire, explosion, fog, dust, steam
+- **3D viewport** — bounding box wireframe and density point cloud preview
 
 ## Inputs
 
-| Input | Label | Type | Description |
-|-------|-------|------|-------------|
-| 0 | cam | Camera | Required — defines the render viewpoint |
-| 1 | axis | Axis | Optional — transforms the volume in world space |
-| 2–9 | light1–8 | Light | Optional — point lights with position, color, intensity |
+| Input | Type | Description |
+|-------|------|-------------|
+| `bg` | Iop | Optional background plate. Sets output resolution. Composited under the volume. |
+| `cam` | CameraOp | Required. Provides view matrix and focal length for ray generation. |
+| `scn` | Any Op | Scene node with lights and Axis transforms. Recursively walked. |
+| `env` | Iop | Latlong HDRI for environment lighting. |
 
-## Scene Presets
+## Supported Grids
 
-| Preset | Mode | Extinction | Scatter | Anisotropy | Quality |
-|--------|------|-----------|---------|------------|---------|
-| Thin Smoke | Lit | 2 | 1.5 | 0.4 | 2 |
-| Dense Smoke | Lit | 15 | 4 | 0.35 | 3 |
-| Fog / Mist | Lit | 0.5 | 0.8 | 0.8 | 1 |
-| Cumulus Cloud | Lit | 12 | 10 | 0.76 | 5 |
-| Fire | Explosion | 5 | 2 | 0.3 | 3 |
-| Explosion | Explosion | 20 | 5 | 0.4 | 5 |
-| Pyroclastic | Explosion | 30 | 6 | 0.5 | 7 |
-| Dust Storm | Lit | 4 | 3 | -0.3 | 2 |
-| Steam | Lit | 1.5 | 2 | 0.7 | 2 |
+| Grid | Type | Field Names |
+|------|------|-------------|
+| Density | float | density, smoke, soot |
+| Temperature | float | temperature, heat, temp |
+| Flames | float | flame, flames, fire, fuel, burn |
+| Velocity | vec3 | vel, v, velocity |
+| Colour | vec3 | Cd, color, colour, rgb, albedo |
 
-## Grid Assignment
+**Discover Grids** scans the VDB file and auto-populates all fields.
 
-Three independent grid slots, each with a mix slider (0–5):
+## Render Modes
 
-- **Density** — scatter/absorption coefficient. Controls opacity and smoke shape.
-- **Temperature** — blackbody emission colour in Kelvin. Drives fire colour.
-- **Flames** — combustion emission intensity. Adds extra glow.
+| Mode | Description |
+|------|-------------|
+| Lit | Physically-based scatter with shadow rays and phase function |
+| Greyscale | Density mapped to luminance |
+| Heat | Black → red → yellow → white |
+| Cool | Black → blue → cyan → white |
+| Blackbody | Planckian locus temperature-to-colour |
+| Custom Gradient | User two-colour ramp |
+| Explosion | Lit smoke with self-luminous fire emission |
 
-Any combination works. Empty fields are skipped. Use **Discover Grids** to auto-scan and populate.
+## AOV Outputs
 
-## Requirements
+| Pass | Layer | Channels |
+|------|-------|----------|
+| Density | vdb_density | Greyscale RGB |
+| Emission | vdb_emission | Colour RGB |
+| Shadow | vdb_shadow | Greyscale RGB |
+| Depth | vdb_depth | Single channel (red) |
 
-- **Windows 11**
-- **Visual Studio 2022** with **C++ Clang-cl** (Individual Components)
-- **CMake 3.20+**
-- **Nuke 17** (tested with 17.0v1)
-- **vcpkg** with OpenVDB 12
+## Building
 
-## Build
+### Requirements
 
-```bat
-cd C:\
-git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg && bootstrap-vcpkg.bat
-vcpkg install openvdb:x64-windows
-```
+- Windows 11
+- Nuke 17 (NDK headers)
+- OpenVDB 12 via vcpkg
+- clang-cl (Visual Studio 2022)
+- CMake
 
-Open **x64 Native Tools Command Prompt for VS 2022**:
+### Build Commands
+
+Open an **x64 Native Tools Command Prompt** and run:
 
 ```bat
 cd C:\dev\VDBmarcher
-mkdir build && cd build
+rmdir /s /q build && mkdir build && cd build
 
 cmake .. -G "NMake Makefiles" ^
     -DCMAKE_BUILD_TYPE=Release ^
@@ -86,37 +88,38 @@ cmake .. -G "NMake Makefiles" ^
     -DNUKE_ROOT="C:/Program Files/Nuke17.0v1"
 
 nmake
+copy /Y VDBRender.dll %USERPROFILE%\.nuke\plugins\
 ```
 
-## Install
+### Install
 
-Run `install_vdbrender.bat` or manually:
+Copy `VDBRender.dll` and `menu.py` to `~/.nuke/plugins/`. The node appears in the Nuke menu automatically.
 
-```bat
-mkdir %USERPROFILE%\.nuke\plugins
-copy /Y build\VDBRender.dll                               %USERPROFILE%\.nuke\plugins\
-copy /Y C:\vcpkg\installed\x64-windows\bin\openvdb.dll    %USERPROFILE%\.nuke\plugins\
-copy /Y C:\vcpkg\installed\x64-windows\bin\tbb12.dll      %USERPROFILE%\.nuke\plugins\
-copy /Y C:\vcpkg\installed\x64-windows\bin\zlib1.dll      %USERPROFILE%\.nuke\plugins\
-copy /Y C:\vcpkg\installed\x64-windows\bin\blosc.dll      %USERPROFILE%\.nuke\plugins\
-copy /Y C:\vcpkg\installed\x64-windows\bin\Imath-3_2.dll  %USERPROFILE%\.nuke\plugins\
+## Multi-Volume Compositing
+
+Each volume gets its own VDBRender node with independent settings. Use deep output for depth-correct compositing:
+
+```
+Camera ──┬── VDBRender (smoke.vdb) ──┐
+         │                            ├── DeepMerge ── DeepToImage
+         ├── VDBRender (fire.vdb)  ──┘
 ```
 
-Copy `menu.py` into `%USERPROFILE%\.nuke\`.
+## Architecture
 
-## Quick Start
+- Single node, dual `Iop` + `DeepOp` inheritance
+- OpenVDB headers included before DDImage to avoid `foreach` macro collision
+- VolumeRayIntersector master built at validate time, shallow-copied per thread
+- Environment map cached to 128×64 float buffer in `_open()` on the main thread
+- 4 always-visible inputs matching ScanlineRender convention
 
-1. **Nodes → VDB → VDBRender**
-2. Connect a **Camera** to input 0
-3. Set **Output Format** (e.g. HD_1080)
-4. Browse to a `.vdb` file
-5. Click **Discover Grids** to auto-populate
-6. Select a **Scene Preset** or adjust manually
+## References
+
+- Museth (2013) — VDB: High-Resolution Sparse Volumes, ACM TOG 32(3)
+- Henyey & Greenstein (1941) — Diffuse radiation in the galaxy, ApJ 93
+- Fong et al. (2017) — Production Volume Rendering, SIGGRAPH Course
+- Novák et al. (2018) — Monte Carlo Methods for Volumetric Light Transport, CGF 37(2)
 
 ## License
 
-MIT
-
----
-
-*Created by Marten Blumen · OpenVDB 12.0 · clang-cl 19 · C++20 · Nuke NDK 17*
+Apache 2.0
