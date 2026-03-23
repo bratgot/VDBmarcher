@@ -5,6 +5,7 @@ setlocal enabledelayedexpansion
 
 set "SRC=%CD%"
 set "VCPKG=C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+set "VCPKG_BIN=C:\vcpkg\installed\x64-windows\bin"
 set "DEST=%USERPROFILE%\.nuke\plugins\VDBRender"
 set /a N=0
 
@@ -35,7 +36,13 @@ for /d %%D in ("C:\Program Files\Nuke*") do (
         if exist "VDBRender.dll" (
             if not exist "!DEST!\nuke!MJ!" mkdir "!DEST!\nuke!MJ!"
             copy /Y VDBRender.dll "!DEST!\nuke!MJ!\" >nul
-            echo  [OK] !NN! -^> nuke!MJ!\VDBRender.dll
+
+            REM Copy vcpkg dependency DLLs alongside the plugin
+            for %%F in (openvdb.dll tbb12.dll tbbmalloc.dll Imath-3_2.dll blosc.dll zlib1.dll) do (
+                if exist "!VCPKG_BIN!\%%F" copy /Y "!VCPKG_BIN!\%%F" "!DEST!\nuke!MJ!\" >nul
+            )
+
+            echo  [OK] !NN! -^> nuke!MJ!\
             set /a N+=1
         ) else (
             echo  [FAIL] !NN!
@@ -48,7 +55,6 @@ for /d %%D in ("C:\Program Files\Nuke*") do (
 REM Append VDBRender menu snippet to menu.py (never overwrite)
 set "MENUPY=%USERPROFILE%\.nuke\menu.py"
 if !N! GTR 0 (
-    REM Check if already appended
     findstr /c:"_load_vdbrender" "!MENUPY!" >nul 2>&1
     if errorlevel 1 (
         echo.>> "!MENUPY!"
