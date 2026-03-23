@@ -20,11 +20,11 @@ const char* VDBRenderIop::HELP =
     "Inputs:\n"
     "  bg  (0) — Background plate (sets resolution)\n"
     "  cam (1) — Camera\n"
-    "  axs (2) — Scene (lights, axis, transforms)\n"
-    "  env (3) — Environment HDRI (optional)\n\n"
-    "Pipe lights and an Axis into a Scene node,\n"
-    "then connect the Scene to the axs input.\n"
-    "All lights in the tree are auto-detected.\n\n"
+    "  scn (2) — Scene (lights, axis, transforms)\n\n"
+    "Pipe lights, an Environment light, and an Axis\n"
+    "into a Scene node, then connect to the scn input.\n"
+    "All lights are auto-detected including EnvironLight\n"
+    "nodes which provide the HDRI environment map.\n\n"
     "Created by Marten Blumen\n"
     "github.com/bratgot/VDBmarcher";
 
@@ -226,8 +226,9 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Divider(f,"Lighting");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Connect lights via the axs input (Scene node). If no lights<br>"
-        "are found, the fallback light below is used instead."
+        "Connect lights and an EnvironLight via the scn input (Scene<br>"
+        "node). All lights are found automatically. EnvironLight provides<br>"
+        "the HDRI. If no lights found, the fallback light is used."
         "</font>");
     Bool_knob(f,&_useFallbackLight,"use_fallback_light","Fallback Light");
     Tooltip(f,"Enable a default directional light when no scene lights\n"
@@ -251,17 +252,18 @@ void VDBRenderIop::knobs(Knob_Callback f)
     BeginClosedGroup(f,"grp_env","Environment Map");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Connect a latlong HDRI to the env input for realistic sky lighting.<br>"
-        "The map is sampled from multiple directions with shadow rays."
+        "Connect an EnvironLight to the scn input via a Scene node.<br>"
+        "The HDRI and rotation are picked up automatically from<br>"
+        "the EnvironLight. Use Rotate below for additional offset."
         "</font>");
     Double_knob(f,&_envIntensity,"env_intensity","Intensity");SetRange(f,0,10);
     Tooltip(f,"Brightness of environment lighting.\n"
               "0 = disabled. 1 = match the HDRI values.\n"
               "Values above 1 boost the environment contribution.");
-    Double_knob(f,&_envRotate,"env_rotate","Rotate");SetRange(f,0,360);
-    Tooltip(f,"Rotates the environment map horizontally in degrees.\n"
-              "0 and 360 are the same. Animatable for spinning setups.\n"
-              "Useful for adjusting where the key light falls on the volume.");
+    Double_knob(f,&_envRotate,"env_rotate","Rotate Offset");SetRange(f,0,360);
+    Tooltip(f,"Additional horizontal rotation on top of the\n"
+              "EnvironLight's own transform. 0 = no extra offset.\n"
+              "Useful for fine-tuning where the key light falls.");
     Double_knob(f,&_envDiffuse,"env_diffuse","Diffuse");SetRange(f,0,1);
     Tooltip(f,"How soft or spread out the environment lighting is.\n"
               "0 = sharp directional highlights from the HDRI hotspots\n"
@@ -599,15 +601,13 @@ CameraOp* VDBRenderIop::camera() const{return dynamic_cast<CameraOp*>(Op::input(
 const char* VDBRenderIop::input_label(int idx,char*buf) const{
     if(idx==0)return"bg";
     if(idx==1)return"cam";
-    if(idx==2)return"axs/scn";
-    if(idx==3)return"env";
+    if(idx==2)return"scn";
     return nullptr;}
 
 bool VDBRenderIop::test_input(int idx,Op*op) const{
     if(idx==0)return dynamic_cast<Iop*>(op)!=nullptr;
     if(idx==1)return dynamic_cast<CameraOp*>(op)||Iop::test_input(idx,op);
-    if(idx==2)return true; // Scene, Axis, Light, TransformGeo — anything 3D
-    if(idx==3)return dynamic_cast<Iop*>(op)!=nullptr;
+    if(idx==2)return true; // Scene, Axis, Light, EnvironLight — anything 3D
     return Iop::test_input(idx,op);}
 
 Op* VDBRenderIop::default_input(int idx) const{
@@ -622,6 +622,25 @@ void VDBRenderIop::gatherLights(Op* scnOp) {
     // Check if this op is a Light
     LightOp* light = dynamic_cast<LightOp*>(scnOp);
     if(light) {
+        // Check if it's an EnvironLight — grab its HDRI input
+        std::string cls(light->Class());
+        if(cls.find("Environ")!=std::string::npos||cls.find("environ")!=std::string::npos){
+            // EnvironLight: input(0) is the HDRI Iop
+            Iop* envIop=nullptr;
+            if(light->inputs()>0) envIop=dynamic_cast<Iop*>(light->input(0));
+            if(envIop&&_envIntensity>0){
+                envIop->validate(true);
+                if(envIop!=_envIop||!_hasEnvMap){
+                    _envIop=envIop;_envDirty=true;
+                }
+                // Extract Y rotation from the EnvironLight's world transform
+                const auto em=light->worldTransform();
+                double yRot=std::atan2((double)em[2][0],(double)em[2][2])*180.0/M_PI;
+                _envLightRotY=yRot;
+            }
+            return; // don't add as a regular light
+        }
+
         const auto lm = light->worldTransform();
         CachedLight cl;
         cl.pos[0]=(double)lm[3][0]; cl.pos[1]=(double)lm[3][1]; cl.pos[2]=(double)lm[3][2];
@@ -753,7 +772,6 @@ void VDBRenderIop::append(Hash& hash) {
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
     if(input(1))hash.append(Op::input(1)->hash());
     if(input(2))hash.append(Op::input(2)->hash());
-    if(inputs()>3&&input(3))hash.append(Op::input(3)->hash());
 }
 
 // ═══ 3D Viewport ═══
@@ -868,9 +886,14 @@ void VDBRenderIop::_validate(bool for_real) {
     }
     // No early return — grid loading must proceed for viewport preview
 
-    // Scene input (2): gather lights + axis from scene tree
+    // Scene input (2): gather lights + axis + EnvironLight from scene tree
     for(int i=0;i<4;++i)for(int j=0;j<4;++j)_volFwd[i][j]=_volInv[i][j]=(i==j)?1:0;
+    _envLightRotY=0;_envDirty=false;
+    {Iop*prevEnv=_envIop;_envIop=nullptr;
     if(input(2)) gatherLights(Op::input(2));
+    // If no EnvironLight found, clear env map
+    if(!_envIop){_hasEnvMap=false;_envDirty=false;}
+    }
 
     // Fallback light if none found in scene and checkbox is enabled
     if(_lights.empty()&&_useFallbackLight){CachedLight cl;
@@ -891,19 +914,6 @@ void VDBRenderIop::_validate(bool for_real) {
             double py=_volInv[0][1]*cl.pos[0]+_volInv[1][1]*cl.pos[1]+_volInv[2][1]*cl.pos[2]+_volInv[3][1];
             double pz=_volInv[0][2]*cl.pos[0]+_volInv[1][2]*cl.pos[1]+_volInv[2][2]*cl.pos[2]+_volInv[3][2];
             cl.pos[0]=px;cl.pos[1]=py;cl.pos[2]=pz;}}}
-
-    // Environment map (input 3) — only re-cache when input changes
-    {Iop*eIop=(inputs()>3&&input(3))?dynamic_cast<Iop*>(Op::input(3)):nullptr;
-     if(eIop&&_envIntensity>0){
-         eIop->validate(true);
-         // Only mark dirty if the env input changed or we never cached
-         if(eIop!=_envIop||!_hasEnvMap){
-             _envIop=eIop;_envDirty=true;
-         }
-     }else{
-         _hasEnvMap=false;_envDirty=false;_envIop=nullptr;
-     }
-    }
 
     // Load VDB
     {Guard guard(_loadLock);
@@ -1146,12 +1156,11 @@ void VDBRenderIop::cacheEnvMap(Iop* envIop) {
 }
 
 void VDBRenderIop::sampleEnv(const openvdb::Vec3d& dir, float& r, float& g, float& b) const {
-    // Latlong: u = atan2(x,-z)/(2pi)+0.5, v = asin(y)/pi+0.5
     double u=std::atan2(dir[0],-dir[2])/(2*M_PI)+0.5;
     double v=std::asin(std::clamp(dir[1],-1.0,1.0))/M_PI+0.5;
-    // Apply env rotation
-    u+=_envRotate/360.0;
-    u-=std::floor(u); // wrap to 0-1
+    // Combine EnvironLight Y rotation + manual offset
+    u+=(_envLightRotY+_envRotate)/360.0;
+    u-=std::floor(u);
     int cx=std::clamp((int)(u*kEnvRes),0,kEnvRes-1);
     int cy=std::clamp((int)(v*(kEnvRes/2)),0,kEnvRes/2-1);
     r=_envMap[cx][cy][0];

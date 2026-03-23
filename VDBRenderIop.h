@@ -45,8 +45,8 @@ public:
     const char* node_help() const override { return HELP; }
 
     // Inputs: 0=bg, 1=cam, 2=scn, 3=env
-    int         minimum_inputs() const override { return 4; }
-    int         maximum_inputs() const override { return 4; }
+    int         minimum_inputs() const override { return 3; }
+    int         maximum_inputs() const override { return 3; }
     const char* input_label(int idx, char* buf) const override;
     bool        test_input(int idx, DD::Image::Op* op) const override;
     Op*         default_input(int idx) const override;
@@ -190,8 +190,9 @@ private:
     static constexpr int kEnvRes = 128;
     float  _envMap[kEnvRes][kEnvRes/2][3] = {};
     bool   _hasEnvMap = false;
-    bool   _envDirty  = false;  // needs caching on next engine call
+    bool   _envDirty  = false;
     DD::Image::Iop* _envIop = nullptr;
+    double _envLightRotY = 0;  // Y rotation from EnvironLight transform
     void   cacheEnvMap(DD::Image::Iop* envIop);
     void   sampleEnv(const openvdb::Vec3d& dir, float& r, float& g, float& b) const;
 
