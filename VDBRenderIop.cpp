@@ -96,7 +96,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Output resolution when no background plate is connected.\n"
               "If a BG is connected to input 0, its format is used instead.");
 
-    Divider(f,"Grids");
+    BeginGroup(f,"grp_grids","Grids");
     Text_knob(f,
         "<font size='-1' color='#777'>"
         "Set the grid names from your VDB file, or click Discover Grids<br>"
@@ -117,7 +117,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
     String_knob(f,&_tempGridName,"temp_grid","Temperature");
     Tooltip(f,"Float grid for blackbody emission colour.\n"
               "Common names: temperature, heat, temp\n"
-              "Values in Kelvin drive fire colour (orange→white).");
+              "Values in Kelvin drive fire colour (orange to white).");
     Double_knob(f,&_tempMix,"temp_mix","Temp Mix");SetRange(f,0,5);
     Tooltip(f,"Multiplier on temperature values.\n"
               "0 = no glow. 1 = original. Higher = brighter fire.");
@@ -140,8 +140,9 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Offsets the timeline frame for sequences.\n"
               "Use negative values to shift the sequence earlier.\n"
               "e.g. -10 makes frame 20 read file frame 10.");
+    EndGroup(f);
 
-    Divider(f,"Render");
+    BeginGroup(f,"grp_render","Render");
     Text_knob(f,
         "<font size='-1' color='#777'>"
         "Scene Presets configure all shading values for common volume types.<br>"
@@ -166,8 +167,9 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Master brightness for all render modes.\n"
               "Multiplies the final RGB output.\n"
               "Does not affect alpha/opacity.");
+    EndGroup(f);
 
-    Divider(f,"Shading");
+    BeginClosedGroup(f,"grp_shading","Shading");
     Text_knob(f,
         "<font size='-1' color='#777'>"
         "Extinction controls opacity. Scattering controls brightness under<br>"
@@ -191,6 +193,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
               " 0 = even scatter in all directions\n"
               "+1 = forward scatter (backlit glow, silver lining)\n"
               "Smoke: 0.4, Cloud: 0.76, Dust: 0.6");
+    EndGroup(f);
 
     BeginClosedGroup(f,"grp_emission","Emission");
     Text_knob(f,
@@ -223,7 +226,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "This is the colour at peak density (opaque end).");
     EndGroup(f);
 
-    Divider(f,"Lighting");
+    BeginClosedGroup(f,"grp_lighting","Lighting");
     Text_knob(f,
         "<font size='-1' color='#777'>"
         "Connect lights and an EnvironLight via the scn input (Scene<br>"
@@ -248,15 +251,13 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Omnidirectional fill light with no shadows.\n"
               "Lifts the darkest self-shadowed areas of dense volumes.\n"
               "Useful for smoke that looks too dark on the shadow side.");
-
-    BeginClosedGroup(f,"grp_env","Environment Map");
+    Divider(f,"Environment Map");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Connect an EnvironLight to the scn input via a Scene node.<br>"
-        "The HDRI and rotation are picked up automatically from<br>"
-        "the EnvironLight. Use Rotate below for additional offset."
+        "Picked up from EnvironLight in the scene tree. The HDRI and<br>"
+        "rotation are inherited automatically. Rotate Offset adds extra rotation."
         "</font>");
-    Double_knob(f,&_envIntensity,"env_intensity","Intensity");SetRange(f,0,10);
+    Double_knob(f,&_envIntensity,"env_intensity","Env Intensity");SetRange(f,0,10);
     Tooltip(f,"Brightness of environment lighting.\n"
               "0 = disabled. 1 = match the HDRI values.\n"
               "Values above 1 boost the environment contribution.");
