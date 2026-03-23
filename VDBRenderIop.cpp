@@ -14,7 +14,17 @@ using namespace DD::Image;
 const char* VDBRenderIop::CLASS = "VDBRender";
 const char* VDBRenderIop::HELP =
     "VDBRender — OpenVDB Volume Ray Marcher\n\n"
-    "Inputs: BG (0), Camera (1), Axis (2), Lights (3-10)\n\n"
+    "Single and multiple scatter volume renderer\n"
+    "with deep output, environment lighting,\n"
+    "and Henyey-Greenstein phase function.\n\n"
+    "Inputs:\n"
+    "  bg  (0) — Background plate (sets resolution)\n"
+    "  cam (1) — Camera\n"
+    "  scn (2) — Scene (lights, axis, transforms)\n"
+    "  env (3) — Environment HDRI (optional)\n\n"
+    "Pipe lights and an Axis into a Scene node,\n"
+    "then connect the Scene to the scn input.\n"
+    "All lights in the tree are auto-detected.\n\n"
     "Created by Marten Blumen\n"
     "github.com/bratgot/VDBmarcher";
 
@@ -63,220 +73,285 @@ VDBRenderIop::VDBRenderIop(Node*node):Iop(node) {
 
 void VDBRenderIop::knobs(Knob_Callback f)
 {
-    // ── Header ──
     Text_knob(f,
         "<font size='+2'><b>VDBRender</b></font>"
         " <font color='#888' size='-1'>v1.0</font><br>"
-        "<font color='#aaa'>Single-scatter volume ray marcher for OpenVDB</font>");
+        "<font color='#aaa'>OpenVDB volume ray marcher with multi-scatter,<br>"
+        "deep output, and environment lighting</font>");
     Divider(f,"");
 
-    // ── Output ──
     Format_knob(f,&_formats,"format","Output Format");
+    Tooltip(f,"Used when no BG plate is connected.\nBG input overrides this resolution.");
 
-    // ── File (always visible) ──
     Divider(f,"");
     File_knob(f,&_vdbFilePath,"file","VDB File");
-    Tooltip(f,"Sequences auto-detected from filename.\nAlso supports #### and %04d patterns.");
+    Tooltip(f,"Path to .vdb file. Sequences auto-detected\nfrom filename. Also supports #### and %04d.");
     Button(f,"discover_grids","Discover Grids");
-    Tooltip(f,"Scan VDB file and auto-populate grid fields below.");
+    Tooltip(f,"Scans the VDB file and auto-populates\ngrid fields below with matching names.");
 
-    // ── Grids (always visible) ──
     Divider(f,"Grid Assignment");
     String_knob(f,&_gridName,"grid_name","Density");
-    Tooltip(f,"Float grid for scatter and absorption.\nStandard: density, smoke, soot");
+    Tooltip(f,"Float grid for smoke opacity and scatter.\nCommon names: density, smoke, soot.\nLeave empty for emission-only rendering.");
     Double_knob(f,&_densityMix,"density_mix","Density Mix");
     SetRange(f,0,5);
-    Tooltip(f,"Multiplier on density grid values.\n0 = invisible. 1 = original. >1 = denser.");
+    Tooltip(f,"Scales density grid values before shading.\n0 = no smoke. 1 = original. 2 = twice as dense.\nAffects opacity, scatter, and shadows.");
     String_knob(f,&_tempGridName,"temp_grid","Temperature");
-    Tooltip(f,"Float grid for blackbody emission colour.\nStandard: temperature, heat, temp");
+    Tooltip(f,"Float grid for blackbody emission colour.\nCommon names: temperature, heat, temp.\nDrives the colour of self-luminous fire.");
     Double_knob(f,&_tempMix,"temp_mix","Temp Mix");
     SetRange(f,0,5);
-    Tooltip(f,"Multiplier on temperature grid values.\n0 = no emission. 1 = original. >1 = brighter.");
+    Tooltip(f,"Scales temperature values before emission.\n0 = no glow. 1 = original. >1 = brighter fire.");
     String_knob(f,&_flameGridName,"flame_grid","Flames");
-    Tooltip(f,"Float grid for flame emission intensity.\nStandard: flame, flames, fire, fuel, burn");
+    Tooltip(f,"Float grid for additional flame emission.\nCommon names: flame, flames, fire, fuel, burn.\nAdds extra glow on top of temperature.");
     Double_knob(f,&_flameMix,"flame_mix","Flame Mix");
     SetRange(f,0,5);
-    Tooltip(f,"Multiplier on flame grid values.\n0 = no flames. 1 = original. >1 = brighter.");
+    Tooltip(f,"Scales flame values before emission.\n0 = no flames. 1 = original. >1 = brighter.");
     Int_knob(f,&_frameOffset,"frame_offset","Frame Offset");
+    Tooltip(f,"Added to timeline frame for sequences.\nUse negative values to shift earlier.");
 
-    // ── Preset & Render Mode (always visible) ──
     Divider(f,"");
     static const char*presets[]={"Custom","Thin Smoke","Dense Smoke","Fog / Mist",
         "Cumulus Cloud","Fire","Explosion","Pyroclastic","Dust Storm","Steam",nullptr};
     Enumeration_knob(f,&_scenePreset,presets,"scene_preset","Scene Preset");
-    Tooltip(f,"Sets all shading values for common VDB volume types.\nSelect Custom to adjust manually.");
+    Tooltip(f,"One-click setup for common volume types.\nSets render mode, density, scattering,\nanisotropy, shadows, emission, and quality.\nSwitch to Custom to tweak individual values.");
 
     static const char*modes[]={"Lit","Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
     Enumeration_knob(f,&_colorScheme,modes,"color_scheme","Render Mode");
     Tooltip(f,
-        "Lit — scatter lighting with shadows\n"
-        "Greyscale — density to luminance\n"
-        "Heat — black/red/yellow/white ramp\n"
-        "Cool — black/blue/cyan/white ramp\n"
+        "Lit — physically-based scatter with shadows\n"
+        "Greyscale — density mapped to luminance\n"
+        "Heat — black to red to yellow to white\n"
+        "Cool — black to blue to cyan to white\n"
         "Blackbody — Planckian temperature colour\n"
-        "Custom Gradient — two-colour ramp\n"
+        "Custom Gradient — user two-colour ramp\n"
         "Explosion — lit smoke + self-luminous fire");
     Double_knob(f,&_rampIntensity,"ramp_intensity","Intensity");
     SetRange(f,0,10);
-    Tooltip(f,"Master brightness multiplier for all render modes.");
+    Tooltip(f,"Master brightness for all render modes.\nMultiplies final RGB output. Does not\naffect alpha.");
 
-    // ── Volume Density ──
     BeginGroup(f,"grp_density","Volume Density");
     Text_knob(f,
         "<font size='-1' color='#999'>"
-        "Extinction controls opacity. Scattering controls brightness.<br>"
-        "Anisotropy shapes forward and backward light scatter."
+        "Controls how the density grid is shaded. Extinction<br>"
+        "sets how opaque the volume is. Scattering sets how<br>"
+        "bright it appears under lighting. Anisotropy controls<br>"
+        "whether light scatters forward or backward."
         "</font>");
     Double_knob(f,&_extinction,"extinction","Extinction");
     SetRange(f,0,100);
-    Tooltip(f,"Light absorption per unit density.\nSmoke 1-5. Cloud 10-30. Solid 50+.");
+    Tooltip(f,"Light absorption per unit density.\nHigher = more opaque.\nThin smoke: 1-5. Cloud: 10-30. Solid: 50+.");
     Double_knob(f,&_scattering,"scattering","Scattering");
     SetRange(f,0,100);
-    Tooltip(f,"In-scatter brightness (Lit and Explosion modes).\n0 = pure absorption.");
+    Tooltip(f,"In-scatter brightness under lighting.\nOnly affects Lit and Explosion modes.\nHigher = brighter. 0 = pure absorption.");
     Divider(f,"Phase Function");
     static const char*aniP[]={"Custom","Isotropic (0.0)","Smoke (0.4)","Dust (0.6)","Cloud (0.76)","Fog (0.8)","Rim Light (-0.4)","Strong Back (-0.7)",nullptr};
     Enumeration_knob(f,&_anisotropyPreset,aniP,"aniso_preset","Preset");
+    Tooltip(f,"Presets for Henyey-Greenstein g value.\nSets the slider below.");
     Double_knob(f,&_anisotropy,"anisotropy","Anisotropy (g)");
     SetRange(f,-1,1);
-    Tooltip(f,"-1 = back-scatter (rim light). 0 = isotropic.\n+1 = forward-scatter (backlit glow).\nSmoke 0.4, Cloud 0.76, Dust 0.6.");
+    Tooltip(f,"Henyey-Greenstein phase function.\n-1 = strong back-scatter (rim light)\n 0 = isotropic (uniform)\n+1 = strong forward-scatter (backlit glow)\nSmoke: 0.4. Cloud: 0.76. Dust: 0.6.");
     EndGroup(f);
 
-    // ── Emission ──
     BeginGroup(f,"grp_emission","Emission & Colour");
     Text_knob(f,
         "<font size='-1' color='#999'>"
-        "Controls for Blackbody, Explosion, and Custom Gradient modes.<br>"
-        "Temperature grid drives blackbody colour. Flames grid adds extra glow."
+        "Controls for temperature and flame emission.<br>"
+        "Used by Blackbody, Explosion, and Lit modes<br>"
+        "when temperature or flames grids are loaded.<br>"
+        "Custom Gradient colours are set here too."
         "</font>");
     Divider(f,"Blackbody");
     Double_knob(f,&_tempMin,"temp_min","Temp Min (K)");
     SetRange(f,0,15000);
-    Tooltip(f,"Zero-density temperature. Candle 1800K. Fire 500K.");
+    Tooltip(f,"Kelvin at zero intensity.\nCandle: 1800. Fire base: 500.");
     Double_knob(f,&_tempMax,"temp_max","Temp Max (K)");
     SetRange(f,0,15000);
-    Tooltip(f,"Peak-density temperature. Fire 3000K. Explosion 8000K. Plasma 15000K.");
+    Tooltip(f,"Kelvin at peak intensity.\nFire: 3000. Explosion: 8000. Plasma: 15000.");
     Double_knob(f,&_emissionIntensity,"emission_intensity","Temp Emission");
     SetRange(f,0,10);
-    Tooltip(f,"Brightness of temperature grid self-illumination.\nRequires a loaded temperature grid. Try 1-5.");
+    Tooltip(f,"Brightness of temperature grid emission.\nOnly active when a temperature grid is\nloaded. Start with 1-5.");
     Double_knob(f,&_flameIntensity,"flame_intensity","Flame Emission");
     SetRange(f,0,20);
-    Tooltip(f,"Brightness of flame grid self-illumination.\nRequires a loaded flames grid. Try 2-10.");
+    Tooltip(f,"Brightness of flame grid emission.\nOnly active when a flames grid is loaded.\nStart with 2-10.");
     Divider(f,"Custom Gradient");
     Color_knob(f,_gradStart,"grad_start","Start Color");
     Color_knob(f,_gradEnd,"grad_end","End Color");
     EndGroup(f);
 
-    // ── Lighting ──
     BeginGroup(f,"grp_light","Lighting");
     Text_knob(f,
         "<font size='-1' color='#999'>"
-        "Connect Nuke Light nodes to inputs 3-10 for scene lighting.<br>"
-        "Moving and rotating lights affects the volume in real time.<br>"
-        "Fallback controls below are used when no lights are connected."
+        "Lights are gathered from the scn input. Pipe<br>"
+        "any number of Lights and an Axis into a Scene<br>"
+        "node, then connect the Scene here. All lights<br>"
+        "in the tree are found automatically.<br><br>"
+        "If no lights are found, the fallback below is<br>"
+        "used. Connect an HDRI to the env input for<br>"
+        "environment lighting."
         "</font>");
     Divider(f,"Fallback Light");
     XYZ_knob(f,_lightDir,"light_dir","Direction");
+    Tooltip(f,"Direction toward the light source.\nUsed when no lights found in scene input.");
     Color_knob(f,_lightColor,"light_color","Color");
+    Tooltip(f,"Fallback light colour.");
     Double_knob(f,&_lightIntensity,"light_intensity","Intensity");
     SetRange(f,0,50);
+    Tooltip(f,"Fallback light brightness.");
     Divider(f,"Ambient");
     Double_knob(f,&_ambientIntensity,"ambient","Ambient");
     SetRange(f,0,5);
-    Tooltip(f,"Omnidirectional fill light. Adds a base level\nof scatter everywhere, ignoring shadows.\nGood for lifting dark areas of dense volumes.");
-    EndGroup(f);
-
-    // ── Quality ──
-    BeginClosedGroup(f,"grp_quality","Quality");
+    Tooltip(f,"Omnidirectional fill light, no shadows.\nLifts the darkest areas of dense volumes.\nUseful for volumes with strong self-shadowing.");
+    Divider(f,"Environment Map");
     Text_knob(f,
         "<font size='-1' color='#999'>"
-        "Higher quality = finer detail, slower render. Shadow steps<br>"
-        "control self-shadow smoothness. Shadow density adjusts darkness."
+        "Connect a latlong HDRI to the env input.<br>"
+        "Samples the image from multiple directions<br>"
+        "with shadow rays for realistic sky lighting."
+        "</font>");
+    Double_knob(f,&_envIntensity,"env_intensity","Env Intensity");
+    SetRange(f,0,10);
+    Tooltip(f,"Brightness of environment lighting.\n0 = disabled. 1 = match image. >1 = brighter.");
+    Double_knob(f,&_envRotate,"env_rotate","Env Rotate");
+    SetRange(f,0,360);
+    Tooltip(f,"Rotates the environment map horizontally.\n0 and 360 = same orientation.\nAnimatable for spinning light setups.");
+    Double_knob(f,&_envDiffuse,"env_diffuse","Env Diffuse");
+    SetRange(f,0,1);
+    Tooltip(f,"How diffuse the environment lighting appears.\n0 = sharp, directional highlights\n0.5 = soft, natural spread\n1 = fully diffuse, even wrap\nHigher values are slower to render.");
+    EndGroup(f);
+
+    BeginClosedGroup(f,"grp_quality","Quality");
+    static const char*qP[]={"Custom","Draft","Preview","Production","Final","Ultra",nullptr};
+    Enumeration_knob(f,&_qualityPreset,qP,"quality_preset","Quality Preset");
+    Tooltip(f,"Sets all quality controls at once.\nDraft = fastest, rough look.\nPreview = quick turnaround.\nProduction = good for client review.\nFinal = full quality delivery.\nUltra = maximum fidelity, slowest.");
+    Text_knob(f,
+        "<font size='-1' color='#999'>"
+        "Quality slider controls ray march resolution.<br>"
+        "Higher = finer detail but slower. Shadow steps<br>"
+        "control self-shadow smoothness. Multi-scatter<br>"
+        "adds light bounces for realistic clouds and fog."
         "</font>");
     Double_knob(f,&_quality,"quality","Quality");
     SetRange(f,1,10);
-    Tooltip(f,"Logarithmic detail control.\n1 = fast preview (step 1.0)\n3 = medium (step 0.11)\n5 = good (step 0.04)\n7 = high (step 0.02)\n10 = final (step 0.01)");
+    Tooltip(f,"Ray march resolution (logarithmic).\n1 = fast preview\n3 = medium quality\n5 = good quality\n7 = high quality\n10 = final render");
     Int_knob(f,&_shadowSteps,"shadow_steps","Shadow Steps");
-    Tooltip(f,"Preview 4-8. Final 16-32.");
+    Tooltip(f,"Shadow ray samples per light.\n4-8 = preview. 16-32 = final.");
     Double_knob(f,&_shadowDensity,"shadow_density","Shadow Density");
     SetRange(f,0,5);
-    Tooltip(f,"Shadow extinction multiplier.\n1 = correct. <1 lighter. >1 darker. 0 = none.");
+    Tooltip(f,"Multiplier on extinction for shadow rays.\n1 = physically correct.\n<1 = lighter shadows. >1 = darker.\n0 = no shadows (fully lit).");
     Divider(f,"Multiple Scattering");
+    static const char*scP[]={"Off","Preview","Thin Volume","Cloud / Fog",
+        "Dense Volume","Ultra",nullptr};
+    Enumeration_knob(f,&_scatterPreset,scP,"scatter_preset","Preset");
+    Tooltip(f,"Quick setup for multi-scatter quality.\nOff = single scatter only (fastest).\nPreview = 1 bounce, 6 rays.\nThin Volume = 1 bounce, 14 rays.\nCloud / Fog = 2 bounces, 14 rays.\nDense Volume = 3 bounces, 26 rays.\nUltra = 4 bounces, 26 rays.");
     Int_knob(f,&_multiBounces,"multi_bounces","Bounces");
-    Tooltip(f,"Number of light bounces through the volume.\n0 = single scatter only (fastest).\n1 = one extra bounce (good for clouds).\n2-3 = thick fog and dense volumes.\n4 = maximum realism, slowest.");
+    Tooltip(f,"Extra light bounces through the volume.\n0 = single scatter (fastest)\n1 = one bounce (good for clouds)\n2-3 = dense fog / thick volumes\n4 = maximum realism, slowest");
     Int_knob(f,&_bounceRays,"bounce_rays","Bounce Rays");
-    Tooltip(f,"Direction samples per bounce.\n6 = axis-aligned (fast, good for most cases).\n14 = adds diagonals (smoother).\n26 = adds edge midpoints (best quality).");
+    Tooltip(f,"Directions sampled per bounce.\n6 = axis-aligned (fast)\n14 = adds diagonals (smoother)\n26 = full coverage (best quality)");
     Divider(f,"Deep Output");
     Int_knob(f,&_deepSamples,"deep_samples","Deep Samples");
-    Tooltip(f,"Max deep samples per pixel.\nConnect deep output to DeepMerge etc.\n16 = fast. 64 = smooth. 128 = final.");
+    Tooltip(f,"Max depth slabs per pixel for deep output.\nConnect to DeepMerge, DeepHoldout, or\nDeepWrite for deep compositing.\n16 = fast. 64 = smooth. 128 = final.");
     EndGroup(f);
 
-    // ── 3D Viewport ──
     BeginClosedGroup(f,"grp_viewport","3D Viewport");
     Text_knob(f,
         "<font size='-1' color='#999'>"
-        "Preview volume shape in the 3D viewer with a bounding box<br>"
-        "wireframe and optional density point cloud."
+        "Preview the volume bounding box and density<br>"
+        "as a point cloud in the 3D viewer. Useful for<br>"
+        "positioning the camera before rendering."
         "</font>");
     Bool_knob(f,&_showBbox,"show_bbox","Bounding Box");
+    Tooltip(f,"Green wireframe around the volume.\nFollows Axis transform from scene input.");
     Bool_knob(f,&_showPoints,"show_points","Point Cloud");
+    Tooltip(f,"Coloured dots representing density values.\nUpdates when the volume or transform changes.");
     static const char*dL[]={"Low (~16k)","Medium (~64k)","High (~250k)",nullptr};
     Enumeration_knob(f,&_pointDensity,dL,"point_density","Density");
+    Tooltip(f,"Number of sample points for the preview.");
     Double_knob(f,&_pointSize,"point_size","Size");
     SetRange(f,1,20);
+    Tooltip(f,"GL point size in pixels.");
     Divider(f,"Colour");
     Bool_knob(f,&_linkViewport,"link_viewport","Link to Render Mode");
+    Tooltip(f,"Viewport colour scheme follows render mode.\nLit and Explosion fall back to Heat ramp.");
     static const char*vp[]={"Greyscale","Heat","Cool","Blackbody","Custom Gradient","Explosion",nullptr};
     Enumeration_knob(f,&_viewportColor,vp,"viewport_color","Manual");
+    Tooltip(f,"Override the viewport colour scheme.");
     EndGroup(f);
 
-    // ── Technical Reference ──
     BeginClosedGroup(f,"grp_tech","Technical Reference");
     Text_knob(f,
-        "<b>Volume Rendering</b><br>"
+        "<b>Radiative Transfer</b><br>"
         "<font size='-1' color='#bbb'>"
-        "Evaluates the emission-absorption radiative transfer equation<br>"
-        "via fixed-step ray marching. Beer-Lambert transmittance:<br>"
-        "T = exp(-integral of extinction along the ray)."
+        "Emission-absorption volume rendering equation<br>"
+        "evaluated via fixed-step ray marching. Each step<br>"
+        "accumulates scatter, emission, and extinction.<br>"
+        "Transmittance follows Beer-Lambert: T = exp(-ext)."
         "</font><br><br>"
-        "<b>Henyey-Greenstein Phase Function</b><br>"
+        "<b>Phase Function</b><br>"
         "<font size='-1' color='#bbb'>"
-        "Angular scatter distribution. g=0 isotropic, g>0 forward scatter,<br>"
-        "g&lt;0 back scatter. Smoke 0.3-0.5. Cloud 0.7-0.85. Dust 0.6."
+        "Henyey-Greenstein angular scatter distribution.<br>"
+        "g=0 isotropic, g>0 forward scatter (backlit glow),<br>"
+        "g&lt;0 back scatter (rim light / halo effect)."
         "</font><br><br>"
-        "<b>Blackbody Radiation (Planckian Locus)</b><br>"
+        "<b>Multiple Scattering</b><br>"
         "<font size='-1' color='#bbb'>"
-        "Maps Kelvin to CIE 1931 chromaticity. 1000K deep red (candle).<br>"
-        "2500K orange (fire). 6500K daylight (D65). 10000K plasma."
+        "N-bounce approximation. At each sample, light is<br>"
+        "scattered in 6-26 directions, each with abbreviated<br>"
+        "shadow rays. Energy conserved via albedo weighting.<br>"
+        "Essential for realistic clouds and thick fog."
+        "</font><br><br>"
+        "<b>Blackbody Emission</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Planckian locus maps Kelvin to CIE 1931 colour.<br>"
+        "1000K deep red, 2500K orange, 6500K daylight,<br>"
+        "10000K blue-white plasma."
         "</font><br><br>"
         "<b>Explosion Mode</b><br>"
         "<font size='-1' color='#bbb'>"
-        "Combines lit smoke (density grid with scatter and shadow rays)<br>"
-        "with self-luminous fire (temperature and flames grids as blackbody<br>"
-        "emission). Fire glows independently of scene lights."
+        "Combines density-driven scatter with shadows<br>"
+        "(smoke) and self-luminous blackbody emission<br>"
+        "(fire). Fire glows independently of scene lights."
         "</font><br><br>"
-        "<b>OpenVDB Standard Grids</b><br>"
+        "<b>Environment Lighting</b><br>"
         "<font size='-1' color='#bbb'>"
-        "density — scatter and absorption coefficient (float)<br>"
-        "temperature — emission temperature in Kelvin (float)<br>"
-        "heat — normalised heat field, typically 0-1 (float)<br>"
-        "flame / flames — combustion emission intensity (float)<br>"
-        "fuel — available combustion fuel (float)<br>"
-        "vel / v — velocity field for motion blur (vec3)"
+        "Latlong HDRI sampled from multiple directions<br>"
+        "with shadow rays. Respects volume transform."
+        "</font><br><br>"
+        "<b>Deep Output</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Outputs depth-sorted RGBA slabs for deep comp.<br>"
+        "Connect to DeepMerge for depth-correct integration<br>"
+        "with CG renders. Pure emission gets synthesised alpha."
+        "</font><br><br>"
+        "<b>Scene Input</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "Recursively walks the scene tree to find lights<br>"
+        "and axis transforms. Connect any number of lights<br>"
+        "into a Scene node, pipe to scn input."
+        "</font><br><br>"
+        "<b>OpenVDB Grids</b><br>"
+        "<font size='-1' color='#bbb'>"
+        "density — scatter/absorption (float)<br>"
+        "temperature — emission Kelvin (float)<br>"
+        "heat — normalised 0-1 (float)<br>"
+        "flame/flames — combustion (float)<br>"
+        "vel/v — velocity, not yet used (vec3)"
         "</font><br><br>"
         "<font size='-1' color='#888'>"
-        "Museth (2013) ACM TOG 32(3). Henyey/Greenstein (1941) ApJ 93.<br>"
-        "Fong et al. (2017) SIGGRAPH Course. Novak et al. (2018) CGF 37(2)."
+        "Museth (2013) ACM TOG 32(3)<br>"
+        "Henyey/Greenstein (1941) ApJ 93<br>"
+        "Fong+ (2017) SIGGRAPH Course<br>"
+        "Novak+ (2018) CGF 37(2)"
         "</font>");
     EndGroup(f);
 
-    // ── Credit ──
     Divider(f,"");
     Text_knob(f,
         "<font size='-1' color='#666'>"
-        "<b>Created by Marten Blumen</b> · github.com/bratgot/VDBmarcher"
+        "<b>Created by Marten Blumen</b><br>"
+        "github.com/bratgot/VDBmarcher"
         "</font><br>"
         "<font size='-1' color='#555'>"
-        "OpenVDB 12 · clang-cl · C++20 · Nuke 17 · Beer-Lambert · Henyey-Greenstein"
+        "OpenVDB 12 · C++20 · Nuke 17<br>"
+        "Beer-Lambert · Henyey-Greenstein · Planckian"
         "</font>");
 }
 
@@ -293,28 +368,20 @@ int VDBRenderIop::knob_changed(Knob* k)
         struct Preset {
             int mode; double ext,scat,aniso; int shSteps;
             double shDen,tMin,tMax,emInt,flInt,quality,ambient;
-            int bounces;
+            int bounces,bRays; double intensity,envDiff;
         };
+        //                                   mode ext   scat  ani  sh shDen tMn   tMx    eI   fI   q    amb  bnc bR   int  envD
         static const Preset pv[] = {
-            {}, // 0: Custom
-            // 1: Thin Smoke
-            {0, 2.0, 1.5, 0.4, 8, 1.0, 500, 6500, 0, 0, 2, 0.1, 0},
-            // 2: Dense Smoke
-            {0, 15.0, 4.0, 0.35, 12, 1.0, 500, 6500, 0, 0, 3, 0.05, 1},
-            // 3: Fog / Mist
-            {0, 0.5, 0.8, 0.8, 8, 0.5, 500, 6500, 0, 0, 1, 0.3, 2},
-            // 4: Cumulus Cloud
-            {0, 12.0, 10.0, 0.76, 16, 1.0, 500, 6500, 0, 0, 5, 0.2, 2},
-            // 5: Fire
-            {6, 5.0, 2.0, 0.3, 8, 0.6, 800, 3000, 4.0, 8.0, 3, 0.15, 0},
-            // 6: Explosion
-            {6, 20.0, 5.0, 0.4, 16, 0.5, 500, 6000, 3.0, 5.0, 5, 0.1, 1},
-            // 7: Pyroclastic
-            {6, 30.0, 6.0, 0.5, 16, 0.4, 1000, 8000, 2.0, 4.0, 7, 0.08, 1},
-            // 8: Dust Storm
-            {0, 4.0, 3.0, -0.3, 8, 1.0, 500, 6500, 0, 0, 2, 0.15, 0},
-            // 9: Steam
-            {0, 1.5, 2.0, 0.7, 8, 0.5, 500, 6500, 0, 0, 2, 0.2, 1},
+            {},                             // 0: Custom
+            {0, 2.0, 1.5, 0.4, 8, 1.0,       500,6500,  0,   0,   2, 0.1,  0, 6,  1.0, 0.5},  // 1: Thin Smoke
+            {0, 15.0,4.0, 0.35,12,1.0,       500,6500,  0,   0,   3, 0.05, 1, 6,  1.0, 0.5},  // 2: Dense Smoke
+            {0, 0.5, 0.8, 0.8, 8, 0.5,       500,6500,  0,   0,   1, 0.3,  2, 14, 1.0, 0.8},  // 3: Fog / Mist
+            {0, 12.0,10.0,0.76,16,1.0,       500,6500,  0,   0,   5, 0.2,  2, 14, 1.0, 0.6},  // 4: Cumulus Cloud
+            {6, 5.0, 2.0, 0.3, 8, 0.6,       800,3000,  4.0, 8.0, 3, 0.15, 0, 6,  1.5, 0.3},  // 5: Fire
+            {6, 20.0,5.0, 0.4, 16,0.5,       500,6000,  3.0, 5.0, 5, 0.1,  1, 14, 1.0, 0.4},  // 6: Explosion
+            {6, 30.0,6.0, 0.5, 16,0.4,      1000,8000,  2.0, 4.0, 7, 0.08, 1, 14, 0.8, 0.3},  // 7: Pyroclastic
+            {0, 4.0, 3.0,-0.3, 8, 1.0,       500,6500,  0,   0,   2, 0.15, 0, 6,  1.0, 0.5},  // 8: Dust Storm
+            {0, 1.5, 2.0, 0.7, 8, 0.5,       500,6500,  0,   0,   2, 0.2,  1, 6,  1.0, 0.7},  // 9: Steam
         };
         const auto&p=pv[_scenePreset];
         knob("color_scheme")->set_value(p.mode);_colorScheme=p.mode;
@@ -330,8 +397,12 @@ int VDBRenderIop::knob_changed(Knob* k)
         knob("quality")->set_value(p.quality);_quality=p.quality;
         knob("ambient")->set_value(p.ambient);_ambientIntensity=p.ambient;
         knob("multi_bounces")->set_value(p.bounces);_multiBounces=p.bounces;
-        // Reset anisotropy preset to Custom since we set it manually
+        knob("bounce_rays")->set_value(p.bRays);_bounceRays=p.bRays;
+        knob("ramp_intensity")->set_value(p.intensity);_rampIntensity=p.intensity;
+        knob("env_diffuse")->set_value(p.envDiff);_envDiffuse=p.envDiff;
         knob("aniso_preset")->set_value(0);_anisotropyPreset=0;
+        knob("scatter_preset")->set_value(0);_scatterPreset=0;
+        knob("quality_preset")->set_value(0);_qualityPreset=0;
         return 1;
     }
     if(k->is("aniso_preset")){
@@ -339,31 +410,108 @@ int VDBRenderIop::knob_changed(Knob* k)
         if(_anisotropyPreset>0&&_anisotropyPreset<(int)(sizeof(pv)/sizeof(double))){
             _anisotropy=pv[_anisotropyPreset];knob("anisotropy")->set_value(_anisotropy);}
         return 1;}
+    if(k->is("scatter_preset")){
+        static const int bounces[]={0,1,1,2,3,4};
+        static const int rays[]   ={6,6,14,14,26,26};
+        if(_scatterPreset<(int)(sizeof(bounces)/sizeof(int))){
+            knob("multi_bounces")->set_value(bounces[_scatterPreset]);
+            _multiBounces=bounces[_scatterPreset];
+            knob("bounce_rays")->set_value(rays[_scatterPreset]);
+            _bounceRays=rays[_scatterPreset];}
+        return 1;}
+    if(k->is("quality_preset")){
+        // Custom(0), Draft(1), Preview(2), Production(3), Final(4), Ultra(5)
+        struct QPreset { double q; int sh; double shDen; int bnc,bRays,deep; double envD; };
+        static const QPreset qv[]={
+            {},                               // 0: Custom
+            {1.0,  4, 0.5, 0,  6,  16, 0.3}, // 1: Draft
+            {2.0,  8, 1.0, 0,  6,  16, 0.4}, // 2: Preview
+            {5.0, 16, 1.0, 1, 14,  32, 0.6}, // 3: Production
+            {7.0, 24, 1.0, 2, 14,  64, 0.7}, // 4: Final
+            {10.0,32, 1.0, 3, 26, 128, 1.0}, // 5: Ultra
+        };
+        if(_qualityPreset>0&&_qualityPreset<(int)(sizeof(qv)/sizeof(QPreset))){
+            const auto&q=qv[_qualityPreset];
+            knob("quality")->set_value(q.q);_quality=q.q;
+            knob("shadow_steps")->set_value(q.sh);_shadowSteps=q.sh;
+            knob("shadow_density")->set_value(q.shDen);_shadowDensity=q.shDen;
+            knob("multi_bounces")->set_value(q.bnc);_multiBounces=q.bnc;
+            knob("bounce_rays")->set_value(q.bRays);_bounceRays=q.bRays;
+            knob("deep_samples")->set_value(q.deep);_deepSamples=q.deep;
+            knob("env_diffuse")->set_value(q.envD);_envDiffuse=q.envD;
+            knob("scatter_preset")->set_value(0);_scatterPreset=0;}
+        return 1;}
     return Iop::knob_changed(k);
 }
 
 // ═══ Inputs ═══
 
 CameraOp* VDBRenderIop::camera() const{return dynamic_cast<CameraOp*>(Op::input(1));}
-AxisOp* VDBRenderIop::axisInput() const{return(inputs()<3||!input(2))?nullptr:dynamic_cast<AxisOp*>(Op::input(2));}
 
 const char* VDBRenderIop::input_label(int idx,char*buf) const{
     if(idx==0)return"bg";
     if(idx==1)return"cam";
-    if(idx==2)return"axis";
-    if(idx>=3&&idx<=10){std::snprintf(buf,10,"light%d",idx-2);return buf;}
+    if(idx==2)return"scn";
+    if(idx==3)return"env";
     return nullptr;}
 
 bool VDBRenderIop::test_input(int idx,Op*op) const{
     if(idx==0)return dynamic_cast<Iop*>(op)!=nullptr;
     if(idx==1)return dynamic_cast<CameraOp*>(op)||Iop::test_input(idx,op);
-    if(idx==2)return dynamic_cast<AxisOp*>(op)!=nullptr;
-    if(idx>=3&&idx<=10)return dynamic_cast<LightOp*>(op)!=nullptr;
+    if(idx==2)return true; // Scene, Axis, Light, TransformGeo — anything 3D
+    if(idx==3)return dynamic_cast<Iop*>(op)!=nullptr;
     return Iop::test_input(idx,op);}
 
 Op* VDBRenderIop::default_input(int idx) const{
-    if(idx==0)return Iop::default_input(idx); // BG gets default black
+    if(idx==0)return Iop::default_input(idx);
     return nullptr;}
+
+// Recursively walk the scene input tree to find LightOps and AxisOps
+void VDBRenderIop::gatherLights(Op* scnOp) {
+    if(!scnOp) return;
+    scnOp->validate(true);
+
+    // Check if this op is a Light
+    LightOp* light = dynamic_cast<LightOp*>(scnOp);
+    if(light) {
+        const auto lm = light->worldTransform();
+        CachedLight cl;
+        cl.pos[0]=(double)lm[3][0]; cl.pos[1]=(double)lm[3][1]; cl.pos[2]=(double)lm[3][2];
+        cl.dir[0]=(double)lm[2][0]; cl.dir[1]=(double)lm[2][1]; cl.dir[2]=(double)lm[2][2];
+        double len=std::sqrt(cl.dir[0]*cl.dir[0]+cl.dir[1]*cl.dir[1]+cl.dir[2]*cl.dir[2]);
+        if(len>1e-8){cl.dir[0]/=len;cl.dir[1]/=len;cl.dir[2]/=len;}
+        cl.isPoint=true;
+        double lr=1,lg=1,lb=1,intensity=1;
+        if(Knob*ck=light->knob("color")){
+            lr=ck->get_value_at(outputContext().frame(),0);
+            lg=ck->get_value_at(outputContext().frame(),1);
+            lb=ck->get_value_at(outputContext().frame(),2);}
+        if(Knob*ik=light->knob("intensity"))
+            intensity=ik->get_value_at(outputContext().frame());
+        cl.color[0]=lr*intensity;cl.color[1]=lg*intensity;cl.color[2]=lb*intensity;
+        _lights.push_back(cl);
+    }
+
+    // Check if this is a non-light AxisOp (volume transform)
+    if(!light && !_hasVolumeXform) {
+        AxisOp* axis = dynamic_cast<AxisOp*>(scnOp);
+        if(axis && !dynamic_cast<CameraOp*>(scnOp)) {
+            const auto axM = axis->worldTransform();
+            for(int c=0;c<4;++c)for(int r=0;r<4;++r)_volFwd[c][r]=(double)axM[c][r];
+            Matrix4 m4;
+            for(int c=0;c<4;++c)for(int r=0;r<4;++r)m4[c][r]=(float)_volFwd[c][r];
+            auto inv=m4.inverse();
+            for(int c=0;c<4;++c)for(int r=0;r<4;++r)_volInv[c][r]=(double)inv[c][r];
+            _hasVolumeXform=true;
+        }
+    }
+
+    // Recurse into this op's inputs (Scene merges its inputs)
+    for(int i=0; i<scnOp->inputs(); ++i) {
+        Op* child = scnOp->input(i);
+        if(child && child != scnOp) gatherLights(child);
+    }
+}
 
 // ═══ Frame Sequence ═══
 
@@ -439,11 +587,13 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_emissionIntensity);hash.append(_flameIntensity);hash.append(_rampIntensity);hash.append(_lightIntensity);
     hash.append(_anisotropy);hash.append(_shadowDensity);hash.append(_ambientIntensity);
     hash.append(_multiBounces);hash.append(_bounceRays);
+    hash.append(_envIntensity);hash.append(_envDiffuse);hash.append(_envRotate);
     hash.append(_densityMix);hash.append(_tempMix);hash.append(_flameMix);
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
-    for(int idx=1;idx<inputs();++idx){
-        Op*op=Op::input(idx);if(op)hash.append(op->hash());
-    }
+    // Hash cam, scene tree, and env inputs
+    if(input(1))hash.append(Op::input(1)->hash());
+    if(input(2))hash.append(Op::input(2)->hash());
+    if(inputs()>3&&input(3))hash.append(Op::input(3)->hash());
 }
 
 // ═══ 3D Viewport ═══
@@ -517,10 +667,9 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
 
 void VDBRenderIop::_validate(bool for_real) {
     _camValid=false;_hasVolumeXform=false;_lights.clear();
-    // Validate all upstream 3D ops (skip BG input 0)
-    for(int idx=1;idx<inputs();++idx){
-        Op*op=Op::input(idx);if(op)op->validate(for_real);
-    }
+    // Validate cam and scene inputs
+    if(input(1)) Op::input(1)->validate(for_real);
+    if(input(2)) Op::input(2)->validate(for_real);
     // BG input 0 — if connected, use its format
     // BG input 0
     Iop* bgIop=dynamic_cast<Iop*>(Op::input(0));
@@ -550,37 +699,21 @@ void VDBRenderIop::_validate(bool for_real) {
         _camOrigin=openvdb::Vec3d(cw[3][0],cw[3][1],cw[3][2]);
         for(int c=0;c<3;++c)for(int r=0;r<3;++r)_camRot[c][r]=(double)cw[c][r];
         _halfW=(double)cam->horizontalAperture()*.5/(double)cam->focalLength();_camValid=true;
-    }else{error("Connect Camera to input 1.");return;}
+    }else{return;}
 
-    // Axis
-    if(AxisOp*axis=axisInput()){const auto axM=axis->worldTransform();
-        for(int c=0;c<4;++c)for(int r=0;r<4;++r)_volFwd[c][r]=(double)axM[c][r];
-        DD::Image::Matrix4 m4;for(int c=0;c<4;++c)for(int r=0;r<4;++r)m4[c][r]=(float)_volFwd[c][r];
-        auto inv=m4.inverse();for(int c=0;c<4;++c)for(int r=0;r<4;++r)_volInv[c][r]=(double)inv[c][r];
-        _hasVolumeXform=true;
-    }else{for(int i=0;i<4;++i)for(int j=0;j<4;++j)_volFwd[i][j]=_volInv[i][j]=(i==j)?1:0;}
+    // Scene input (2): gather lights + axis from scene tree
+    for(int i=0;i<4;++i)for(int j=0;j<4;++j)_volFwd[i][j]=_volInv[i][j]=(i==j)?1:0;
+    if(input(2)) gatherLights(Op::input(2));
 
-    // Lights
-    for(int idx=3;idx<11&&idx<inputs();++idx){if(!input(idx))continue;
-        LightOp*light=dynamic_cast<LightOp*>(Op::input(idx));if(!light)continue;
-        const auto lm=light->worldTransform();CachedLight cl;
-        cl.pos[0]=(double)lm[3][0];cl.pos[1]=(double)lm[3][1];cl.pos[2]=(double)lm[3][2];
-        cl.dir[0]=(double)lm[2][0];cl.dir[1]=(double)lm[2][1];cl.dir[2]=(double)lm[2][2];
-        double len=std::sqrt(cl.dir[0]*cl.dir[0]+cl.dir[1]*cl.dir[1]+cl.dir[2]*cl.dir[2]);
-        if(len>1e-8){cl.dir[0]/=len;cl.dir[1]/=len;cl.dir[2]/=len;}
-        cl.isPoint=true;
-        double lr=1,lg=1,lb=1,intensity=1;
-        if(Knob*ck=light->knob("color")){lr=ck->get_value_at(outputContext().frame(),0);
-            lg=ck->get_value_at(outputContext().frame(),1);lb=ck->get_value_at(outputContext().frame(),2);}
-        if(Knob*ik=light->knob("intensity"))intensity=ik->get_value_at(outputContext().frame());
-        cl.color[0]=lr*intensity;cl.color[1]=lg*intensity;cl.color[2]=lb*intensity;
-        _lights.push_back(cl);}
+    // Fallback light if none found in scene
     if(_lights.empty()){CachedLight cl;
         cl.dir[0]=_lightDir[0];cl.dir[1]=_lightDir[1];cl.dir[2]=_lightDir[2];
         double len=std::sqrt(cl.dir[0]*cl.dir[0]+cl.dir[1]*cl.dir[1]+cl.dir[2]*cl.dir[2]);
         if(len>1e-8){cl.dir[0]/=len;cl.dir[1]/=len;cl.dir[2]/=len;}
         cl.color[0]=_lightColor[0]*_lightIntensity;cl.color[1]=_lightColor[1]*_lightIntensity;cl.color[2]=_lightColor[2]*_lightIntensity;
         cl.isPoint=false;cl.pos[0]=cl.pos[1]=cl.pos[2]=0;_lights.push_back(cl);}
+
+    // Transform lights into volume-local space
     if(_hasVolumeXform){for(auto&cl:_lights){
         double dx=_volInv[0][0]*cl.dir[0]+_volInv[1][0]*cl.dir[1]+_volInv[2][0]*cl.dir[2];
         double dy=_volInv[0][1]*cl.dir[0]+_volInv[1][1]*cl.dir[1]+_volInv[2][1]*cl.dir[2];
@@ -591,6 +724,19 @@ void VDBRenderIop::_validate(bool for_real) {
             double py=_volInv[0][1]*cl.pos[0]+_volInv[1][1]*cl.pos[1]+_volInv[2][1]*cl.pos[2]+_volInv[3][1];
             double pz=_volInv[0][2]*cl.pos[0]+_volInv[1][2]*cl.pos[1]+_volInv[2][2]*cl.pos[2]+_volInv[3][2];
             cl.pos[0]=px;cl.pos[1]=py;cl.pos[2]=pz;}}}
+
+    // Environment map (input 3) — only re-cache when input changes
+    {Iop*eIop=(inputs()>3&&input(3))?dynamic_cast<Iop*>(Op::input(3)):nullptr;
+     if(eIop&&_envIntensity>0){
+         eIop->validate(true);
+         // Only mark dirty if the env input changed or we never cached
+         if(eIop!=_envIop||!_hasEnvMap){
+             _envIop=eIop;_envDirty=true;
+         }
+     }else{
+         _hasEnvMap=false;_envDirty=false;_envIop=nullptr;
+     }
+    }
 
     // Load VDB
     {Guard guard(_loadLock);
@@ -639,6 +785,10 @@ void VDBRenderIop::_validate(bool for_real) {
             _bboxMin=_bboxMax=corners[0];
             for(int i=1;i<8;++i)for(int a=0;a<3;++a){_bboxMin[a]=std::min(_bboxMin[a],corners[i][a]);_bboxMax[a]=std::max(_bboxMax[a],corners[i][a]);}
             _gridValid=true;_loadedPath=path2;_loadedGrid=grid;_loadedFrame=curFrame;
+            // Build VolumeRayIntersector for HDDA empty-space skipping
+            _volRI.reset();
+            openvdb::FloatGrid::Ptr riGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
+            if(riGrid){try{_volRI=std::make_unique<VRI>(*riGrid);}catch(...){}}
         }catch(const std::exception&e){error("OpenVDB: %s",e.what());}catch(...){error("OpenVDB error.");}}
     }}
 }
@@ -648,6 +798,22 @@ void VDBRenderIop::_validate(bool for_real) {
 void VDBRenderIop::_request(int x,int y,int r,int t,ChannelMask channels,int count){
     Iop*bg=dynamic_cast<Iop*>(Op::input(0));
     if(bg) bg->request(x,y,r,t,channels,count);
+    // Request full env image for caching
+    if(_envIop&&_envDirty){
+        const int ew=_envIop->info().format().width();
+        const int eh=_envIop->info().format().height();
+        _envIop->request(0,0,ew,eh,Mask_RGB,1);
+    }
+}
+
+// _open runs once on the main thread after all _request calls
+// and before any engine threads — safe to read env data here
+void VDBRenderIop::_open() {
+    Iop::_open();
+    if(_envDirty&&_envIop){
+        cacheEnvMap(_envIop);
+        _envDirty=false;
+    }
 }
 
 void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
@@ -712,6 +878,49 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
     }
 }
 
+// ═══ Environment Map ═══
+
+void VDBRenderIop::cacheEnvMap(Iop* envIop) {
+    _hasEnvMap=false;
+    if(!envIop)return;
+    envIop->open();
+    const Format&ef=envIop->info().format();
+    const int ew=ef.width(),eh=ef.height();
+    if(ew<2||eh<2)return;
+
+    const int cw=kEnvRes,ch=kEnvRes/2;
+    for(int cy=0;cy<ch;++cy){
+        int sy=std::clamp(cy*eh/ch, 0, eh-1);
+        Row row(0,ew);
+        envIop->get(sy,0,ew,Mask_RGB,row);
+        for(int cx=0;cx<cw;++cx){
+            int sx=std::clamp(cx*ew/cw, 0, ew-1);
+            float rv=0,gv=0,bv=0;
+            const float*rp=row[Chan_Red];   if(rp) rv=rp[sx];
+            const float*gp=row[Chan_Green]; if(gp) gv=gp[sx];
+            const float*bp=row[Chan_Blue];  if(bp) bv=bp[sx];
+            _envMap[cx][cy][0]=rv;
+            _envMap[cx][cy][1]=gv;
+            _envMap[cx][cy][2]=bv;
+        }
+    }
+    _hasEnvMap=true;
+}
+
+void VDBRenderIop::sampleEnv(const openvdb::Vec3d& dir, float& r, float& g, float& b) const {
+    // Latlong: u = atan2(x,-z)/(2pi)+0.5, v = asin(y)/pi+0.5
+    double u=std::atan2(dir[0],-dir[2])/(2*M_PI)+0.5;
+    double v=std::asin(std::clamp(dir[1],-1.0,1.0))/M_PI+0.5;
+    // Apply env rotation
+    u+=_envRotate/360.0;
+    u-=std::floor(u); // wrap to 0-1
+    int cx=std::clamp((int)(u*kEnvRes),0,kEnvRes-1);
+    int cy=std::clamp((int)(v*(kEnvRes/2)),0,kEnvRes/2-1);
+    r=_envMap[cx][cy][0];
+    g=_envMap[cx][cy][1];
+    b=_envMap[cx][cy][2];
+}
+
 // ═══ Multi-scatter direction sets ═══
 
 static const openvdb::Vec3d kDirs6[] = {
@@ -724,16 +933,14 @@ static const openvdb::Vec3d kDirs12[] = {
     {0.707,0,0.707},{0.707,0,-0.707},{-0.707,0,0.707},{-0.707,0,-0.707},
     {0,0.707,0.707},{0,0.707,-0.707},{0,-0.707,0.707},{0,-0.707,-0.707}};
 
-// ═══ marchRay — Lit mode ═══
+// ═══ marchRay — Lit mode (HDDA + trilinear) ═══
+// [v2 TODO] Move inner loop to CUDA kernel with NanoVDB accessor
 
 void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA) const {
     outR=outG=outB=outA=0;if(!_floatGrid)return;
-    double tEnter=0,tExit=1e9;
-    for(int a=0;a<3;++a){double inv=(std::abs(dir[a])>1e-8)?1./dir[a]:1e38;
-        double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
-        if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
-    if(tEnter>=tExit||tExit<=0)return;
-    auto acc=_floatGrid->getConstAccessor();const auto&xf=_floatGrid->transform();
+    const auto&xf=_floatGrid->transform();
+    auto acc=_floatGrid->getConstAccessor();
+    auto shAcc=_floatGrid->getConstAccessor(); // reused for all shadow rays
     double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0)),ext=_extinction,scat=_scattering;
     double g=std::clamp(_anisotropy,-.999,.999),g2=g*g,hgN=(1-g2)/(4*M_PI);
     int nSh=std::max(1,_shadowSteps);double bDiag=(_bboxMax-_bboxMin).length(),shStep=bDiag/(nSh*2);
@@ -741,102 +948,133 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
     std::unique_ptr<openvdb::FloatGrid::ConstAccessor> tAcc,fAcc;
     if(_hasTempGrid&&_tempGrid)tAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
     if(_hasFlameGrid&&_flameGrid)fAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
-    for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
-        auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-        openvdb::Coord ijk((int)std::floor(iP[0]),(int)std::floor(iP[1]),(int)std::floor(iP[2]));
-        float density=acc.getValue(ijk)*(float)_densityMix;
-        if(density>1e-6f){double se=density*ext,ss=density*scat;
-            for(const auto&lt:_lights){openvdb::Vec3d lD;
-                if(lt.isPoint){lD=openvdb::Vec3d(lt.pos[0]-wP[0],lt.pos[1]-wP[1],lt.pos[2]-wP[2]);double l=lD.length();if(l>1e-8)lD/=l;else lD=openvdb::Vec3d(0,1,0);}
-                else lD=openvdb::Vec3d(lt.dir[0],lt.dir[1],lt.dir[2]);
-                double cosT=-(dir[0]*lD[0]+dir[1]*lD[1]+dir[2]*lD[2]);
-                double ph;if(std::abs(g)<.001)ph=1./(4*M_PI);else{double dn=1+g2-2*g*cosT;ph=hgN/std::pow(dn,1.5);}
-                double phS=ph*4*M_PI;
-                double lT=1;{auto la=_floatGrid->getConstAccessor();
-                    for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
-                        for(int a=0;a<3;++a)if(lw[a]<_bboxMin[a]||lw[a]>_bboxMax[a]){in=false;break;}if(!in)break;
-                        auto li=xf.worldToIndex(lw);
-                        lT*=std::exp(-(double)la.getValue(openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shStep);
-                        if(lT<.001)break;}}
-                double ctr=ss*phS*lT*T*step;aR+=ctr*lt.color[0];aG+=ctr*lt.color[1];aB+=ctr*lt.color[2];}
-            // Ambient fill light (no shadows, omnidirectional)
-            if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;aR+=amb;aG+=amb;aB+=amb;}
-            // Multi-scatter bounces
-            if(_multiBounces>0&&_floatGrid){
-                double albedo=std::min(scat/(ext+1e-8),1.0);  // single-scatter albedo
-                double bounceStep=bDiag*0.05;  // ~5% of volume per step
-                int nBounceSteps=4;
-                int nDirs=std::min(std::max(_bounceRays,6),26);
-                // Build direction list
-                const openvdb::Vec3d* dirs[3]={kDirs6,kDirs8,kDirs12};
-                int dirCounts[3]={6,8,12};
-                // Iterate bounces — each one scatters light deeper
-                double bounceR=0,bounceG=0,bounceB=0;
-                double bouncePow=albedo;  // energy factor per bounce
-                for(int bounce=0;bounce<_multiBounces;++bounce){
-                    double bR=0,bG=0,bB=0;int samplesUsed=0;
-                    // Sample directions
-                    for(int dSet=0;dSet<3&&samplesUsed<nDirs;++dSet){
-                        for(int di=0;di<dirCounts[dSet]&&samplesUsed<nDirs;++di){
-                            openvdb::Vec3d bDir=dirs[dSet][di];
-                            // March a few steps in this scatter direction
-                            for(int bs=1;bs<=nBounceSteps;++bs){
-                                auto bP=wP+(bs*bounceStep)*bDir;
-                                bool inside=true;
-                                for(int a3=0;a3<3;++a3)if(bP[a3]<_bboxMin[a3]||bP[a3]>_bboxMax[a3]){inside=false;break;}
-                                if(!inside)break;
-                                auto bI=xf.worldToIndex(bP);
-                                float bDen=acc.getValue(openvdb::Coord((int)std::floor(bI[0]),(int)std::floor(bI[1]),(int)std::floor(bI[2])))*(float)_densityMix;
-                                if(bDen<1e-6f)continue;
-                                // Abbreviated light computation at secondary point
-                                for(const auto&lt2:_lights){
-                                    openvdb::Vec3d lD2;
-                                    if(lt2.isPoint){lD2=openvdb::Vec3d(lt2.pos[0]-bP[0],lt2.pos[1]-bP[1],lt2.pos[2]-bP[2]);
-                                        double l2=lD2.length();if(l2>1e-8)lD2/=l2;else continue;}
-                                    else lD2=openvdb::Vec3d(lt2.dir[0],lt2.dir[1],lt2.dir[2]);
-                                    // Abbreviated shadow (3 steps max)
-                                    double lT2=1;{auto la2=_floatGrid->getConstAccessor();
-                                        for(int si=0;si<3;++si){auto lw2=bP+((si+1)*shStep*2)*lD2;bool in2=true;
-                                            for(int a4=0;a4<3;++a4)if(lw2[a4]<_bboxMin[a4]||lw2[a4]>_bboxMax[a4]){in2=false;break;}if(!in2)break;
-                                            auto li2=xf.worldToIndex(lw2);
-                                            lT2*=std::exp(-(double)la2.getValue(openvdb::Coord((int)std::floor(li2[0]),(int)std::floor(li2[1]),(int)std::floor(li2[2])))*ext*_shadowDensity*shStep*2);
-                                            if(lT2<.001)break;}}
-                                    double c2=bDen*scat*lT2;
-                                    bR+=c2*lt2.color[0];bG+=c2*lt2.color[1];bB+=c2*lt2.color[2];}
-                            }++samplesUsed;
-                        }
-                    }
-                    if(samplesUsed>0){
-                        double norm=bouncePow/(samplesUsed*nBounceSteps);
-                        bounceR+=bR*norm;bounceG+=bG*norm;bounceB+=bB*norm;
-                    }
-                    bouncePow*=albedo;  // each successive bounce is weaker
-                }
-                double msc=T*step;
-                aR+=bounceR*msc;aG+=bounceG*msc;aB+=bounceB*msc;
-            }
-            // Temperature emission
-            if(tAcc){float tv=tAcc->getValue(ijk)*(float)_tempMix;if(tv>.001f){
-                double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
-                double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
-                double em=_emissionIntensity*tS*T*step;aR+=bb.r*em;aG+=bb.g*em;aB+=bb.b*em;}}
-            // Flame emission
-            if(fAcc){float fv=fAcc->getValue(ijk)*(float)_flameMix;if(fv>.001f){
-                Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
-                double fem=_flameIntensity*fv*T*step;aR+=fb.r*fem;aG+=fb.g*fem;aB+=fb.b*fem;}}
-            T*=std::exp(-se*step);}
-    }outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1-T);
+
+    // Lambda: shade one sample at world position wP, index position iP
+    auto shadeSample=[&](const openvdb::Vec3d&wP,const openvdb::Vec3d&iP){
+        // Trilinear density sample [v2 TODO: NanoVDB texture lookup]
+        float density=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
+        if(density<=1e-6f)return;
+        double se=density*ext,ss=density*scat;
+        // Direct lighting with shadow rays
+        for(const auto&lt:_lights){openvdb::Vec3d lD;
+            if(lt.isPoint){lD=openvdb::Vec3d(lt.pos[0]-wP[0],lt.pos[1]-wP[1],lt.pos[2]-wP[2]);double l=lD.length();if(l>1e-8)lD/=l;else lD=openvdb::Vec3d(0,1,0);}
+            else lD=openvdb::Vec3d(lt.dir[0],lt.dir[1],lt.dir[2]);
+            double cosT=-(dir[0]*lD[0]+dir[1]*lD[1]+dir[2]*lD[2]);
+            double ph;if(std::abs(g)<.001)ph=1./(4*M_PI);else{double dn=1+g2-2*g*cosT;ph=hgN/std::pow(dn,1.5);}
+            double phS=ph*4*M_PI;
+            double lT=1;
+            for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
+                for(int a=0;a<3;++a)if(lw[a]<_bboxMin[a]||lw[a]>_bboxMax[a]){in=false;break;}if(!in)break;
+                auto li=xf.worldToIndex(lw);
+                lT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li)*ext*_shadowDensity*shStep);
+                if(lT<.001)break;}
+            double ctr=ss*phS*lT*T*step;aR+=ctr*lt.color[0];aG+=ctr*lt.color[1];aB+=ctr*lt.color[2];}
+        // Ambient
+        if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;aR+=amb;aG+=amb;aB+=amb;}
+        // Environment map
+        if(_hasEnvMap&&_envIntensity>0){
+            int nEnv=6+(int)(std::clamp(_envDiffuse,0.0,1.0)*20);
+            const openvdb::Vec3d*eDirs[3]={kDirs6,kDirs8,kDirs12};int eDirCnt[3]={6,8,12};
+            int used=0;
+            for(int dS=0;dS<3&&used<nEnv;++dS)for(int di=0;di<eDirCnt[dS]&&used<nEnv;++di){
+                openvdb::Vec3d eDir=eDirs[dS][di];
+                openvdb::Vec3d wDir=eDir;
+                if(_hasVolumeXform){
+                    wDir=openvdb::Vec3d(
+                        _volFwd[0][0]*eDir[0]+_volFwd[1][0]*eDir[1]+_volFwd[2][0]*eDir[2],
+                        _volFwd[0][1]*eDir[0]+_volFwd[1][1]*eDir[1]+_volFwd[2][1]*eDir[2],
+                        _volFwd[0][2]*eDir[0]+_volFwd[1][2]*eDir[1]+_volFwd[2][2]*eDir[2]);
+                    double wl=wDir.length();if(wl>1e-8)wDir/=wl;}
+                float eR,eG,eB;sampleEnv(wDir,eR,eG,eB);
+                double eT=1;
+                for(int si=0;si<nSh;++si){auto ew=wP+((si+1)*shStep)*eDir;bool in=true;
+                    for(int a5=0;a5<3;++a5)if(ew[a5]<_bboxMin[a5]||ew[a5]>_bboxMax[a5]){in=false;break;}if(!in)break;
+                    auto ei=xf.worldToIndex(ew);
+                    eT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,ei)*ext*_shadowDensity*shStep);
+                    if(eT<.001)break;}
+                double envC=ss*eT*T*step*_envIntensity*(4*M_PI/nEnv);
+                aR+=envC*eR;aG+=envC*eG;aB+=envC*eB;
+                ++used;}
+        }
+        // Multi-scatter bounces
+        if(_multiBounces>0){
+            double albedo=std::min(scat/(ext+1e-8),1.0);
+            double bounceStep=bDiag*0.05;int nBounceSteps=4;
+            int nDirs=std::min(std::max(_bounceRays,6),26);
+            const openvdb::Vec3d*dirs[3]={kDirs6,kDirs8,kDirs12};int dirCounts[3]={6,8,12};
+            double bounceR=0,bounceG=0,bounceB=0,bouncePow=albedo;
+            for(int bounce=0;bounce<_multiBounces;++bounce){
+                double bR=0,bG=0,bB=0;int su=0;
+                for(int dSet=0;dSet<3&&su<nDirs;++dSet)for(int di=0;di<dirCounts[dSet]&&su<nDirs;++di){
+                    openvdb::Vec3d bDir=dirs[dSet][di];
+                    for(int bs=1;bs<=nBounceSteps;++bs){
+                        auto bP=wP+(bs*bounceStep)*bDir;bool inside=true;
+                        for(int a3=0;a3<3;++a3)if(bP[a3]<_bboxMin[a3]||bP[a3]>_bboxMax[a3]){inside=false;break;}
+                        if(!inside)break;
+                        auto bI=xf.worldToIndex(bP);
+                        float bDen=openvdb::tools::BoxSampler::sample(acc,bI)*(float)_densityMix;
+                        if(bDen<1e-6f)continue;
+                        for(const auto&lt2:_lights){openvdb::Vec3d lD2;
+                            if(lt2.isPoint){lD2=openvdb::Vec3d(lt2.pos[0]-bP[0],lt2.pos[1]-bP[1],lt2.pos[2]-bP[2]);
+                                double l2=lD2.length();if(l2>1e-8)lD2/=l2;else continue;}
+                            else lD2=openvdb::Vec3d(lt2.dir[0],lt2.dir[1],lt2.dir[2]);
+                            double lT2=1;
+                            for(int si=0;si<3;++si){auto lw2=bP+((si+1)*shStep*2)*lD2;bool in2=true;
+                                for(int a4=0;a4<3;++a4)if(lw2[a4]<_bboxMin[a4]||lw2[a4]>_bboxMax[a4]){in2=false;break;}if(!in2)break;
+                                auto li2=xf.worldToIndex(lw2);
+                                lT2*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li2)*ext*_shadowDensity*shStep*2);
+                                if(lT2<.001)break;}
+                            double c2=bDen*scat*lT2;bR+=c2*lt2.color[0];bG+=c2*lt2.color[1];bB+=c2*lt2.color[2];}
+                    }++su;}
+                if(su>0){double norm=bouncePow/(su*nBounceSteps);bounceR+=bR*norm;bounceG+=bG*norm;bounceB+=bB*norm;}
+                bouncePow*=albedo;}
+            double msc=T*step;aR+=bounceR*msc;aG+=bounceG*msc;aB+=bounceB*msc;
+        }
+        // Temperature emission
+        if(tAcc){float tv=openvdb::tools::BoxSampler::sample(*tAcc,iP)*(float)_tempMix;if(tv>.001f){
+            double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
+            double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
+            double em=_emissionIntensity*tS*T*step;aR+=bb.r*em;aG+=bb.g*em;aB+=bb.b*em;}}
+        // Flame emission
+        if(fAcc){float fv=openvdb::tools::BoxSampler::sample(*fAcc,iP)*(float)_flameMix;if(fv>.001f){
+            Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
+            double fem=_flameIntensity*fv*T*step;aR+=fb.r*fem;aG+=fb.g*fem;aB+=fb.b*fem;}}
+        T*=std::exp(-se*step);
+    };
+
+    // HDDA traversal: skip empty space between active leaf nodes
+    if(_volRI){
+        VRI vri(*_volRI); // thread-safe shallow copy
+        openvdb::math::Ray<double> wRay(origin,dir);
+        if(!vri.setWorldRay(wRay)){outR=outG=outB=outA=0;return;}
+        double it0,it1;
+        while(vri.march(it0,it1)&&T>.001){
+            auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
+            double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
+            if(wT1<=0)continue;if(wT0<0)wT0=0;
+            for(double t2=wT0;t2<wT1&&T>.001;t2+=step){
+                auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
+                shadeSample(wP,iP);}
+        }
+    }else{
+        // Fallback: manual AABB (shouldn't happen if grid is valid)
+        double tEnter=0,tExit=1e9;
+        for(int a=0;a<3;++a){double inv=(std::abs(dir[a])>1e-8)?1./dir[a]:1e38;
+            double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
+            if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
+        if(tEnter>=tExit||tExit<=0)return;
+        for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
+            auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
+            shadeSample(wP,iP);}
+    }
+    outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1-T);
 }
 
-// ═══ marchRayExplosion — smoke + fire ═══
+// ═══ marchRayExplosion — smoke + fire (HDDA + trilinear) ═══
+// [v2 TODO] Move inner loop to CUDA kernel with NanoVDB accessor
 
 void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA) const {
-    outR=outG=outB=outA=0;double tEnter=0,tExit=1e9;
-    for(int a=0;a<3;++a){double inv=(std::abs(dir[a])>1e-8)?1./dir[a]:1e38;
-        double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
-        if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
-    if(tEnter>=tExit||tExit<=0)return;
-    // Use whichever grid is available for coordinate transform
+    outR=outG=outB=outA=0;
     openvdb::FloatGrid::Ptr xfGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
     if(!xfGrid)return;
     const auto&xf=xfGrid->transform();
@@ -845,24 +1083,23 @@ void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::
     int nSh=std::max(1,_shadowSteps);double bDiag=(_bboxMax-_bboxMin).length(),shStep=bDiag/(nSh*2);
     double T=1,aR=0,aG=0,aB=0;
     std::unique_ptr<openvdb::FloatGrid::ConstAccessor> dAcc,tAcc,fAcc;
+    openvdb::FloatGrid::ConstAccessor shAcc=xfGrid->getConstAccessor(); // shadow ray accessor
     if(_floatGrid)dAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_floatGrid->getConstAccessor());
     if(_hasTempGrid&&_tempGrid)tAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
     if(_hasFlameGrid&&_flameGrid)fAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
-    for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
-        auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-        openvdb::Coord ijk((int)std::floor(iP[0]),(int)std::floor(iP[1]),(int)std::floor(iP[2]));
-        // FIRE: temperature emission (self-luminous)
-        if(tAcc){float tv=tAcc->getValue(ijk)*(float)_tempMix;if(tv>.001f){
+
+    auto shadeSampleExplosion=[&](const openvdb::Vec3d&wP,const openvdb::Vec3d&iP){
+        // FIRE: temperature emission (self-luminous, trilinear)
+        if(tAcc){float tv=openvdb::tools::BoxSampler::sample(*tAcc,iP)*(float)_tempMix;if(tv>.001f){
             double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
             double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
             double em=_emissionIntensity*tS*T*step;aR+=bb.r*em;aG+=bb.g*em;aB+=bb.b*em;}}
         // FIRE: flame emission
-        if(fAcc){float fv=fAcc->getValue(ijk)*(float)_flameMix;if(fv>.001f){
+        if(fAcc){float fv=openvdb::tools::BoxSampler::sample(*fAcc,iP)*(float)_flameMix;if(fv>.001f){
             Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
             double fem=_flameIntensity*fv*T*step;aR+=fb.r*fem;aG+=fb.g*fem;aB+=fb.b*fem;}}
-        // SMOKE: scatter + absorption (only if density grid loaded)
-        if(dAcc){
-            float density=dAcc->getValue(ijk)*(float)_densityMix;
+        // SMOKE: scatter + absorption
+        if(dAcc){float density=openvdb::tools::BoxSampler::sample(*dAcc,iP)*(float)_densityMix;
             if(density>1e-6f){double se=density*ext,ss=density*scat;
                 for(const auto&lt:_lights){openvdb::Vec3d lD;
                     if(lt.isPoint){lD=openvdb::Vec3d(lt.pos[0]-wP[0],lt.pos[1]-wP[1],lt.pos[2]-wP[2]);double l=lD.length();if(l>1e-8)lD/=l;else lD=openvdb::Vec3d(0,1,0);}
@@ -870,76 +1107,134 @@ void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::
                     double cosT=-(dir[0]*lD[0]+dir[1]*lD[1]+dir[2]*lD[2]);
                     double ph;if(std::abs(g)<.001)ph=1./(4*M_PI);else{double dn=1+g2-2*g*cosT;ph=hgN/std::pow(dn,1.5);}
                     double phS=ph*4*M_PI;
-                    double lT=1;{auto la=_floatGrid->getConstAccessor();
-                        for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
-                            for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
-                            auto li=xf.worldToIndex(lw);
-                            lT*=std::exp(-(double)la.getValue(openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shStep);
-                            if(lT<.001)break;}}
+                    double lT=1;
+                    for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
+                        for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
+                        auto li=xf.worldToIndex(lw);
+                        lT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li)*ext*_shadowDensity*shStep);
+                        if(lT<.001)break;}
                     double ctr=ss*phS*lT*T*step;aR+=ctr*lt.color[0];aG+=ctr*lt.color[1];aB+=ctr*lt.color[2];}
                 if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;aR+=amb;aG+=amb;aB+=amb;}
-                // Multi-scatter bounces
-                if(_multiBounces>0&&_floatGrid){
-                    double albedo=std::min(scat/(ext+1e-8),1.0);
-                    double bounceStep2=bDiag*0.05;
+                // Environment map
+                if(_hasEnvMap&&_envIntensity>0){
+                    int nEnv=6+(int)(std::clamp(_envDiffuse,0.0,1.0)*20);
+                    const openvdb::Vec3d*eDirs[3]={kDirs6,kDirs8,kDirs12};int eDirCnt[3]={6,8,12};int used=0;
+                    for(int dS=0;dS<3&&used<nEnv;++dS)for(int di=0;di<eDirCnt[dS]&&used<nEnv;++di){
+                        openvdb::Vec3d eDir=eDirs[dS][di],wDir=eDir;
+                        if(_hasVolumeXform){wDir=openvdb::Vec3d(
+                            _volFwd[0][0]*eDir[0]+_volFwd[1][0]*eDir[1]+_volFwd[2][0]*eDir[2],
+                            _volFwd[0][1]*eDir[0]+_volFwd[1][1]*eDir[1]+_volFwd[2][1]*eDir[2],
+                            _volFwd[0][2]*eDir[0]+_volFwd[1][2]*eDir[1]+_volFwd[2][2]*eDir[2]);
+                            double wl=wDir.length();if(wl>1e-8)wDir/=wl;}
+                        float eR,eG,eB;sampleEnv(wDir,eR,eG,eB);
+                        double eT=1;
+                        for(int si=0;si<nSh;++si){auto ew=wP+((si+1)*shStep)*eDir;bool in2=true;
+                            for(int a5=0;a5<3;++a5)if(ew[a5]<_bboxMin[a5]||ew[a5]>_bboxMax[a5]){in2=false;break;}if(!in2)break;
+                            auto ei=xf.worldToIndex(ew);
+                            eT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,ei)*ext*_shadowDensity*shStep);
+                            if(eT<.001)break;}
+                        double envC=ss*eT*T*step*_envIntensity*(4*M_PI/nEnv);
+                        aR+=envC*eR;aG+=envC*eG;aB+=envC*eB;++used;}
+                }
+                // Multi-scatter
+                if(_multiBounces>0){
+                    double albedo=std::min(scat/(ext+1e-8),1.0);double bounceStep2=bDiag*0.05;
                     int nBSteps=4,nDirs=std::min(std::max(_bounceRays,6),26);
                     const openvdb::Vec3d*dirs[3]={kDirs6,kDirs8,kDirs12};int dirCounts[3]={6,8,12};
                     double bounceR=0,bounceG=0,bounceB=0,bouncePow=albedo;
-                    for(int bounce=0;bounce<_multiBounces;++bounce){
-                        double bR=0,bG=0,bB=0;int su=0;
+                    for(int bounce=0;bounce<_multiBounces;++bounce){double bR=0,bG=0,bB=0;int su=0;
                         for(int dS=0;dS<3&&su<nDirs;++dS)for(int di=0;di<dirCounts[dS]&&su<nDirs;++di){
                             openvdb::Vec3d bDir=dirs[dS][di];
-                            for(int bs=1;bs<=nBSteps;++bs){
-                                auto bP=wP+(bs*bounceStep2)*bDir;bool inside=true;
+                            for(int bs=1;bs<=nBSteps;++bs){auto bP=wP+(bs*bounceStep2)*bDir;bool inside=true;
                                 for(int a3=0;a3<3;++a3)if(bP[a3]<_bboxMin[a3]||bP[a3]>_bboxMax[a3]){inside=false;break;}
-                                if(!inside)break;
-                                auto bI=xf.worldToIndex(bP);
-                                float bDen=dAcc->getValue(openvdb::Coord((int)std::floor(bI[0]),(int)std::floor(bI[1]),(int)std::floor(bI[2])))*(float)_densityMix;
+                                if(!inside)break;auto bI=xf.worldToIndex(bP);
+                                float bDen=openvdb::tools::BoxSampler::sample(*dAcc,bI)*(float)_densityMix;
                                 if(bDen<1e-6f)continue;
                                 for(const auto&lt2:_lights){openvdb::Vec3d lD2;
                                     if(lt2.isPoint){lD2=openvdb::Vec3d(lt2.pos[0]-bP[0],lt2.pos[1]-bP[1],lt2.pos[2]-bP[2]);
                                         double l2=lD2.length();if(l2>1e-8)lD2/=l2;else continue;}
                                     else lD2=openvdb::Vec3d(lt2.dir[0],lt2.dir[1],lt2.dir[2]);
-                                    double lT2=1;{auto la2=_floatGrid->getConstAccessor();
-                                        for(int si=0;si<3;++si){auto lw2=bP+((si+1)*shStep*2)*lD2;bool in2=true;
-                                            for(int a4=0;a4<3;++a4)if(lw2[a4]<_bboxMin[a4]||lw2[a4]>_bboxMax[a4]){in2=false;break;}if(!in2)break;
-                                            auto li2=xf.worldToIndex(lw2);
-                                            lT2*=std::exp(-(double)la2.getValue(openvdb::Coord((int)std::floor(li2[0]),(int)std::floor(li2[1]),(int)std::floor(li2[2])))*ext*_shadowDensity*shStep*2);
-                                            if(lT2<.001)break;}}
+                                    double lT2=1;
+                                    for(int si=0;si<3;++si){auto lw2=bP+((si+1)*shStep*2)*lD2;bool in2=true;
+                                        for(int a4=0;a4<3;++a4)if(lw2[a4]<_bboxMin[a4]||lw2[a4]>_bboxMax[a4]){in2=false;break;}if(!in2)break;
+                                        auto li2=xf.worldToIndex(lw2);
+                                        lT2*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li2)*ext*_shadowDensity*shStep*2);
+                                        if(lT2<.001)break;}
                                     double c2=bDen*scat*lT2;bR+=c2*lt2.color[0];bG+=c2*lt2.color[1];bB+=c2*lt2.color[2];}
                             }++su;}
                         if(su>0){double norm=bouncePow/(su*nBSteps);bounceR+=bR*norm;bounceG+=bG*norm;bounceB+=bB*norm;}
-                        bouncePow*=albedo;
-                    }
+                        bouncePow*=albedo;}
                     double msc=T*step;aR+=bounceR*msc;aG+=bounceG*msc;aB+=bounceB*msc;
                 }
                 T*=std::exp(-se*step);}
         }
-    }outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1-T);
+    };
+
+    // HDDA traversal or AABB fallback
+    if(_volRI){
+        VRI vri(*_volRI);openvdb::math::Ray<double> wRay(origin,dir);
+        if(!vri.setWorldRay(wRay))return;
+        double it0,it1;
+        while(vri.march(it0,it1)&&T>.001){
+            auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
+            double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
+            if(wT1<=0)continue;if(wT0<0)wT0=0;
+            for(double t2=wT0;t2<wT1&&T>.001;t2+=step){
+                auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
+                shadeSampleExplosion(wP,iP);}
+        }
+    }else{
+        double tEnter=0,tExit=1e9;
+        for(int a=0;a<3;++a){double inv=(std::abs(dir[a])>1e-8)?1./dir[a]:1e38;
+            double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
+            if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
+        if(tEnter>=tExit||tExit<=0)return;
+        for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
+            auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
+            shadeSampleExplosion(wP,iP);}
+    }
+    outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1-T);
 }
 
-// ═══ marchRayDensity ═══
+// ═══ marchRayDensity — ramp modes (HDDA + trilinear) ═══
 
 void VDBRenderIop::marchRayDensity(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outD,float&outA) const {
     outD=0;outA=0;if(!_floatGrid)return;
-    double tEnter=0,tExit=1e9;
-    for(int a=0;a<3;++a){double inv=(std::abs(dir[a])>1e-8)?1./dir[a]:1e38;
-        double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
-        if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
-    if(tEnter>=tExit||tExit<=0)return;
     auto acc=_floatGrid->getConstAccessor();const auto&xf=_floatGrid->transform();
     bool useTG=_hasTempGrid&&_tempGrid&&_colorScheme==kBlackbody;
     std::unique_ptr<openvdb::FloatGrid::ConstAccessor> tA;
     if(useTG)tA=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
     double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0)),ext=_extinction,T=1,wV=0;
-    for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
-        auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-        openvdb::Coord ijk((int)std::floor(iP[0]),(int)std::floor(iP[1]),(int)std::floor(iP[2]));
-        float d=acc.getValue(ijk)*(float)_densityMix;
+
+    auto shadeDensity=[&](const openvdb::Vec3d&iP){
+        float d=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
         if(d>1e-6f){double se=d*ext,ab=T*(1-std::exp(-se*step));
-            float val=d;if(useTG){float tv=tA->getValue(ijk)*(float)_tempMix;val=(float)std::clamp((tv-_tempMin)/(_tempMax-_tempMin),0.,1.);}
+            float val=d;if(useTG){float tv=openvdb::tools::BoxSampler::sample(*tA,iP)*(float)_tempMix;
+                val=(float)std::clamp((tv-_tempMin)/(_tempMax-_tempMin),0.,1.);}
             wV+=val*ab;T*=std::exp(-se*step);}
-    }double alpha=1-T;outD=(alpha>1e-6)?std::clamp((float)(wV/alpha),0.f,1.f):0;outA=(float)alpha;
+    };
+
+    if(_volRI){
+        VRI vri(*_volRI);openvdb::math::Ray<double> wRay(origin,dir);
+        if(!vri.setWorldRay(wRay))return;
+        double it0,it1;
+        while(vri.march(it0,it1)&&T>.001){
+            auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
+            double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
+            if(wT1<=0)continue;if(wT0<0)wT0=0;
+            for(double t2=wT0;t2<wT1&&T>.001;t2+=step){
+                auto iP=xf.worldToIndex(origin+t2*dir);shadeDensity(iP);}
+        }
+    }else{
+        double tEnter=0,tExit=1e9;
+        for(int a=0;a<3;++a){double inv=(std::abs(dir[a])>1e-8)?1./dir[a]:1e38;
+            double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
+            if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
+        if(tEnter>=tExit||tExit<=0)return;
+        for(double t2=tEnter;t2<tExit&&T>.001;t2+=step){
+            auto iP=xf.worldToIndex(origin+t2*dir);shadeDensity(iP);}
+    }
+    double alpha=1-T;outD=(alpha>1e-6)?std::clamp((float)(wV/alpha),0.f,1.f):0;outA=(float)alpha;
 }
 
 // ═══ Deep Interface ═══

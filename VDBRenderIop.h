@@ -5,6 +5,14 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/io/File.h>
 #include <openvdb/tools/Interpolation.h>
+#include <openvdb/tools/RayIntersector.h>
+#include <openvdb/math/Ray.h>
+
+// NanoVDB — requires OpenVDB 13 for compatible API
+// [v2] Upgrade to OpenVDB 13, then:
+// #include <nanovdb/NanoVDB.h>
+// #include <nanovdb/tools/CreateNanoGrid.h>
+// #include <nanovdb/math/SampleFromVoxels.h>
 
 #include <DDImage/Iop.h>
 #include <DDImage/DeepOp.h>
@@ -36,22 +44,23 @@ public:
     const char* Class()     const override { return CLASS; }
     const char* node_help() const override { return HELP; }
 
-    int         minimum_inputs() const override { return 3; }
-    int         maximum_inputs() const override { return 11; }
+    // Inputs: 0=bg, 1=cam, 2=scn, 3=env
+    int         minimum_inputs() const override { return 4; }
+    int         maximum_inputs() const override { return 4; }
     const char* input_label(int idx, char* buf) const override;
     bool        test_input(int idx, DD::Image::Op* op) const override;
     Op*         default_input(int idx) const override;
 
-    // ── 2D Iop ──
+    // 2D Iop
     void _validate(bool for_real) override;
+    void _open() override;
     void _request(int x, int y, int r, int t, DD::Image::ChannelMask, int count) override;
     void engine(int y, int x, int r, DD::Image::ChannelMask, DD::Image::Row&) override;
     void append(DD::Image::Hash& hash) override;
     void build_handles(DD::Image::ViewerContext* ctx) override;
     void draw_handle(DD::Image::ViewerContext* ctx) override;
 
-    // ── DeepOp interface ──
-    // DeepOp requires op() to return the Op* for this node
+    // DeepOp
     DD::Image::Op* op() override { return static_cast<DD::Image::Iop*>(this); }
     void getDeepRequests(DD::Image::Box box, const DD::Image::ChannelSet& channels,
                          int count, std::vector<DD::Image::RequestData>& reqData) override;
@@ -73,10 +82,8 @@ private:
     const char* _gridName      = "density";
     const char* _tempGridName  = "";
     const char* _flameGridName = "";
-    double _densityMix        = 1.0;
-    double _tempMix           = 1.0;
-    double _flameMix          = 1.0;
-    int    _frameOffset       = 0;
+    double _densityMix = 1.0, _tempMix = 1.0, _flameMix = 1.0;
+    int    _frameOffset = 0;
     DD::Image::FormatPair _formats;
 
     // ── Shading ──
@@ -99,14 +106,19 @@ private:
     double _lightColor[3]     = {1,1,1};
     double _lightIntensity    = 1.0;
     double _ambientIntensity  = 0.0;
+    double _envIntensity      = 1.0;
+    double _envDiffuse        = 0.5;  // 0=sharp, 1=fully diffuse
+    double _envRotate         = 0.0;   // degrees, 0-360
 
     // ── Quality ──
     double _quality           = 2.0;
     int    _shadowSteps       = 8;
     double _shadowDensity     = 1.0;
     int    _deepSamples       = 32;
-    int    _multiBounces      = 0;    // 0=single scatter, 1-4=multi-scatter bounces
-    int    _bounceRays        = 6;    // directions per bounce
+    int    _multiBounces      = 0;
+    int    _bounceRays        = 6;
+    int    _scatterPreset     = 0;
+    int    _qualityPreset     = 0;
 
     // ── Viewport ──
     bool   _showBbox          = true;
@@ -122,6 +134,19 @@ private:
     bool _gridValid=false, _hasTempGrid=false, _hasFlameGrid=false;
     int  _loadedFrame=-1;
 
+    // ── Ray acceleration (HDDA empty-space skipping) ──
+    // VolumeRayIntersector uses the grid's topology to skip empty nodes.
+    // Master copy built at validate time; shallow-copied per thread in march funcs.
+    // [v2 TODO] Replace with NanoVDB grid + CUDA kernel for GPU rendering.
+    using VRI = openvdb::tools::VolumeRayIntersector<openvdb::FloatGrid>;
+    std::unique_ptr<VRI> _volRI;  // master, built from density grid
+
+    // ── NanoVDB grids [v2 — requires OpenVDB 13] ──
+    // Convert OpenVDB → NanoVDB at load time for ~2x faster CPU access.
+    // Same handles upload to GPU via cudaMemcpy for CUDA rendering.
+    // using NanoHandle = nanovdb::GridHandle<nanovdb::HostBuffer>;
+    // NanoHandle _nanoDensity, _nanoTemp, _nanoFlame;
+
     // ── Camera ──
     openvdb::Vec3d _camOrigin;
     double _camRot[3][3], _halfW=1.0;
@@ -131,9 +156,19 @@ private:
     bool _hasVolumeXform=false;
     double _volFwd[4][4], _volInv[4][4];
 
-    // ── Lights ──
+    // ── Lights (gathered from scene input) ──
     struct CachedLight { double dir[3], color[3], pos[3]; bool isPoint; };
     std::vector<CachedLight> _lights;
+    void gatherLights(DD::Image::Op* scnOp);
+
+    // ── Environment map ──
+    static constexpr int kEnvRes = 128;
+    float  _envMap[kEnvRes][kEnvRes/2][3] = {};
+    bool   _hasEnvMap = false;
+    bool   _envDirty  = false;  // needs caching on next engine call
+    DD::Image::Iop* _envIop = nullptr;
+    void   cacheEnvMap(DD::Image::Iop* envIop);
+    void   sampleEnv(const openvdb::Vec3d& dir, float& r, float& g, float& b) const;
 
     // ── Point cloud ──
     struct DensityPoint { float x,y,z,density; };
@@ -148,7 +183,6 @@ private:
         {0,1},{2,3},{4,5},{6,7},{0,2},{1,3},{4,6},{5,7},{0,4},{1,5},{2,6},{3,7}};
 
     DD::Image::CameraOp* camera() const;
-    DD::Image::AxisOp* axisInput() const;
     std::string resolveFramePath(int frame) const;
     void discoverGrids();
 
