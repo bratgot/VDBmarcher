@@ -240,28 +240,78 @@ void VDBRenderIop::knobs(Knob_Callback f)
     BeginClosedGroup(f,"grp_lighting","Lighting");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Connect lights and an EnvironLight via the scn input (Scene<br>"
-        "node). All lights are found automatically. EnvironLight provides<br>"
-        "the HDRI. If no lights found, the fallback light is used."
+        "Scene lights override the rig. If no lights are connected,<br>"
+        "the Light Rig below provides ready-to-use lighting setups."
         "</font>");
-    Bool_knob(f,&_useFallbackLight,"use_fallback_light","Fallback Light");
-    Tooltip(f,"Enable a default directional light when no scene lights\n"
-              "are connected. Disable this to light with environment\n"
-              "and ambient only.");
+    static const char*rigNames[]={"None","Day Sky","Golden Hour","Overcast","Blue Hour","Night / Moon","Studio 3-Point","Studio Dramatic","Studio Soft",nullptr};
+    Enumeration_knob(f,&_lightRig,rigNames,"light_rig","Light Rig");
+    Tooltip(f,"Built-in lighting setups — no scene lights needed.\n"
+              "Day Sky — sun + blue sky + ground bounce\n"
+              "Golden Hour — low warm sun, soft amber fill\n"
+              "Overcast — soft white dome, no direct sun\n"
+              "Blue Hour — post-sunset cool twilight\n"
+              "Night / Moon — dim cool moonlight\n"
+              "Studio 3-Point — key + fill + rim\n"
+              "Studio Dramatic — strong key, minimal fill\n"
+              "Studio Soft — broad diffuse wrap");
+
+    Divider(f,"Sun and Sky");
+    Double_knob(f,&_sunElevation,"sun_elevation","Sun Elevation");SetRange(f,0,90);
+    Tooltip(f,"Sun height above the horizon in degrees.\n"
+              "90 = directly overhead (noon)\n"
+              "30 = late afternoon\n"
+              "10 = sunset, warm colours\n"
+              "0 = at the horizon");
+    Double_knob(f,&_sunAzimuth,"sun_azimuth","Sun Azimuth");SetRange(f,0,360);
+    Tooltip(f,"Sun horizontal angle in degrees.\n"
+              "0/360 = North, 90 = East, 180 = South, 270 = West.\n"
+              "Rotate to change where shadows fall.");
+    Double_knob(f,&_sunIntensity,"sun_intensity","Sun Intensity");SetRange(f,0,20);
+    Tooltip(f,"Brightness of the direct sunlight.\n"
+              "3 = natural daylight. Higher for dramatic contrast.");
+    Double_knob(f,&_skyIntensity,"sky_intensity","Sky Intensity");SetRange(f,0,5);
+    Tooltip(f,"Brightness of the sky dome fill light.\n"
+              "Simulates blue skylight scattered from the atmosphere.\n"
+              "0.3-0.5 = natural. Higher for softer shadows.");
+    Double_knob(f,&_turbidity,"turbidity","Turbidity");SetRange(f,2,10);
+    Tooltip(f,"Atmospheric haziness. Affects sun and sky colour.\n"
+              "2 = crystal clear mountain air\n"
+              "3 = clear day\n"
+              "5 = slightly hazy\n"
+              "8 = very hazy, smoggy\n"
+              "10 = heavy haze");
+    Double_knob(f,&_groundBounce,"ground_bounce","Ground Bounce");SetRange(f,0,1);
+    Tooltip(f,"Light bounced up from the ground surface.\n"
+              "Fills the underside of volumes.\n"
+              "0 = none. 0.1 = subtle. 0.3 = sandy ground.");
+
+    Divider(f,"Studio");
+    Double_knob(f,&_studioKeyAzimuth,"studio_key_azimuth","Key Azimuth");SetRange(f,0,360);
+    Tooltip(f,"Horizontal angle of the key (main) light.\n"
+              "45 = classic 3/4 lighting from camera-left.\n"
+              "315 = same from camera-right.");
+    Double_knob(f,&_studioKeyIntensity,"studio_key_intensity","Key Intensity");SetRange(f,0,20);
+    Tooltip(f,"Brightness of the main studio light.");
+    Double_knob(f,&_studioFillRatio,"studio_fill_ratio","Fill Ratio");SetRange(f,0,1);
+    Tooltip(f,"Fill light as a fraction of key intensity.\n"
+              "0 = no fill (very dramatic). 0.5 = soft (beauty).\n"
+              "Fill comes from the opposite side of the key.");
+    Double_knob(f,&_studioRimIntensity,"studio_rim_intensity","Rim Intensity");SetRange(f,0,20);
+    Tooltip(f,"Backlight intensity for edge definition.\n"
+              "Creates a bright outline on the volume's silhouette.\n"
+              "0 = no rim. 2 = standard. 4 = strong halo.");
+
+    Divider(f,"Manual Override");
+    Bool_knob(f,&_useFallbackLight,"use_fallback_light","Custom Light");
+    Tooltip(f,"Adds a single custom directional light on top of\n"
+              "the rig or scene lights. Useful for fine adjustments.");
     XYZ_knob(f,_lightDir,"light_dir","Direction");
-    Tooltip(f,"Direction toward the fallback light source.\n"
-              "Only used when no lights are found in the scene input.\n"
-              "Tip: use the 3D viewer to visualize the light direction.");
-    Color_knob(f,_lightColor,"light_color","Light Color");
-    Tooltip(f,"Fallback light colour.\n"
-              "Only used when no scene lights are connected.");
-    Double_knob(f,&_lightIntensity,"light_intensity","Light Intensity");SetRange(f,0,50);
-    Tooltip(f,"Fallback light brightness.\n"
-              "Only used when no scene lights are connected.");
+    Color_knob(f,_lightColor,"light_color","Color");
+    Double_knob(f,&_lightIntensity,"light_intensity","Intensity");SetRange(f,0,50);
     Double_knob(f,&_ambientIntensity,"ambient","Ambient");SetRange(f,0,5);
-    Tooltip(f,"Omnidirectional fill light with no shadows.\n"
-              "Lifts the darkest self-shadowed areas of dense volumes.\n"
-              "Useful for smoke that looks too dark on the shadow side.");
+    Tooltip(f,"Omnidirectional fill. Lifts the darkest areas.\n"
+              "Use sparingly — too much flattens the volume.");
+
     Divider(f,"Environment Map");
     Text_knob(f,
         "<font size='-1' color='#777'>"
@@ -269,19 +319,8 @@ void VDBRenderIop::knobs(Knob_Callback f)
         "rotation are inherited automatically. Rotate Offset adds extra rotation."
         "</font>");
     Double_knob(f,&_envIntensity,"env_intensity","Env Intensity");SetRange(f,0,10);
-    Tooltip(f,"Brightness of environment lighting.\n"
-              "0 = disabled. 1 = match the HDRI values.\n"
-              "Values above 1 boost the environment contribution.");
     Double_knob(f,&_envRotate,"env_rotate","Rotate Offset");SetRange(f,0,360);
-    Tooltip(f,"Additional horizontal rotation on top of the\n"
-              "EnvironLight's own transform. 0 = no extra offset.\n"
-              "Useful for fine-tuning where the key light falls.");
     Double_knob(f,&_envDiffuse,"env_diffuse","Diffuse");SetRange(f,0,1);
-    Tooltip(f,"How soft or spread out the environment lighting is.\n"
-              "0 = sharp directional highlights from the HDRI hotspots\n"
-              "0.5 = soft natural spread\n"
-              "1 = fully diffuse, even light from all directions\n"
-              "Higher values use more samples and render slower.");
     EndGroup(f);
 
     BeginClosedGroup(f,"grp_info","Technical Reference");
@@ -536,25 +575,24 @@ int VDBRenderIop::knob_changed(Knob* k)
         knob("shutter_close")->set_value(sClose[_shutterPreset]);return 1;
     }
     if(k->is("scene_preset")&&_scenePreset>0){
-        // Preset values: mode, extinction, scattering, anisotropy, shadowSteps,
-        //                shadowDensity, tempMin, tempMax, emissionInt, flameInt, stepSize
         struct Preset {
             int mode; double ext,scat,aniso; int shSteps;
             double shDen,tMin,tMax,emInt,flInt,quality,ambient;
             int bounces,bRays; double intensity,envDiff;
+            int rig; double sunElev;
         };
-        //                                   mode ext   scat  ani  sh shDen tMn   tMx    eI   fI   q    amb  bnc bR   int  envD
+        //                                   mode ext   scat  ani  sh shDen tMn   tMx    eI   fI   q    amb  bnc bR   int  envD  rig sElev
         static const Preset pv[] = {
             {},                             // 0: Custom
-            {0, 2.0, 1.5, 0.4, 8, 1.0,       500,6500,  0,   0,   2, 0.1,  0, 6,  1.0, 0.5},  // 1: Thin Smoke
-            {0, 15.0,4.0, 0.35,12,1.0,       500,6500,  0,   0,   3, 0.05, 1, 6,  1.0, 0.5},  // 2: Dense Smoke
-            {0, 0.5, 0.8, 0.8, 8, 0.5,       500,6500,  0,   0,   1, 0.3,  2, 14, 1.0, 0.8},  // 3: Fog / Mist
-            {0, 12.0,10.0,0.76,16,1.0,       500,6500,  0,   0,   5, 0.2,  2, 14, 1.0, 0.6},  // 4: Cumulus Cloud
-            {6, 5.0, 2.0, 0.3, 8, 0.6,       800,3000,  4.0, 8.0, 3, 0.15, 0, 6,  1.5, 0.3},  // 5: Fire
-            {6, 20.0,5.0, 0.4, 16,0.5,       500,6000,  3.0, 5.0, 5, 0.1,  1, 14, 1.0, 0.4},  // 6: Explosion
-            {6, 30.0,6.0, 0.5, 16,0.4,      1000,8000,  2.0, 4.0, 7, 0.08, 1, 14, 0.8, 0.3},  // 7: Pyroclastic
-            {0, 4.0, 3.0,-0.3, 8, 1.0,       500,6500,  0,   0,   2, 0.15, 0, 6,  1.0, 0.5},  // 8: Dust Storm
-            {0, 1.5, 2.0, 0.7, 8, 0.5,       500,6500,  0,   0,   2, 0.2,  1, 6,  1.0, 0.7},  // 9: Steam
+            {0, 2.0, 1.5, 0.4, 8, 1.0,       500,6500,  0,   0,   2, 0.1,  0, 6,  1.0, 0.5,  1, 45},  // 1: Thin Smoke — Day Sky
+            {0, 15.0,6.0, 0.35,12,1.0,       500,6500,  0,   0,   3, 0.05, 1, 6,  1.0, 0.5,  1, 45},  // 2: Dense Smoke — Day Sky
+            {0, 1.0, 0.95,0.8, 8, 0.5,       500,6500,  0,   0,   2, 0.3,  2, 14, 1.0, 0.8,  3,  0},  // 3: Fog / Mist — Overcast
+            {0, 12.0,11.4,0.76,16,1.0,       500,6500,  0,   0,   5, 0.2,  3, 14, 1.0, 0.6,  1, 55},  // 4: Cumulus Cloud — Day Sky, high sun
+            {6, 5.0, 2.0, 0.3, 8, 0.6,       800,3000,  4.0, 8.0, 3, 0.15, 0, 6,  1.5, 0.3,  2,  0},  // 5: Fire — Golden Hour
+            {6, 20.0,5.0, 0.4, 16,0.5,       500,6000,  3.0, 5.0, 5, 0.1,  1, 14, 1.0, 0.4,  1, 35},  // 6: Explosion — Day Sky
+            {6, 30.0,6.0, 0.4, 16,0.4,      1000,8000,  2.0, 4.0, 7, 0.08, 1, 14, 0.8, 0.3,  1, 30},  // 7: Pyroclastic — Day Sky, lower
+            {0, 4.0, 3.0, 0.55, 8, 1.0,      500,6500,  0,   0,   2, 0.15, 0, 6,  1.0, 0.5,  1, 40},  // 8: Dust Storm — Day Sky
+            {0, 2.0, 1.9, 0.7, 8, 0.5,       500,6500,  0,   0,   2, 0.2,  1, 6,  1.0, 0.7,  8,  0},  // 9: Steam — Studio Soft
         };
         const auto&p=pv[_scenePreset];
         knob("color_scheme")->set_value(p.mode);_colorScheme=p.mode;
@@ -573,11 +611,14 @@ int VDBRenderIop::knob_changed(Knob* k)
         knob("bounce_rays")->set_value(p.bRays);_bounceRays=p.bRays;
         knob("ramp_intensity")->set_value(p.intensity);_rampIntensity=p.intensity;
         knob("env_diffuse")->set_value(p.envDiff);_envDiffuse=p.envDiff;
+        knob("light_rig")->set_value(p.rig);_lightRig=p.rig;
+        if(p.sunElev>0){knob("sun_elevation")->set_value(p.sunElev);_sunElevation=p.sunElev;}
         knob("aniso_preset")->set_value(0);_anisotropyPreset=0;
         knob("scatter_preset")->set_value(0);_scatterPreset=0;
         knob("quality_preset")->set_value(0);_qualityPreset=0;
         return 1;
     }
+    if(k->is("light_rig"))return 1; // trigger re-render
     if(k->is("aniso_preset")){
         static const double pv[]={0,0,0.4,0.6,0.76,0.8,-0.4,-0.7};
         if(_anisotropyPreset>0&&_anisotropyPreset<(int)(sizeof(pv)/sizeof(double))){
@@ -636,6 +677,167 @@ bool VDBRenderIop::test_input(int idx,Op*op) const{
 Op* VDBRenderIop::default_input(int idx) const{
     if(idx==0)return Iop::default_input(idx);
     return nullptr;}
+
+// ═══ Light Rig — analytical sun/sky + studio setups ═══
+
+static void sunColorFromElevation(double elev, double turbidity, double& r, double& g, double& b) {
+    // Simplified Preetham: sun colour shifts from white(noon) → gold → orange → red(horizon)
+    // Turbidity increases warmth and reduces blue
+    double t = std::clamp(elev / 90.0, 0.0, 1.0); // 0=horizon, 1=zenith
+    double turbShift = (turbidity - 2.0) / 8.0 * 0.15; // haze warms the sun
+    r = 1.0;
+    g = std::clamp(0.4 + 0.55 * t - turbShift, 0.15, 1.0);
+    b = std::clamp(0.1 + 0.8 * t * t - turbShift * 2, 0.02, 0.95);
+}
+
+static void skyColorFromElevation(double elev, double turbidity, double& r, double& g, double& b) {
+    // Sky dome colour: deep blue at noon, warm purple at sunset, grey at high turbidity
+    double t = std::clamp(elev / 90.0, 0.0, 1.0);
+    double haze = std::clamp((turbidity - 2.0) / 8.0, 0.0, 1.0);
+    // Base blue sky, lerp toward warm at low elevation
+    r = 0.15 + 0.1 * (1 - t) + 0.3 * haze;
+    g = 0.3 + 0.15 * (1 - t) + 0.15 * haze;
+    b = 0.7 - 0.3 * (1 - t) - 0.2 * haze;
+    // Desaturate with turbidity
+    double grey = (r + g + b) / 3.0;
+    r = r + (grey - r) * haze * 0.5;
+    g = g + (grey - g) * haze * 0.5;
+    b = b + (grey - b) * haze * 0.5;
+}
+
+static void dirFromElevAzim(double elevDeg, double azimDeg, double& dx, double& dy, double& dz) {
+    double er = elevDeg * M_PI / 180.0, ar = azimDeg * M_PI / 180.0;
+    dx = std::cos(er) * std::sin(ar);
+    dy = std::sin(er);
+    dz = -std::cos(er) * std::cos(ar);
+    double len = std::sqrt(dx*dx + dy*dy + dz*dz);
+    if (len > 1e-8) { dx /= len; dy /= len; dz /= len; }
+}
+
+void VDBRenderIop::buildLightRig() {
+    // Only add rig lights when no scene lights were found
+    if (!_lights.empty()) return;
+    if (_lightRig == 0) return; // None
+
+    auto addLight = [&](double dx, double dy, double dz, double r, double g, double b, bool point = false) {
+        CachedLight cl;
+        cl.dir[0] = dx; cl.dir[1] = dy; cl.dir[2] = dz;
+        cl.color[0] = r; cl.color[1] = g; cl.color[2] = b;
+        cl.isPoint = point;
+        cl.pos[0] = cl.pos[1] = cl.pos[2] = 0;
+        _lights.push_back(cl);
+    };
+
+    double sunR, sunG, sunB, skyR, skyG, skyB;
+    double sdx, sdy, sdz;
+
+    switch (_lightRig) {
+    case 1: { // Day Sky
+        sunColorFromElevation(_sunElevation, _turbidity, sunR, sunG, sunB);
+        skyColorFromElevation(_sunElevation, _turbidity, skyR, skyG, skyB);
+        dirFromElevAzim(_sunElevation, _sunAzimuth, sdx, sdy, sdz);
+        double si = _sunIntensity * std::clamp(_sunElevation / 15.0, 0.1, 1.0); // dim near horizon
+        addLight(sdx, sdy, sdz, sunR * si, sunG * si, sunB * si);
+        // Sky dome as soft overhead light
+        addLight(0, 1, 0, skyR * _skyIntensity, skyG * _skyIntensity, skyB * _skyIntensity);
+        // Ground bounce
+        if (_groundBounce > 0.01)
+            addLight(0, -1, 0, _groundBounce * 0.8, _groundBounce * 0.7, _groundBounce * 0.5);
+        _ambientIntensity = std::max(_ambientIntensity, _skyIntensity * 0.15);
+        break;
+    }
+    case 2: { // Golden Hour — low warm sun
+        double ge = 8.0; // fixed low sun
+        sunColorFromElevation(ge, _turbidity, sunR, sunG, sunB);
+        dirFromElevAzim(ge, _sunAzimuth, sdx, sdy, sdz);
+        addLight(sdx, sdy, sdz, sunR * 2.5, sunG * 2.5, sunB * 2.5);
+        // Warm amber fill from opposite side
+        addLight(-sdx, 0.3, -sdz, 0.4, 0.25, 0.1);
+        // Subtle blue sky overhead
+        addLight(0, 1, 0, 0.08, 0.12, 0.25);
+        _ambientIntensity = std::max(_ambientIntensity, 0.08);
+        break;
+    }
+    case 3: { // Overcast — soft white dome, no sun
+        addLight(0, 1, 0, 0.9, 0.9, 0.95);        // main dome
+        addLight(0.3, 0.6, -0.3, 0.3, 0.3, 0.32);  // slight directional bias for shape
+        addLight(-0.3, 0.4, 0.3, 0.15, 0.15, 0.17); // secondary fill
+        _ambientIntensity = std::max(_ambientIntensity, 0.25);
+        break;
+    }
+    case 4: { // Blue Hour — post-sunset cool twilight
+        addLight(0.2, 0.15, -0.4, 0.15, 0.2, 0.5); // dim cool horizon glow
+        addLight(0, 1, 0, 0.05, 0.08, 0.2);          // deep blue overhead
+        addLight(0, -1, 0, 0.02, 0.015, 0.01);       // faint ground
+        _ambientIntensity = std::max(_ambientIntensity, 0.06);
+        break;
+    }
+    case 5: { // Night / Moon — dim cool moonlight
+        dirFromElevAzim(35, _sunAzimuth, sdx, sdy, sdz);
+        addLight(sdx, sdy, sdz, 0.15, 0.18, 0.25);  // moonlight
+        addLight(0, 1, 0, 0.01, 0.015, 0.03);        // faint sky
+        _ambientIntensity = std::max(_ambientIntensity, 0.02);
+        break;
+    }
+    case 6: { // Studio 3-Point — key + fill + rim
+        double kaz = _studioKeyAzimuth;
+        double kx, ky, kz; dirFromElevAzim(40, kaz, kx, ky, kz);
+        double ki = _studioKeyIntensity;
+        addLight(kx, ky, kz, ki, ki * 0.95, ki * 0.9);  // warm key
+        // Fill from opposite side, lower elevation
+        double fx, fy, fz; dirFromElevAzim(20, kaz + 180, fx, fy, fz);
+        double fi = ki * _studioFillRatio;
+        addLight(fx, fy, fz, fi * 0.9, fi * 0.92, fi);   // cool fill
+        // Rim from behind, high
+        double rx, ry, rz; dirFromElevAzim(50, kaz + 160, rx, ry, rz);
+        double ri2 = _studioRimIntensity;
+        addLight(rx, ry, rz, ri2, ri2, ri2);
+        _ambientIntensity = std::max(_ambientIntensity, 0.05);
+        break;
+    }
+    case 7: { // Studio Dramatic — strong key, minimal fill
+        double kaz = _studioKeyAzimuth;
+        double kx, ky, kz; dirFromElevAzim(35, kaz, kx, ky, kz);
+        double ki = _studioKeyIntensity * 1.3;
+        addLight(kx, ky, kz, ki, ki * 0.9, ki * 0.8); // warm hard key
+        // Very subtle fill
+        double fx, fy, fz; dirFromElevAzim(10, kaz + 200, fx, fy, fz);
+        addLight(fx, fy, fz, ki * 0.08, ki * 0.08, ki * 0.1);
+        // Strong rim kicker
+        double rx, ry, rz; dirFromElevAzim(30, kaz + 150, rx, ry, rz);
+        addLight(rx, ry, rz, _studioRimIntensity * 1.5, _studioRimIntensity * 1.4, _studioRimIntensity * 1.3);
+        _ambientIntensity = std::max(_ambientIntensity, 0.02);
+        break;
+    }
+    case 8: { // Studio Soft — broad diffuse wrap
+        double kaz = _studioKeyAzimuth;
+        double ki = _studioKeyIntensity * 0.7;
+        // Two keys flanking center for wrap
+        double k1x, k1y, k1z; dirFromElevAzim(45, kaz - 30, k1x, k1y, k1z);
+        double k2x, k2y, k2z; dirFromElevAzim(45, kaz + 30, k2x, k2y, k2z);
+        addLight(k1x, k1y, k1z, ki, ki, ki * 1.05);
+        addLight(k2x, k2y, k2z, ki * 0.8, ki * 0.8, ki * 0.85);
+        // Top fill
+        addLight(0, 1, 0, ki * 0.3, ki * 0.3, ki * 0.35);
+        // Gentle rim
+        double rx, ry, rz; dirFromElevAzim(40, kaz + 180, rx, ry, rz);
+        addLight(rx, ry, rz, _studioRimIntensity * 0.6, _studioRimIntensity * 0.6, _studioRimIntensity * 0.65);
+        _ambientIntensity = std::max(_ambientIntensity, 0.1);
+        break;
+    }
+    }
+
+    // Custom manual light on top of rig
+    if (_useFallbackLight && _lightIntensity > 0.001) {
+        double ld = std::sqrt(_lightDir[0]*_lightDir[0]+_lightDir[1]*_lightDir[1]+_lightDir[2]*_lightDir[2]);
+        if (ld > 1e-8) {
+            addLight(_lightDir[0]/ld, _lightDir[1]/ld, _lightDir[2]/ld,
+                     _lightColor[0]*_lightIntensity, _lightColor[1]*_lightIntensity, _lightColor[2]*_lightIntensity);
+        }
+    }
+}
+
+// ═══ Scene input — gather lights, axis, environment ═══
 
 // Recursively walk the scene input tree to find LightOps, Environment, and AxisOps
 void VDBRenderIop::gatherLights(Op* scnOp) {
@@ -806,6 +1008,9 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_envIntensity);hash.append(_envDiffuse);hash.append(_envRotate);
     hash.append(_densityMix);hash.append(_tempMix);hash.append(_flameMix);
     hash.append(_adaptiveStep);hash.append(_proxyMode);hash.append(_useFallbackLight);
+    hash.append(_lightRig);hash.append(_sunElevation);hash.append(_sunAzimuth);
+    hash.append(_sunIntensity);hash.append(_skyIntensity);hash.append(_turbidity);hash.append(_groundBounce);
+    hash.append(_studioKeyAzimuth);hash.append(_studioKeyIntensity);hash.append(_studioFillRatio);hash.append(_studioRimIntensity);
     hash.append(_motionBlur);hash.append(_shutterOpen);hash.append(_shutterClose);hash.append(_motionSamples);
     hash.append(_aovDensity);hash.append(_aovEmission);hash.append(_aovShadow);hash.append(_aovDepth);
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
@@ -947,13 +1152,8 @@ void VDBRenderIop::_validate(bool for_real) {
     if(!_envIop){_hasEnvMap=false;_envDirty=false;}
     }
 
-    // Fallback light if none found in scene and checkbox is enabled
-    if(_lights.empty()&&_useFallbackLight){CachedLight cl;
-        cl.dir[0]=_lightDir[0];cl.dir[1]=_lightDir[1];cl.dir[2]=_lightDir[2];
-        double len=std::sqrt(cl.dir[0]*cl.dir[0]+cl.dir[1]*cl.dir[1]+cl.dir[2]*cl.dir[2]);
-        if(len>1e-8){cl.dir[0]/=len;cl.dir[1]/=len;cl.dir[2]/=len;}
-        cl.color[0]=_lightColor[0]*_lightIntensity;cl.color[1]=_lightColor[1]*_lightIntensity;cl.color[2]=_lightColor[2]*_lightIntensity;
-        cl.isPoint=false;cl.pos[0]=cl.pos[1]=cl.pos[2]=0;_lights.push_back(cl);}
+    // Light rig — generates lights when none found in scene
+    buildLightRig();
 
     // Transform lights into volume-local space
     if(_hasVolumeXform){for(auto&cl:_lights){

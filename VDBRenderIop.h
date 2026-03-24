@@ -109,6 +109,20 @@ private:
     double _lightIntensity    = 1.0;
     bool   _useFallbackLight  = true;
     double _ambientIntensity  = 0.0;
+
+    // ── Light Rig ──
+    int    _lightRig          = 1;   // 0=None 1=DaySky 2=GoldenHour 3=Overcast 4=BlueHour 5=Night 6=Studio3pt 7=StudioDramatic 8=StudioSoft
+    double _sunElevation      = 45.0;
+    double _sunAzimuth        = 180.0;
+    double _sunIntensity      = 3.0;
+    double _skyIntensity      = 0.4;
+    double _turbidity         = 3.0;
+    double _groundBounce      = 0.1;
+    double _studioKeyAzimuth  = 45.0;
+    double _studioKeyIntensity= 3.0;
+    double _studioFillRatio   = 0.35;
+    double _studioRimIntensity= 2.0;
+    void   buildLightRig();
     double _envIntensity      = 1.0;
     double _envDiffuse        = 0.5;  // 0=sharp, 1=fully diffuse
     double _envRotate         = 0.0;   // degrees, 0-360
