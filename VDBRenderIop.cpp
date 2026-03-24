@@ -237,92 +237,6 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "This is the colour at peak density (opaque end).");
     EndGroup(f);
 
-    BeginClosedGroup(f,"grp_lighting","Lighting");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "Scene lights override the rig. If no lights are connected,<br>"
-        "the Light Rig below provides ready-to-use lighting setups."
-        "</font>");
-    static const char*rigNames[]={"None","Day Sky","Golden Hour","Overcast","Blue Hour","Night / Moon","Studio 3-Point","Studio Dramatic","Studio Soft",nullptr};
-    Enumeration_knob(f,&_lightRig,rigNames,"light_rig","Light Rig");
-    Tooltip(f,"Built-in lighting setups — no scene lights needed.\n"
-              "Day Sky — sun + blue sky + ground bounce\n"
-              "Golden Hour — low warm sun, soft amber fill\n"
-              "Overcast — soft white dome, no direct sun\n"
-              "Blue Hour — post-sunset cool twilight\n"
-              "Night / Moon — dim cool moonlight\n"
-              "Studio 3-Point — key + fill + rim\n"
-              "Studio Dramatic — strong key, minimal fill\n"
-              "Studio Soft — broad diffuse wrap");
-
-    Divider(f,"Sun and Sky");
-    Double_knob(f,&_sunElevation,"sun_elevation","Sun Elevation");SetRange(f,0,90);
-    Tooltip(f,"Sun height above the horizon in degrees.\n"
-              "90 = directly overhead (noon)\n"
-              "30 = late afternoon\n"
-              "10 = sunset, warm colours\n"
-              "0 = at the horizon");
-    Double_knob(f,&_sunAzimuth,"sun_azimuth","Sun Azimuth");SetRange(f,0,360);
-    Tooltip(f,"Sun horizontal angle in degrees.\n"
-              "0/360 = North, 90 = East, 180 = South, 270 = West.\n"
-              "Rotate to change where shadows fall.");
-    Double_knob(f,&_sunIntensity,"sun_intensity","Sun Intensity");SetRange(f,0,20);
-    Tooltip(f,"Brightness of the direct sunlight.\n"
-              "3 = natural daylight. Higher for dramatic contrast.");
-    Double_knob(f,&_skyIntensity,"sky_intensity","Sky Intensity");SetRange(f,0,5);
-    Tooltip(f,"Brightness of the sky dome fill light.\n"
-              "Simulates blue skylight scattered from the atmosphere.\n"
-              "0.3-0.5 = natural. Higher for softer shadows.");
-    Double_knob(f,&_turbidity,"turbidity","Turbidity");SetRange(f,2,10);
-    Tooltip(f,"Atmospheric haziness. Affects sun and sky colour.\n"
-              "2 = crystal clear mountain air\n"
-              "3 = clear day\n"
-              "5 = slightly hazy\n"
-              "8 = very hazy, smoggy\n"
-              "10 = heavy haze");
-    Double_knob(f,&_groundBounce,"ground_bounce","Ground Bounce");SetRange(f,0,1);
-    Tooltip(f,"Light bounced up from the ground surface.\n"
-              "Fills the underside of volumes.\n"
-              "0 = none. 0.1 = subtle. 0.3 = sandy ground.");
-
-    Divider(f,"Studio");
-    Double_knob(f,&_studioKeyAzimuth,"studio_key_azimuth","Key Azimuth");SetRange(f,0,360);
-    Tooltip(f,"Horizontal angle of the key (main) light.\n"
-              "45 = classic 3/4 lighting from camera-left.\n"
-              "315 = same from camera-right.");
-    Double_knob(f,&_studioKeyIntensity,"studio_key_intensity","Key Intensity");SetRange(f,0,20);
-    Tooltip(f,"Brightness of the main studio light.");
-    Double_knob(f,&_studioFillRatio,"studio_fill_ratio","Fill Ratio");SetRange(f,0,1);
-    Tooltip(f,"Fill light as a fraction of key intensity.\n"
-              "0 = no fill (very dramatic). 0.5 = soft (beauty).\n"
-              "Fill comes from the opposite side of the key.");
-    Double_knob(f,&_studioRimIntensity,"studio_rim_intensity","Rim Intensity");SetRange(f,0,20);
-    Tooltip(f,"Backlight intensity for edge definition.\n"
-              "Creates a bright outline on the volume's silhouette.\n"
-              "0 = no rim. 2 = standard. 4 = strong halo.");
-
-    Divider(f,"Manual Override");
-    Bool_knob(f,&_useFallbackLight,"use_fallback_light","Custom Light");
-    Tooltip(f,"Adds a single custom directional light on top of\n"
-              "the rig or scene lights. Useful for fine adjustments.");
-    XYZ_knob(f,_lightDir,"light_dir","Direction");
-    Color_knob(f,_lightColor,"light_color","Color");
-    Double_knob(f,&_lightIntensity,"light_intensity","Intensity");SetRange(f,0,50);
-    Double_knob(f,&_ambientIntensity,"ambient","Ambient");SetRange(f,0,5);
-    Tooltip(f,"Omnidirectional fill. Lifts the darkest areas.\n"
-              "Use sparingly — too much flattens the volume.");
-
-    Divider(f,"Environment Map");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "Picked up from EnvironLight in the scene tree. The HDRI and<br>"
-        "rotation are inherited automatically. Rotate Offset adds extra rotation."
-        "</font>");
-    Double_knob(f,&_envIntensity,"env_intensity","Env Intensity");SetRange(f,0,10);
-    Double_knob(f,&_envRotate,"env_rotate","Rotate Offset");SetRange(f,0,360);
-    Double_knob(f,&_envDiffuse,"env_diffuse","Diffuse");SetRange(f,0,1);
-    EndGroup(f);
-
     BeginClosedGroup(f,"grp_info","Technical Reference");
     Text_knob(f,
         "<font size='-1' color='#bbb'>"
@@ -427,6 +341,118 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Number of time samples across the shutter interval.\n"
               "2 = fast linear blur. 3 = good quality.\n"
               "5 = very smooth. More = slower render.");
+
+    // ═══════════════════════════════════════════════════
+    //  TAB: Lighting
+    // ═══════════════════════════════════════════════════
+    Tab_knob(f,"Lighting");
+
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Choose a Light Rig for instant lighting, or connect scene<br>"
+        "lights to the scn input to override. Works out of the box<br>"
+        "with Day Sky selected and any Scene Preset."
+        "</font>");
+
+    static const char*rigNames[]={"None","Day Sky","Golden Hour","Overcast","Blue Hour","Night / Moon","Studio 3-Point","Studio Dramatic","Studio Soft",nullptr};
+    Enumeration_knob(f,&_lightRig,rigNames,"light_rig","Light Rig");
+    Tooltip(f,"Built-in lighting setups — no scene lights needed.\n"
+              "Day Sky — sun + blue sky + ground bounce\n"
+              "Golden Hour — low warm sun, soft amber fill\n"
+              "Overcast — soft white dome, no direct sun\n"
+              "Blue Hour — post-sunset cool twilight\n"
+              "Night / Moon — dim cool moonlight\n"
+              "Studio 3-Point — key + fill + rim\n"
+              "Studio Dramatic — strong key, minimal fill\n"
+              "Studio Soft — broad diffuse wrap");
+
+    BeginGroup(f,"grp_sky","Sun and Sky");
+    Double_knob(f,&_sunElevation,"sun_elevation","Sun Elevation");SetRange(f,0,90);
+    Tooltip(f,"Sun height above the horizon in degrees.\n"
+              "90 = directly overhead (noon)\n"
+              "30 = late afternoon\n"
+              "10 = sunset, warm colours\n"
+              "0 = at the horizon");
+    Double_knob(f,&_sunAzimuth,"sun_azimuth","Sun Azimuth");SetRange(f,0,360);
+    Tooltip(f,"Sun horizontal angle in degrees.\n"
+              "0/360 = North, 90 = East, 180 = South, 270 = West.\n"
+              "Rotate to change where shadows fall.");
+    Double_knob(f,&_sunIntensity,"sun_intensity","Sun Intensity");SetRange(f,0,20);
+    Tooltip(f,"Brightness of the direct sunlight.\n"
+              "3 = natural daylight. Higher for dramatic contrast.");
+    Double_knob(f,&_skyIntensity,"sky_intensity","Sky Intensity");SetRange(f,0,5);
+    Tooltip(f,"Brightness of the sky dome fill light.\n"
+              "Simulates blue skylight scattered from the atmosphere.\n"
+              "0.3-0.5 = natural. Higher for softer shadows.");
+    Double_knob(f,&_turbidity,"turbidity","Turbidity");SetRange(f,2,10);
+    Tooltip(f,"Atmospheric haziness. Affects sun and sky colour.\n"
+              "2 = crystal clear mountain air\n"
+              "3 = clear day\n"
+              "5 = slightly hazy\n"
+              "8 = very hazy, smoggy\n"
+              "10 = heavy haze");
+    Double_knob(f,&_groundBounce,"ground_bounce","Ground Bounce");SetRange(f,0,1);
+    Tooltip(f,"Light bounced up from the ground surface.\n"
+              "Fills the underside of volumes.\n"
+              "0 = none. 0.1 = subtle. 0.3 = sandy ground.");
+    EndGroup(f);
+
+    BeginClosedGroup(f,"grp_studio","Studio Lights");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Controls for Studio 3-Point, Dramatic, and Soft rigs.<br>"
+        "Key is the main light. Fill softens shadows. Rim defines edges."
+        "</font>");
+    Double_knob(f,&_studioKeyAzimuth,"studio_key_azimuth","Key Azimuth");SetRange(f,0,360);
+    Tooltip(f,"Horizontal angle of the key (main) light.\n"
+              "45 = classic 3/4 lighting from camera-left.\n"
+              "315 = same from camera-right.");
+    Double_knob(f,&_studioKeyIntensity,"studio_key_intensity","Key Intensity");SetRange(f,0,20);
+    Tooltip(f,"Brightness of the main studio light.");
+    Double_knob(f,&_studioFillRatio,"studio_fill_ratio","Fill Ratio");SetRange(f,0,1);
+    Tooltip(f,"Fill light as a fraction of key intensity.\n"
+              "0 = no fill (very dramatic). 0.5 = soft (beauty).\n"
+              "Fill comes from the opposite side of the key.");
+    Double_knob(f,&_studioRimIntensity,"studio_rim_intensity","Rim Intensity");SetRange(f,0,20);
+    Tooltip(f,"Backlight intensity for edge definition.\n"
+              "Creates a bright outline on the volume's silhouette.\n"
+              "0 = no rim. 2 = standard. 4 = strong halo.");
+    EndGroup(f);
+
+    BeginClosedGroup(f,"grp_env","Environment Map");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Picked up from EnvironLight in the scene tree. The HDRI and<br>"
+        "rotation are inherited automatically. Rotate Offset adds extra rotation."
+        "</font>");
+    Double_knob(f,&_envIntensity,"env_intensity","Env Intensity");SetRange(f,0,10);
+    Tooltip(f,"Brightness of environment lighting.\n"
+              "0 = disabled. 1 = match the HDRI values.\n"
+              "Values above 1 boost the environment contribution.");
+    Double_knob(f,&_envRotate,"env_rotate","Rotate Offset");SetRange(f,0,360);
+    Tooltip(f,"Additional horizontal rotation on top of the\n"
+              "EnvironLight's own transform. 0 = no extra offset.");
+    Double_knob(f,&_envDiffuse,"env_diffuse","Diffuse");SetRange(f,0,1);
+    Tooltip(f,"How soft or spread out the environment lighting is.\n"
+              "0 = sharp highlights. 0.5 = natural. 1 = fully diffuse.");
+    EndGroup(f);
+
+    BeginClosedGroup(f,"grp_manual","Manual Override");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Add a custom directional light on top of the rig or scene<br>"
+        "lights. Also controls global ambient fill."
+        "</font>");
+    Bool_knob(f,&_useFallbackLight,"use_fallback_light","Custom Light");
+    Tooltip(f,"Adds a single custom directional light.\n"
+              "Works alongside the rig and scene lights.");
+    XYZ_knob(f,_lightDir,"light_dir","Direction");
+    Color_knob(f,_lightColor,"light_color","Color");
+    Double_knob(f,&_lightIntensity,"light_intensity","Intensity");SetRange(f,0,50);
+    Double_knob(f,&_ambientIntensity,"ambient","Ambient");SetRange(f,0,5);
+    Tooltip(f,"Omnidirectional fill. Lifts the darkest areas.\n"
+              "Use sparingly — too much flattens the volume.");
+    EndGroup(f);
 
     // ═══════════════════════════════════════════════════
     //  TAB: Quality
@@ -618,7 +644,10 @@ int VDBRenderIop::knob_changed(Knob* k)
         knob("quality_preset")->set_value(0);_qualityPreset=0;
         return 1;
     }
-    if(k->is("light_rig"))return 1; // trigger re-render
+    if(k->is("light_rig")||k->is("sun_elevation")||k->is("sun_azimuth")||k->is("sun_intensity")
+       ||k->is("sky_intensity")||k->is("turbidity")||k->is("ground_bounce")
+       ||k->is("studio_key_azimuth")||k->is("studio_key_intensity")
+       ||k->is("studio_fill_ratio")||k->is("studio_rim_intensity"))return 1;
     if(k->is("aniso_preset")){
         static const double pv[]={0,0,0.4,0.6,0.76,0.8,-0.4,-0.7};
         if(_anisotropyPreset>0&&_anisotropyPreset<(int)(sizeof(pv)/sizeof(double))){
@@ -635,14 +664,15 @@ int VDBRenderIop::knob_changed(Knob* k)
         return 1;}
     if(k->is("quality_preset")){
         // Custom(0), Draft(1), Preview(2), Production(3), Final(4), Ultra(5)
+        // Step size = 1/(q*q). Lower = finer detail but slower.
         struct QPreset { double q; int sh; double shDen; int bnc,bRays,deep; double envD; };
         static const QPreset qv[]={
             {},                               // 0: Custom
-            {1.0,  4, 0.5, 0,  6,  16, 0.3}, // 1: Draft
-            {2.0,  8, 1.0, 0,  6,  16, 0.4}, // 2: Preview
-            {5.0, 16, 1.0, 1, 14,  32, 0.6}, // 3: Production
-            {7.0, 24, 1.0, 2, 14,  64, 0.7}, // 4: Final
-            {10.0,32, 1.0, 3, 26, 128, 1.0}, // 5: Ultra
+            {1.5,  4, 1.0, 0,  6,  16, 0.3}, // 1: Draft     — step 0.44, fast layout check
+            {3.0,  8, 1.0, 0,  6,  32, 0.4}, // 2: Preview   — step 0.11, smooth enough for review
+            {5.0, 16, 1.0, 1, 14,  48, 0.6}, // 3: Production— step 0.04, 1-bounce for realism
+            {7.0, 24, 1.0, 2, 14,  64, 0.7}, // 4: Final     — step 0.02, 2-bounce
+            {10.0,32, 1.0, 3, 26, 128, 1.0}, // 5: Ultra     — step 0.01, full quality
         };
         if(_qualityPreset>0&&_qualityPreset<(int)(sizeof(qv)/sizeof(QPreset))){
             const auto&q=qv[_qualityPreset];

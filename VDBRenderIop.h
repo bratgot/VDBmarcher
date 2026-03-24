@@ -128,7 +128,7 @@ private:
     double _envRotate         = 0.0;   // degrees, 0-360
 
     // ── Quality ──
-    double _quality           = 2.0;
+    double _quality           = 3.0;
     int    _shadowSteps       = 8;
     double _shadowDensity     = 1.0;
     int    _deepSamples       = 32;
