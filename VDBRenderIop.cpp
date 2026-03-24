@@ -1146,6 +1146,25 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         openvdb::Vec3d rayO(ox,oy,oz),rayD(rdx,rdy,rdz);
         float ri=(float)_rampIntensity;
 
+        // AABB ray-box test — skip pixels that miss the volume entirely
+        {double tE=0,tX=1e30;
+         for(int a=0;a<3;++a){
+             double inv=(std::abs(rayD[a])>1e-8)?1.0/rayD[a]:1e30;
+             double t0=(_bboxMin[a]-rayO[a])*inv,t1=(_bboxMax[a]-rayO[a])*inv;
+             if(t0>t1){double tmp=t0;t0=t1;t1=tmp;}
+             if(t0>tE)tE=t0;if(t1<tX)tX=t1;}
+         if(tE>=tX||tX<=0){
+             // Ray misses volume — write BG or black
+             if(hasBg){rO[ix]=bgR[ix];gO[ix]=bgG[ix];bO[ix]=bgB[ix];aO[ix]=bgA[ix];}
+             else{rO[ix]=0;gO[ix]=0;bO[ix]=0;aO[ix]=0;}
+             if(aovDenR){aovDenR[ix]=0;aovDenG[ix]=0;aovDenB[ix]=0;}
+             if(aovEmR){aovEmR[ix]=0;aovEmG[ix]=0;aovEmB[ix]=0;}
+             if(aovShR){aovShR[ix]=0;aovShG[ix]=0;aovShB[ix]=0;}
+             if(aovDpP)aovDpP[ix]=0;
+             continue;
+         }
+        }
+
         // Accumulate across motion blur time samples
         float R=0,G=0,B=0,A=0;
         float emAccR=0,emAccG=0,emAccB=0;
@@ -1318,7 +1337,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
                 for(int a=0;a<3;++a)if(lw[a]<_bboxMin[a]||lw[a]>_bboxMax[a]){in=false;break;}if(!in)break;
                 auto li=xf.worldToIndex(lw);
                 lT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li)*ext*_shadowDensity*shStep);
-                if(lT<.001)break;}
+                if(lT<.01)break;}
             double ctr=ss*phS*lT*T*step;aR+=ctr*lt.color[0];aG+=ctr*lt.color[1];aB+=ctr*lt.color[2];}
         // Ambient
         if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;aR+=amb;aG+=amb;aB+=amb;}
@@ -1342,7 +1361,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
                     for(int a5=0;a5<3;++a5)if(ew[a5]<_bboxMin[a5]||ew[a5]>_bboxMax[a5]){in=false;break;}if(!in)break;
                     auto ei=xf.worldToIndex(ew);
                     eT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,ei)*ext*_shadowDensity*shStep);
-                    if(eT<.001)break;}
+                    if(eT<.01)break;}
                 double envC=ss*eT*T*step*_envIntensity*(4*M_PI/nEnv);
                 aR+=envC*eR;aG+=envC*eG;aB+=envC*eB;
                 ++used;}
@@ -1374,7 +1393,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
                                 for(int a4=0;a4<3;++a4)if(lw2[a4]<_bboxMin[a4]||lw2[a4]>_bboxMax[a4]){in2=false;break;}if(!in2)break;
                                 auto li2=xf.worldToIndex(lw2);
                                 lT2*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li2)*ext*_shadowDensity*shStep*2);
-                                if(lT2<.001)break;}
+                                if(lT2<.01)break;}
                             double c2=bDen*scat*lT2;bR+=c2*lt2.color[0];bG+=c2*lt2.color[1];bB+=c2*lt2.color[2];}
                     }++su;}
                 if(su>0){double norm=bouncePow/(su*nBounceSteps);bounceR+=bR*norm;bounceG+=bG*norm;bounceB+=bB*norm;}
@@ -1404,11 +1423,11 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
         openvdb::math::Ray<double> wRay(origin,dir);
         if(!vri.setWorldRay(wRay)){outR=outG=outB=outA=0;return;}
         double it0,it1;
-        while(vri.march(it0,it1)&&T>.001){
+        while(vri.march(it0,it1)&&T>.005){
             auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
             double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
             if(wT1<=0)continue;if(wT0<0)wT0=0;
-            for(double t2=wT0;t2<wT1&&T>.001;){
+            for(double t2=wT0;t2<wT1&&T>.005;){
                 auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
                 lastDen=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
                 shadeSample(wP,iP);
@@ -1423,7 +1442,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
             double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
             if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
         if(tEnter>=tExit||tExit<=0)return;
-        for(double t2=tEnter;t2<tExit&&T>.001;){
+        for(double t2=tEnter;t2<tExit&&T>.005;){
             auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
             lastDen=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
             shadeSample(wP,iP);
@@ -1479,7 +1498,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
                         for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
                         auto li=xf.worldToIndex(lw);
                         lT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li)*ext*_shadowDensity*shStep);
-                        if(lT<.001)break;}
+                        if(lT<.01)break;}
                     double ctr=ss*phS*lT*T*step;aR+=ctr*lt.color[0];aG+=ctr*lt.color[1];aB+=ctr*lt.color[2];}
                 if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;aR+=amb;aG+=amb;aB+=amb;}
                 // Environment map
@@ -1499,7 +1518,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
                             for(int a5=0;a5<3;++a5)if(ew[a5]<_bboxMin[a5]||ew[a5]>_bboxMax[a5]){in2=false;break;}if(!in2)break;
                             auto ei=xf.worldToIndex(ew);
                             eT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,ei)*ext*_shadowDensity*shStep);
-                            if(eT<.001)break;}
+                            if(eT<.01)break;}
                         double envC=ss*eT*T*step*_envIntensity*(4*M_PI/nEnv);
                         aR+=envC*eR;aG+=envC*eG;aB+=envC*eB;++used;}
                 }
@@ -1526,7 +1545,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
                                         for(int a4=0;a4<3;++a4)if(lw2[a4]<_bboxMin[a4]||lw2[a4]>_bboxMax[a4]){in2=false;break;}if(!in2)break;
                                         auto li2=xf.worldToIndex(lw2);
                                         lT2*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li2)*ext*_shadowDensity*shStep*2);
-                                        if(lT2<.001)break;}
+                                        if(lT2<.01)break;}
                                     double c2=bDen*scat*lT2;bR+=c2*lt2.color[0];bG+=c2*lt2.color[1];bB+=c2*lt2.color[2];}
                             }++su;}
                         if(su>0){double norm=bouncePow/(su*nBSteps);bounceR+=bR*norm;bounceG+=bG*norm;bounceB+=bB*norm;}
@@ -1542,11 +1561,11 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
         VRI vri(*_volRI);openvdb::math::Ray<double> wRay(origin,dir);
         if(!vri.setWorldRay(wRay))return;
         double it0,it1;
-        while(vri.march(it0,it1)&&T>.001){
+        while(vri.march(it0,it1)&&T>.005){
             auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
             double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
             if(wT1<=0)continue;if(wT0<0)wT0=0;
-            for(double t2=wT0;t2<wT1&&T>.001;){
+            for(double t2=wT0;t2<wT1&&T>.005;){
                 auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
                 shadeSampleExplosion(wP,iP);
                 double curStep=step;
@@ -1560,7 +1579,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
             double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
             if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
         if(tEnter>=tExit||tExit<=0)return;
-        for(double t2=tEnter;t2<tExit&&T>.001;){
+        for(double t2=tEnter;t2<tExit&&T>.005;){
             auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
             shadeSampleExplosion(wP,iP);
             double curStep=step;
@@ -1594,11 +1613,11 @@ void VDBRenderIop::marchRayDensity(MarchCtx&ctx,const openvdb::Vec3d&origin,cons
         VRI vri(*_volRI);openvdb::math::Ray<double> wRay(origin,dir);
         if(!vri.setWorldRay(wRay))return;
         double it0,it1;
-        while(vri.march(it0,it1)&&T>.001){
+        while(vri.march(it0,it1)&&T>.005){
             auto wS=vri.getWorldPos(it0),wE=vri.getWorldPos(it1);
             double wT0=(wS-origin).dot(dir),wT1=(wE-origin).dot(dir);
             if(wT1<=0)continue;if(wT0<0)wT0=0;
-            for(double t2=wT0;t2<wT1&&T>.001;){
+            for(double t2=wT0;t2<wT1&&T>.005;){
                 auto iP=xf.worldToIndex(origin+t2*dir);float ld=shadeDensity(iP);
                 double curStep=step;
                 if(_adaptiveStep){curStep=step*(ld<0.01?4.0:ld<0.1?2.0:1.0);}
@@ -1610,7 +1629,7 @@ void VDBRenderIop::marchRayDensity(MarchCtx&ctx,const openvdb::Vec3d&origin,cons
             double t0=(_bboxMin[a]-origin[a])*inv,t1=(_bboxMax[a]-origin[a])*inv;
             if(t0>t1)std::swap(t0,t1);tEnter=std::max(tEnter,t0);tExit=std::min(tExit,t1);}
         if(tEnter>=tExit||tExit<=0)return;
-        for(double t2=tEnter;t2<tExit&&T>.001;){
+        for(double t2=tEnter;t2<tExit&&T>.005;){
             auto iP=xf.worldToIndex(origin+t2*dir);float ld=shadeDensity(iP);
             double curStep=step;
             if(_adaptiveStep){curStep=step*(ld<0.01?4.0:ld<0.1?2.0:1.0);}
@@ -1733,7 +1752,7 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
                                         for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
                                         auto li=xf.worldToIndex(lw);
                                         lT*=std::exp(-(double)la.getValue(openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shStep);
-                                        if(lT<.001)break;}}
+                                        if(lT<.01)break;}}
                                 double ctr=ss*phS*lT*T*step;
                                 slabR+=(float)(ctr*lt.color[0]);slabG+=(float)(ctr*lt.color[1]);slabB+=(float)(ctr*lt.color[2]);}
                             if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;

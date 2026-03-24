@@ -33,6 +33,13 @@ target_compile_definitions(VDBRender PRIVATE
     FN_SHARED_EXPORT=__declspec\(dllexport\)
 )
 
+# AVX2 SIMD + fast math for volume ray marching
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(VDBRender PRIVATE -mavx2 -mfma -ffast-math)
+elseif(MSVC)
+    target_compile_options(VDBRender PRIVATE /arch:AVX2 /fp:fast)
+endif()
+
 target_link_libraries(VDBRender PRIVATE
     ${NDK_LIB}
     OpenVDB::openvdb

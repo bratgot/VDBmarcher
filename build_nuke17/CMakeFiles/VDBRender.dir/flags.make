@@ -6,5 +6,5 @@ CXX_DEFINES = -DBOOST_IOSTREAMS_DYN_LINK -DBOOST_IOSTREAMS_NO_LIB -DBOOST_RANDOM
 
 CXX_INCLUDES = -IC:\PROGRA~1\Nuke17.0v1\include -imsvcC:\vcpkg\installed\x64-windows\include -imsvcC:\vcpkg\installed\x64-windows\include\Imath
 
-CXX_FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD
+CXX_FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD -mavx2 -mfma -ffast-math
 
