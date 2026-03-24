@@ -349,24 +349,26 @@ void VDBRenderIop::knobs(Knob_Callback f)
 
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Choose a Light Rig for instant lighting, or connect scene<br>"
-        "lights to the scn input to override. Works out of the box<br>"
-        "with Day Sky selected and any Scene Preset."
+        "Sun/Sky and Studio lights can be blended together using the<br>"
+        "Mix sliders. Scene lights from the scn input override the rig.<br>"
+        "Presets set the sliders below — tweak them freely afterwards."
         "</font>");
 
-    static const char*rigNames[]={"None","Day Sky","Golden Hour","Overcast","Blue Hour","Night / Moon","Studio 3-Point","Studio Dramatic","Studio Soft",nullptr};
-    Enumeration_knob(f,&_lightRig,rigNames,"light_rig","Light Rig");
-    Tooltip(f,"Built-in lighting setups — no scene lights needed.\n"
-              "Day Sky — sun + blue sky + ground bounce\n"
-              "Golden Hour — low warm sun, soft amber fill\n"
-              "Overcast — soft white dome, no direct sun\n"
-              "Blue Hour — post-sunset cool twilight\n"
-              "Night / Moon — dim cool moonlight\n"
-              "Studio 3-Point — key + fill + rim\n"
-              "Studio Dramatic — strong key, minimal fill\n"
-              "Studio Soft — broad diffuse wrap");
-
-    BeginGroup(f,"grp_sky","Sun and Sky");
+    Divider(f,"Sun and Sky");
+    static const char*skyP[]={"Off","Custom","Day Sky","Golden Hour","Overcast","Blue Hour","Night / Moon",nullptr};
+    Enumeration_knob(f,&_skyPreset,skyP,"sky_preset","Sky Preset");
+    Tooltip(f,"Sets sun/sky sliders for common lighting conditions.\n"
+              "Off — disables sun and sky entirely\n"
+              "Custom — adjust sliders manually\n"
+              "Day Sky — noon sun, clear blue sky\n"
+              "Golden Hour — low warm sunset light\n"
+              "Overcast — soft cloudy dome, no direct sun\n"
+              "Blue Hour — cool post-sunset twilight\n"
+              "Night / Moon — dim cool moonlight");
+    Double_knob(f,&_skyMix,"sky_mix","Sky Mix");SetRange(f,0,2);
+    Tooltip(f,"Master brightness for all sun and sky lights.\n"
+              "0 = off. 1 = natural. 2 = double brightness.\n"
+              "Use this to balance sun/sky against studio lights.");
     Double_knob(f,&_sunElevation,"sun_elevation","Sun Elevation");SetRange(f,0,90);
     Tooltip(f,"Sun height above the horizon in degrees.\n"
               "90 = directly overhead (noon)\n"
@@ -375,38 +377,41 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "0 = at the horizon");
     Double_knob(f,&_sunAzimuth,"sun_azimuth","Sun Azimuth");SetRange(f,0,360);
     Tooltip(f,"Sun horizontal angle in degrees.\n"
-              "0/360 = North, 90 = East, 180 = South, 270 = West.\n"
-              "Rotate to change where shadows fall.");
+              "0/360 = North, 90 = East, 180 = South, 270 = West.");
     Double_knob(f,&_sunIntensity,"sun_intensity","Sun Intensity");SetRange(f,0,20);
     Tooltip(f,"Brightness of the direct sunlight.\n"
               "3 = natural daylight. Higher for dramatic contrast.");
-    Double_knob(f,&_skyIntensity,"sky_intensity","Sky Intensity");SetRange(f,0,5);
+    Double_knob(f,&_skyIntensity,"sky_intensity","Sky Fill");SetRange(f,0,5);
     Tooltip(f,"Brightness of the sky dome fill light.\n"
-              "Simulates blue skylight scattered from the atmosphere.\n"
-              "0.3-0.5 = natural. Higher for softer shadows.");
+              "0.3-0.5 = natural outdoor. Higher for softer shadows.");
     Double_knob(f,&_turbidity,"turbidity","Turbidity");SetRange(f,2,10);
     Tooltip(f,"Atmospheric haziness. Affects sun and sky colour.\n"
-              "2 = crystal clear mountain air\n"
-              "3 = clear day\n"
-              "5 = slightly hazy\n"
-              "8 = very hazy, smoggy\n"
-              "10 = heavy haze");
+              "2 = crystal clear. 3 = clear day. 6 = hazy. 10 = heavy.");
     Double_knob(f,&_groundBounce,"ground_bounce","Ground Bounce");SetRange(f,0,1);
     Tooltip(f,"Light bounced up from the ground surface.\n"
               "Fills the underside of volumes.\n"
               "0 = none. 0.1 = subtle. 0.3 = sandy ground.");
-    EndGroup(f);
 
-    BeginClosedGroup(f,"grp_studio","Studio Lights");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "Controls for Studio 3-Point, Dramatic, and Soft rigs.<br>"
-        "Key is the main light. Fill softens shadows. Rim defines edges."
-        "</font>");
+    Divider(f,"Studio Lights");
+    static const char*stuP[]={"Off","3-Point","Dramatic","Soft","Rim Only","Top Light",nullptr};
+    Enumeration_knob(f,&_studioPreset,stuP,"studio_preset","Studio Preset");
+    Tooltip(f,"Sets studio light sliders for common setups.\n"
+              "3-Point — key + fill + rim (standard)\n"
+              "Dramatic — strong key, minimal fill, hard rim\n"
+              "Soft — broad wrap, gentle rim (beauty)\n"
+              "Rim Only — backlight silhouette\n"
+              "Top Light — overhead, moody\n"
+              "Choose Off to disable studio lights.");
+    Double_knob(f,&_studioMix,"studio_mix","Studio Mix");SetRange(f,0,2);
+    Tooltip(f,"Master brightness for all studio lights.\n"
+              "0 = off. 1 = natural. 2 = double brightness.\n"
+              "Blend with Sky Mix for hybrid lighting.");
     Double_knob(f,&_studioKeyAzimuth,"studio_key_azimuth","Key Azimuth");SetRange(f,0,360);
     Tooltip(f,"Horizontal angle of the key (main) light.\n"
-              "45 = classic 3/4 lighting from camera-left.\n"
-              "315 = same from camera-right.");
+              "45 = classic 3/4 from camera-left. 315 = camera-right.");
+    Double_knob(f,&_studioKeyElevation,"studio_key_elevation","Key Elevation");SetRange(f,0,90);
+    Tooltip(f,"Height of the key light.\n"
+              "40 = standard portrait. 70 = high, dramatic shadows.");
     Double_knob(f,&_studioKeyIntensity,"studio_key_intensity","Key Intensity");SetRange(f,0,20);
     Tooltip(f,"Brightness of the main studio light.");
     Double_knob(f,&_studioFillRatio,"studio_fill_ratio","Fill Ratio");SetRange(f,0,1);
@@ -415,43 +420,81 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Fill comes from the opposite side of the key.");
     Double_knob(f,&_studioRimIntensity,"studio_rim_intensity","Rim Intensity");SetRange(f,0,20);
     Tooltip(f,"Backlight intensity for edge definition.\n"
-              "Creates a bright outline on the volume's silhouette.\n"
               "0 = no rim. 2 = standard. 4 = strong halo.");
-    EndGroup(f);
+
+    Divider(f,"Global");
+    Double_knob(f,&_ambientIntensity,"ambient","Ambient");SetRange(f,0,5);
+    Tooltip(f,"Omnidirectional fill. Lifts the darkest areas.\n"
+              "Use sparingly — too much flattens the volume.");
 
     BeginClosedGroup(f,"grp_env","Environment Map");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Picked up from EnvironLight in the scene tree. The HDRI and<br>"
-        "rotation are inherited automatically. Rotate Offset adds extra rotation."
+        "Picked up from EnvironLight in the scene tree."
         "</font>");
     Double_knob(f,&_envIntensity,"env_intensity","Env Intensity");SetRange(f,0,10);
-    Tooltip(f,"Brightness of environment lighting.\n"
-              "0 = disabled. 1 = match the HDRI values.\n"
-              "Values above 1 boost the environment contribution.");
     Double_knob(f,&_envRotate,"env_rotate","Rotate Offset");SetRange(f,0,360);
-    Tooltip(f,"Additional horizontal rotation on top of the\n"
-              "EnvironLight's own transform. 0 = no extra offset.");
     Double_knob(f,&_envDiffuse,"env_diffuse","Diffuse");SetRange(f,0,1);
-    Tooltip(f,"How soft or spread out the environment lighting is.\n"
-              "0 = sharp highlights. 0.5 = natural. 1 = fully diffuse.");
     EndGroup(f);
 
     BeginClosedGroup(f,"grp_manual","Manual Override");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Add a custom directional light on top of the rig or scene<br>"
-        "lights. Also controls global ambient fill."
+        "Add a custom directional light on top of everything."
         "</font>");
     Bool_knob(f,&_useFallbackLight,"use_fallback_light","Custom Light");
-    Tooltip(f,"Adds a single custom directional light.\n"
-              "Works alongside the rig and scene lights.");
     XYZ_knob(f,_lightDir,"light_dir","Direction");
     Color_knob(f,_lightColor,"light_color","Color");
     Double_knob(f,&_lightIntensity,"light_intensity","Intensity");SetRange(f,0,50);
-    Double_knob(f,&_ambientIntensity,"ambient","Ambient");SetRange(f,0,5);
-    Tooltip(f,"Omnidirectional fill. Lifts the darkest areas.\n"
-              "Use sparingly — too much flattens the volume.");
+    EndGroup(f);
+
+    BeginClosedGroup(f,"grp_light_info","Lighting Technical Reference");
+    Text_knob(f,
+        "<font size='-1' color='#bbb'>"
+        "<b>Sun and Sky Model</b><br>"
+        "Simplified analytical sky based on Preetham et al. (1999).<br>"
+        "Sun colour is derived from elevation and turbidity: high<br>"
+        "elevation produces white light, low elevation shifts through<br>"
+        "gold, orange, and red via Planckian-like chromaticity. Sky<br>"
+        "dome colour follows Rayleigh scattering — deep blue at noon,<br>"
+        "warm purple at sunset. Turbidity controls Mie scattering<br>"
+        "from aerosols: higher values add haze warmth, desaturate<br>"
+        "the sky, and reduce blue. Ground bounce approximates<br>"
+        "Lambertian diffuse reflection from the terrain surface."
+        "</font><br><br>"
+        "<font size='-1' color='#bbb'>"
+        "<b>Studio Lighting</b><br>"
+        "Three-point lighting follows cinematographic convention:<br>"
+        "the Key light provides primary illumination with slight<br>"
+        "warmth (Kelvin ~5500K). The Fill light sits opposite the<br>"
+        "key at half elevation with a cool tint, controlled by the<br>"
+        "Fill Ratio as a fraction of key intensity. The Rim (back)<br>"
+        "light is placed behind and above the subject to define<br>"
+        "edge silhouettes. Dramatic mode reduces fill to ~8% for<br>"
+        "high-contrast chiaroscuro. Soft mode uses two flanking<br>"
+        "keys offset +/-30 degrees for broad wrap-around lighting."
+        "</font><br><br>"
+        "<font size='-1' color='#bbb'>"
+        "<b>Mix Controls</b><br>"
+        "Sky Mix and Studio Mix are master multipliers applied to<br>"
+        "all lights in their respective group. Both can be active<br>"
+        "simultaneously for hybrid lighting — e.g. outdoor sun with<br>"
+        "a subtle studio rim for edge definition. Values above 1.0<br>"
+        "boost beyond natural intensity for artistic emphasis."
+        "</font><br><br>"
+        "<font size='-1' color='#bbb'>"
+        "<b>Light Generation</b><br>"
+        "All rig lights are generated as directional CachedLight<br>"
+        "entries during validate — identical to scene lights from<br>"
+        "the scn input. They participate in the same shadow ray,<br>"
+        "phase function, and multi-scatter calculations. Scene<br>"
+        "lights always override the rig entirely."
+        "</font><br><br>"
+        "<font size='-1' color='#888'>"
+        "Preetham, Shirley, Smits (1999) — A Practical Analytic<br>"
+        "Model for Daylight, SIGGRAPH 99<br>"
+        "Henyey-Greenstein (1941) — Phase function for volume scatter"
+        "</font>");
     EndGroup(f);
 
     // ═══════════════════════════════════════════════════
@@ -605,20 +648,20 @@ int VDBRenderIop::knob_changed(Knob* k)
             int mode; double ext,scat,aniso; int shSteps;
             double shDen,tMin,tMax,emInt,flInt,quality,ambient;
             int bounces,bRays; double intensity,envDiff;
-            int rig; double sunElev;
+            int skyP,stuP; // sky preset, studio preset (triggers their knob_changed)
         };
-        //                                   mode ext   scat  ani  sh shDen tMn   tMx    eI   fI   q    amb  bnc bR   int  envD  rig sElev
+        //                                   mode ext   scat  ani  sh shDen tMn   tMx    eI   fI   q    amb  bnc bR   int  envD  skyP stuP
         static const Preset pv[] = {
             {},                             // 0: Custom
-            {0, 2.0, 1.5, 0.4, 8, 1.0,       500,6500,  0,   0,   2, 0.1,  0, 6,  1.0, 0.5,  1, 45},  // 1: Thin Smoke — Day Sky
-            {0, 15.0,6.0, 0.35,12,1.0,       500,6500,  0,   0,   3, 0.05, 1, 6,  1.0, 0.5,  1, 45},  // 2: Dense Smoke — Day Sky
-            {0, 1.0, 0.95,0.8, 8, 0.5,       500,6500,  0,   0,   2, 0.3,  2, 14, 1.0, 0.8,  3,  0},  // 3: Fog / Mist — Overcast
-            {0, 12.0,11.4,0.76,16,1.0,       500,6500,  0,   0,   5, 0.2,  3, 14, 1.0, 0.6,  1, 55},  // 4: Cumulus Cloud — Day Sky, high sun
-            {6, 5.0, 2.0, 0.3, 8, 0.6,       800,3000,  4.0, 8.0, 3, 0.15, 0, 6,  1.5, 0.3,  2,  0},  // 5: Fire — Golden Hour
-            {6, 20.0,5.0, 0.4, 16,0.5,       500,6000,  3.0, 5.0, 5, 0.1,  1, 14, 1.0, 0.4,  1, 35},  // 6: Explosion — Day Sky
-            {6, 30.0,6.0, 0.4, 16,0.4,      1000,8000,  2.0, 4.0, 7, 0.08, 1, 14, 0.8, 0.3,  1, 30},  // 7: Pyroclastic — Day Sky, lower
-            {0, 4.0, 3.0, 0.55, 8, 1.0,      500,6500,  0,   0,   2, 0.15, 0, 6,  1.0, 0.5,  1, 40},  // 8: Dust Storm — Day Sky
-            {0, 2.0, 1.9, 0.7, 8, 0.5,       500,6500,  0,   0,   2, 0.2,  1, 6,  1.0, 0.7,  8,  0},  // 9: Steam — Studio Soft
+            {0, 2.0, 1.5, 0.4, 8, 1.0,       500,6500,  0,   0,   3, 0.1,  0, 6,  1.0, 0.5,  2, 0},  // 1: Thin Smoke — Day Sky
+            {0, 15.0,6.0, 0.35,12,1.0,       500,6500,  0,   0,   3, 0.05, 1, 6,  1.0, 0.5,  2, 0},  // 2: Dense Smoke — Day Sky
+            {0, 1.0, 0.95,0.8, 8, 0.5,       500,6500,  0,   0,   3, 0.3,  2, 14, 1.0, 0.8,  4, 0},  // 3: Fog / Mist — Overcast
+            {0, 12.0,11.4,0.76,16,1.0,       500,6500,  0,   0,   5, 0.2,  3, 14, 1.0, 0.6,  2, 0},  // 4: Cumulus Cloud — Day Sky
+            {6, 5.0, 2.0, 0.3, 8, 0.6,       800,3000,  2.5, 5.0, 3, 0.15, 0, 6,  1.5, 0.3,  3, 0},  // 5: Fire — Golden Hour
+            {6, 20.0,5.0, 0.4, 16,0.5,       500,6000,  2.0, 3.5, 5, 0.1,  1, 14, 1.0, 0.4,  2, 0},  // 6: Explosion — Day Sky
+            {6, 30.0,6.0, 0.4, 16,0.4,      1000,8000,  1.5, 2.5, 7, 0.08, 1, 14, 0.8, 0.3,  2, 0},  // 7: Pyroclastic — Day Sky
+            {0, 4.0, 3.0, 0.55, 8, 1.0,      500,6500,  0,   0,   3, 0.15, 0, 6,  1.0, 0.5,  2, 0},  // 8: Dust Storm — Day Sky
+            {0, 2.0, 1.9, 0.7, 8, 0.5,       500,6500,  0,   0,   3, 0.2,  1, 6,  1.0, 0.7,  0, 3},  // 9: Steam — Studio Soft
         };
         const auto&p=pv[_scenePreset];
         knob("color_scheme")->set_value(p.mode);_colorScheme=p.mode;
@@ -637,17 +680,86 @@ int VDBRenderIop::knob_changed(Knob* k)
         knob("bounce_rays")->set_value(p.bRays);_bounceRays=p.bRays;
         knob("ramp_intensity")->set_value(p.intensity);_rampIntensity=p.intensity;
         knob("env_diffuse")->set_value(p.envDiff);_envDiffuse=p.envDiff;
-        knob("light_rig")->set_value(p.rig);_lightRig=p.rig;
-        if(p.sunElev>0){knob("sun_elevation")->set_value(p.sunElev);_sunElevation=p.sunElev;}
+        // Set lighting presets — triggers their knob_changed to populate sliders
+        knob("sky_preset")->set_value(p.skyP);_skyPreset=p.skyP;
+        knob("studio_preset")->set_value(p.stuP);_studioPreset=p.stuP;
+        if(p.skyP>0){knob("sky_mix")->set_value(1.0);_skyMix=1.0;
+            knob("studio_mix")->set_value(0.0);_studioMix=0.0;}
+        if(p.stuP>0){knob("studio_mix")->set_value(1.0);_studioMix=1.0;
+            if(p.skyP==0){knob("sky_mix")->set_value(0.0);_skyMix=0.0;}}
         knob("aniso_preset")->set_value(0);_anisotropyPreset=0;
         knob("scatter_preset")->set_value(0);_scatterPreset=0;
         knob("quality_preset")->set_value(0);_qualityPreset=0;
         return 1;
     }
-    if(k->is("light_rig")||k->is("sun_elevation")||k->is("sun_azimuth")||k->is("sun_intensity")
+    if(k->is("sky_preset")){
+        if(_skyPreset==0){
+            // Off — zero everything
+            knob("sky_mix")->set_value(0);_skyMix=0;
+            knob("sun_intensity")->set_value(0);_sunIntensity=0;
+            knob("sky_intensity")->set_value(0);_skyIntensity=0;
+            knob("ground_bounce")->set_value(0);_groundBounce=0;
+            return 1;
+        }
+        if(_skyPreset==1) return 1; // Custom — leave sliders as-is
+        //                  elev  azim  sunI  skyI  turb  grnd  mix
+        struct SkyP{double e,a,si,ski,t,gb,m;};
+        static const SkyP sp[]={
+            {},                                    // padding for index 0,1
+            {},
+            { 45, 180, 3.0, 0.4, 3.0, 0.1, 1.0},  // 2: Day Sky
+            {  8, 220, 2.5, 0.15,4.0, 0.05,1.0},  // 3: Golden Hour
+            { 30, 180, 0.0, 0.9, 6.0, 0.05,1.0},  // 4: Overcast
+            {  3, 250, 0.3, 0.15,3.0, 0.02,1.0},  // 5: Blue Hour
+            { 35, 120, 0.4, 0.03,2.5, 0.0, 1.0},  // 6: Night / Moon
+        };
+        if(_skyPreset>=2&&_skyPreset<(int)(sizeof(sp)/sizeof(SkyP))){
+            const auto&s=sp[_skyPreset];
+            knob("sun_elevation")->set_value(s.e);_sunElevation=s.e;
+            knob("sun_azimuth")->set_value(s.a);_sunAzimuth=s.a;
+            knob("sun_intensity")->set_value(s.si);_sunIntensity=s.si;
+            knob("sky_intensity")->set_value(s.ski);_skyIntensity=s.ski;
+            knob("turbidity")->set_value(s.t);_turbidity=s.t;
+            knob("ground_bounce")->set_value(s.gb);_groundBounce=s.gb;
+            knob("sky_mix")->set_value(s.m);_skyMix=s.m;
+        }
+        return 1;
+    }
+    if(k->is("studio_preset")){
+        if(_studioPreset==0){
+            // Off — zero mix
+            knob("studio_mix")->set_value(0);_studioMix=0;
+            knob("studio_key_intensity")->set_value(0);_studioKeyIntensity=0;
+            knob("studio_rim_intensity")->set_value(0);_studioRimIntensity=0;
+            return 1;
+        }
+        //                keyAz  keyEl keyI  fill  rimI  mix
+        struct StuP{double ka,ke,ki,fr,ri,m;};
+        static const StuP stp[]={
+            {},                                // 0: Off (handled above)
+            { 45, 40, 3.0, 0.35, 2.0, 1.0},   // 1: 3-Point
+            { 45, 35, 4.0, 0.08, 3.0, 1.0},   // 2: Dramatic
+            { 30, 45, 2.0, 0.50, 1.2, 1.0},   // 3: Soft
+            {180, 30, 0.0, 0.0,  4.0, 1.0},   // 4: Rim Only
+            {  0, 80, 3.5, 0.15, 0.5, 1.0},   // 5: Top Light
+        };
+        if(_studioPreset>=1&&_studioPreset<(int)(sizeof(stp)/sizeof(StuP))){
+            const auto&s=stp[_studioPreset];
+            knob("studio_key_azimuth")->set_value(s.ka);_studioKeyAzimuth=s.ka;
+            knob("studio_key_elevation")->set_value(s.ke);_studioKeyElevation=s.ke;
+            knob("studio_key_intensity")->set_value(s.ki);_studioKeyIntensity=s.ki;
+            knob("studio_fill_ratio")->set_value(s.fr);_studioFillRatio=s.fr;
+            knob("studio_rim_intensity")->set_value(s.ri);_studioRimIntensity=s.ri;
+            knob("studio_mix")->set_value(s.m);_studioMix=s.m;
+        }
+        return 1;
+    }
+    if(k->is("sun_elevation")||k->is("sun_azimuth")||k->is("sun_intensity")
        ||k->is("sky_intensity")||k->is("turbidity")||k->is("ground_bounce")
-       ||k->is("studio_key_azimuth")||k->is("studio_key_intensity")
-       ||k->is("studio_fill_ratio")||k->is("studio_rim_intensity"))return 1;
+       ||k->is("sky_mix")||k->is("studio_mix")
+       ||k->is("studio_key_azimuth")||k->is("studio_key_elevation")
+       ||k->is("studio_key_intensity")||k->is("studio_fill_ratio")
+       ||k->is("studio_rim_intensity"))return 1;
     if(k->is("aniso_preset")){
         static const double pv[]={0,0,0.4,0.6,0.76,0.8,-0.4,-0.7};
         if(_anisotropyPreset>0&&_anisotropyPreset<(int)(sizeof(pv)/sizeof(double))){
@@ -745,125 +857,69 @@ static void dirFromElevAzim(double elevDeg, double azimDeg, double& dx, double& 
 }
 
 void VDBRenderIop::buildLightRig() {
-    // Only add rig lights when no scene lights were found
-    if (!_lights.empty()) return;
-    if (_lightRig == 0) return; // None
+    if (!_lights.empty()) return; // scene lights override
+    if (_skyMix < 0.001 && _studioMix < 0.001 && !_useFallbackLight) return;
 
-    auto addLight = [&](double dx, double dy, double dz, double r, double g, double b, bool point = false) {
+    auto addLight = [&](double dx, double dy, double dz, double r, double g, double b) {
         CachedLight cl;
-        cl.dir[0] = dx; cl.dir[1] = dy; cl.dir[2] = dz;
-        cl.color[0] = r; cl.color[1] = g; cl.color[2] = b;
-        cl.isPoint = point;
-        cl.pos[0] = cl.pos[1] = cl.pos[2] = 0;
+        cl.dir[0]=dx;cl.dir[1]=dy;cl.dir[2]=dz;
+        cl.color[0]=r;cl.color[1]=g;cl.color[2]=b;
+        cl.isPoint=false;cl.pos[0]=cl.pos[1]=cl.pos[2]=0;
         _lights.push_back(cl);
     };
 
-    double sunR, sunG, sunB, skyR, skyG, skyB;
-    double sdx, sdy, sdz;
-
-    switch (_lightRig) {
-    case 1: { // Day Sky
+    // ── Sun and Sky (driven by sliders, scaled by _skyMix) ──
+    if (_skyMix > 0.001) {
+        double m = _skyMix;
+        double sunR,sunG,sunB,skyR,skyG,skyB,sdx,sdy,sdz;
         sunColorFromElevation(_sunElevation, _turbidity, sunR, sunG, sunB);
         skyColorFromElevation(_sunElevation, _turbidity, skyR, skyG, skyB);
         dirFromElevAzim(_sunElevation, _sunAzimuth, sdx, sdy, sdz);
-        double si = _sunIntensity * std::clamp(_sunElevation / 15.0, 0.1, 1.0); // dim near horizon
-        addLight(sdx, sdy, sdz, sunR * si, sunG * si, sunB * si);
-        // Sky dome as soft overhead light
-        addLight(0, 1, 0, skyR * _skyIntensity, skyG * _skyIntensity, skyB * _skyIntensity);
+        // Sun — dim near horizon naturally
+        double si = _sunIntensity * std::clamp(_sunElevation / 15.0, 0.1, 1.0) * m;
+        if (si > 0.001)
+            addLight(sdx, sdy, sdz, sunR*si, sunG*si, sunB*si);
+        // Sky dome
+        double ski = _skyIntensity * m;
+        if (ski > 0.001)
+            addLight(0, 1, 0, skyR*ski, skyG*ski, skyB*ski);
         // Ground bounce
-        if (_groundBounce > 0.01)
-            addLight(0, -1, 0, _groundBounce * 0.8, _groundBounce * 0.7, _groundBounce * 0.5);
-        _ambientIntensity = std::max(_ambientIntensity, _skyIntensity * 0.15);
-        break;
-    }
-    case 2: { // Golden Hour — low warm sun
-        double ge = 8.0; // fixed low sun
-        sunColorFromElevation(ge, _turbidity, sunR, sunG, sunB);
-        dirFromElevAzim(ge, _sunAzimuth, sdx, sdy, sdz);
-        addLight(sdx, sdy, sdz, sunR * 2.5, sunG * 2.5, sunB * 2.5);
-        // Warm amber fill from opposite side
-        addLight(-sdx, 0.3, -sdz, 0.4, 0.25, 0.1);
-        // Subtle blue sky overhead
-        addLight(0, 1, 0, 0.08, 0.12, 0.25);
-        _ambientIntensity = std::max(_ambientIntensity, 0.08);
-        break;
-    }
-    case 3: { // Overcast — soft white dome, no sun
-        addLight(0, 1, 0, 0.9, 0.9, 0.95);        // main dome
-        addLight(0.3, 0.6, -0.3, 0.3, 0.3, 0.32);  // slight directional bias for shape
-        addLight(-0.3, 0.4, 0.3, 0.15, 0.15, 0.17); // secondary fill
-        _ambientIntensity = std::max(_ambientIntensity, 0.25);
-        break;
-    }
-    case 4: { // Blue Hour — post-sunset cool twilight
-        addLight(0.2, 0.15, -0.4, 0.15, 0.2, 0.5); // dim cool horizon glow
-        addLight(0, 1, 0, 0.05, 0.08, 0.2);          // deep blue overhead
-        addLight(0, -1, 0, 0.02, 0.015, 0.01);       // faint ground
-        _ambientIntensity = std::max(_ambientIntensity, 0.06);
-        break;
-    }
-    case 5: { // Night / Moon — dim cool moonlight
-        dirFromElevAzim(35, _sunAzimuth, sdx, sdy, sdz);
-        addLight(sdx, sdy, sdz, 0.15, 0.18, 0.25);  // moonlight
-        addLight(0, 1, 0, 0.01, 0.015, 0.03);        // faint sky
-        _ambientIntensity = std::max(_ambientIntensity, 0.02);
-        break;
-    }
-    case 6: { // Studio 3-Point — key + fill + rim
-        double kaz = _studioKeyAzimuth;
-        double kx, ky, kz; dirFromElevAzim(40, kaz, kx, ky, kz);
-        double ki = _studioKeyIntensity;
-        addLight(kx, ky, kz, ki, ki * 0.95, ki * 0.9);  // warm key
-        // Fill from opposite side, lower elevation
-        double fx, fy, fz; dirFromElevAzim(20, kaz + 180, fx, fy, fz);
-        double fi = ki * _studioFillRatio;
-        addLight(fx, fy, fz, fi * 0.9, fi * 0.92, fi);   // cool fill
-        // Rim from behind, high
-        double rx, ry, rz; dirFromElevAzim(50, kaz + 160, rx, ry, rz);
-        double ri2 = _studioRimIntensity;
-        addLight(rx, ry, rz, ri2, ri2, ri2);
-        _ambientIntensity = std::max(_ambientIntensity, 0.05);
-        break;
-    }
-    case 7: { // Studio Dramatic — strong key, minimal fill
-        double kaz = _studioKeyAzimuth;
-        double kx, ky, kz; dirFromElevAzim(35, kaz, kx, ky, kz);
-        double ki = _studioKeyIntensity * 1.3;
-        addLight(kx, ky, kz, ki, ki * 0.9, ki * 0.8); // warm hard key
-        // Very subtle fill
-        double fx, fy, fz; dirFromElevAzim(10, kaz + 200, fx, fy, fz);
-        addLight(fx, fy, fz, ki * 0.08, ki * 0.08, ki * 0.1);
-        // Strong rim kicker
-        double rx, ry, rz; dirFromElevAzim(30, kaz + 150, rx, ry, rz);
-        addLight(rx, ry, rz, _studioRimIntensity * 1.5, _studioRimIntensity * 1.4, _studioRimIntensity * 1.3);
-        _ambientIntensity = std::max(_ambientIntensity, 0.02);
-        break;
-    }
-    case 8: { // Studio Soft — broad diffuse wrap
-        double kaz = _studioKeyAzimuth;
-        double ki = _studioKeyIntensity * 0.7;
-        // Two keys flanking center for wrap
-        double k1x, k1y, k1z; dirFromElevAzim(45, kaz - 30, k1x, k1y, k1z);
-        double k2x, k2y, k2z; dirFromElevAzim(45, kaz + 30, k2x, k2y, k2z);
-        addLight(k1x, k1y, k1z, ki, ki, ki * 1.05);
-        addLight(k2x, k2y, k2z, ki * 0.8, ki * 0.8, ki * 0.85);
-        // Top fill
-        addLight(0, 1, 0, ki * 0.3, ki * 0.3, ki * 0.35);
-        // Gentle rim
-        double rx, ry, rz; dirFromElevAzim(40, kaz + 180, rx, ry, rz);
-        addLight(rx, ry, rz, _studioRimIntensity * 0.6, _studioRimIntensity * 0.6, _studioRimIntensity * 0.65);
-        _ambientIntensity = std::max(_ambientIntensity, 0.1);
-        break;
-    }
+        double gb = _groundBounce * m;
+        if (gb > 0.01)
+            addLight(0, -1, 0, gb*0.8, gb*0.7, gb*0.5);
     }
 
-    // Custom manual light on top of rig
+    // ── Studio lights (driven by sliders, scaled by _studioMix) ──
+    if (_studioMix > 0.001) {
+        double m = _studioMix;
+        double kaz = _studioKeyAzimuth;
+        double kel = _studioKeyElevation;
+        // Key light — slightly warm
+        double ki = _studioKeyIntensity * m;
+        if (ki > 0.001) {
+            double kx,ky,kz; dirFromElevAzim(kel, kaz, kx, ky, kz);
+            addLight(kx, ky, kz, ki, ki*0.95, ki*0.9);
+        }
+        // Fill light — opposite side, lower, slightly cool
+        double fi = ki * _studioFillRatio;
+        if (fi > 0.001) {
+            double fx,fy,fz; dirFromElevAzim(kel*0.5, kaz+180, fx, fy, fz);
+            addLight(fx, fy, fz, fi*0.9, fi*0.92, fi);
+        }
+        // Rim light — behind and high, independent of key
+        double ri2 = _studioRimIntensity * m;
+        if (ri2 > 0.001) {
+            double rx,ry,rz; dirFromElevAzim(kel+15, kaz+160, rx, ry, rz);
+            addLight(rx, ry, rz, ri2, ri2, ri2);
+        }
+    }
+
+    // ── Custom manual light ──
     if (_useFallbackLight && _lightIntensity > 0.001) {
         double ld = std::sqrt(_lightDir[0]*_lightDir[0]+_lightDir[1]*_lightDir[1]+_lightDir[2]*_lightDir[2]);
-        if (ld > 1e-8) {
+        if (ld > 1e-8)
             addLight(_lightDir[0]/ld, _lightDir[1]/ld, _lightDir[2]/ld,
                      _lightColor[0]*_lightIntensity, _lightColor[1]*_lightIntensity, _lightColor[2]*_lightIntensity);
-        }
     }
 }
 
@@ -1038,9 +1094,11 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_envIntensity);hash.append(_envDiffuse);hash.append(_envRotate);
     hash.append(_densityMix);hash.append(_tempMix);hash.append(_flameMix);
     hash.append(_adaptiveStep);hash.append(_proxyMode);hash.append(_useFallbackLight);
-    hash.append(_lightRig);hash.append(_sunElevation);hash.append(_sunAzimuth);
+    hash.append(_skyPreset);hash.append(_studioPreset);hash.append(_skyMix);hash.append(_studioMix);
+    hash.append(_sunElevation);hash.append(_sunAzimuth);
     hash.append(_sunIntensity);hash.append(_skyIntensity);hash.append(_turbidity);hash.append(_groundBounce);
-    hash.append(_studioKeyAzimuth);hash.append(_studioKeyIntensity);hash.append(_studioFillRatio);hash.append(_studioRimIntensity);
+    hash.append(_studioKeyAzimuth);hash.append(_studioKeyElevation);
+    hash.append(_studioKeyIntensity);hash.append(_studioFillRatio);hash.append(_studioRimIntensity);
     hash.append(_motionBlur);hash.append(_shutterOpen);hash.append(_shutterClose);hash.append(_motionSamples);
     hash.append(_aovDensity);hash.append(_aovEmission);hash.append(_aovShadow);hash.append(_aovDepth);
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
@@ -1099,10 +1157,10 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
         glVertex3f(cx-sz,cy,cz);glVertex3f(cx+sz,cy,cz);glVertex3f(cx,cy-sz,cz);glVertex3f(cx,cy+sz,cz);
         glVertex3f(cx,cy,cz-sz);glVertex3f(cx,cy,cz+sz);glEnd();
     } else {
-        // Invisible corners for F-key framing
-        glPointSize(1);glColor4f(0,0,0,0);glBegin(GL_POINTS);
-        for(int i=0;i<8;++i)glVertex3fv(co[i]);
-        glEnd();
+        // Draw bbox edges with near-zero alpha so Nuke can frame to them (F key)
+        glEnable(GL_BLEND);glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        glLineWidth(0.5f);glColor4f(0.2f,0.2f,0.2f,0.01f);glBegin(GL_LINES);
+        for(int e=0;e<12;++e){glVertex3fv(co[_bboxEdges[e][0]]);glVertex3fv(co[_bboxEdges[e][1]]);}glEnd();
     }
     if(_showPoints&&_floatGrid){
         int cf=(int)outputContext().frame()+_frameOffset;std::string cp=resolveFramePath(cf);
@@ -1631,18 +1689,29 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
             double msc=T*step;aR+=bounceR*msc;aG+=bounceG*msc;aB+=bounceB*msc;
         }
         // Temperature emission
+        double localEmR=0,localEmG=0,localEmB=0;
         if(tAcc){float tv=openvdb::tools::BoxSampler::sample(*tAcc,iP)*(float)_tempMix;if(tv>.001f){
             double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
             double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
             double em=_emissionIntensity*tS*T*step;
             double er=bb.r*em,eg=bb.g*em,eb=bb.b*em;
-            aR+=er;aG+=eg;aB+=eb;eR+=er;eG+=eg;eB+=eb;}}
+            aR+=er;aG+=eg;aB+=eb;eR+=er;eG+=eg;eB+=eb;
+            localEmR+=bb.r*_emissionIntensity*tS;localEmG+=bb.g*_emissionIntensity*tS;localEmB+=bb.b*_emissionIntensity*tS;}}
         // Flame emission
         if(fAcc){float fv=openvdb::tools::BoxSampler::sample(*fAcc,iP)*(float)_flameMix;if(fv>.001f){
             Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
             double fem=_flameIntensity*fv*T*step;
             double fr=fb.r*fem,fg=fb.g*fem,fb2=fb.b*fem;
-            aR+=fr;aG+=fg;aB+=fb2;eR+=fr;eG+=fg;eB+=fb2;}}
+            aR+=fr;aG+=fg;aB+=fb2;eR+=fr;eG+=fg;eB+=fb2;
+            localEmR+=fb.r*_flameIntensity*fv;localEmG+=fb.g*_flameIntensity*fv;localEmB+=fb.b*_flameIntensity*fv;}}
+        // Emission illuminating density — fire acts as embedded light source
+        // Normalized as isotropic point emission: 1/(4*pi)
+        if(localEmR+localEmG+localEmB>0.001){
+            double emScat=ss*T*step*(1.0/(4*M_PI));
+            aR+=emScat*localEmR;aG+=emScat*localEmG;aB+=emScat*localEmB;}
+        // Fire self-absorption
+        double fireAbsorb=std::clamp((localEmR+localEmG+localEmB)*0.1,0.0,2.0);
+        if(fireAbsorb>0.001) T*=std::exp(-fireAbsorb*step);
         T*=std::exp(-se*step);
     };
 
@@ -1702,21 +1771,32 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
 
     auto shadeSampleExplosion=[&](const openvdb::Vec3d&wP,const openvdb::Vec3d&iP){
         // FIRE: temperature emission (self-luminous, trilinear)
+        double localEmR=0,localEmG=0,localEmB=0;
         if(tAcc){float tv=openvdb::tools::BoxSampler::sample(*tAcc,iP)*(float)_tempMix;if(tv>.001f){
             double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
             double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
             double em=_emissionIntensity*tS*T*step;
             double er=bb.r*em,eg=bb.g*em,eb=bb.b*em;
-            aR+=er;aG+=eg;aB+=eb;eR+=er;eG+=eg;eB+=eb;}}
+            aR+=er;aG+=eg;aB+=eb;eR+=er;eG+=eg;eB+=eb;
+            localEmR+=bb.r*_emissionIntensity*tS;localEmG+=bb.g*_emissionIntensity*tS;localEmB+=bb.b*_emissionIntensity*tS;}}
         // FIRE: flame emission
         if(fAcc){float fv=openvdb::tools::BoxSampler::sample(*fAcc,iP)*(float)_flameMix;if(fv>.001f){
             Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
             double fem=_flameIntensity*fv*T*step;
             double fr=fb.r*fem,fg=fb.g*fem,fb2=fb.b*fem;
-            aR+=fr;aG+=fg;aB+=fb2;eR+=fr;eG+=fg;eB+=fb2;}}
+            aR+=fr;aG+=fg;aB+=fb2;eR+=fr;eG+=fg;eB+=fb2;
+            localEmR+=fb.r*_flameIntensity*fv;localEmG+=fb.g*_flameIntensity*fv;localEmB+=fb.b*_flameIntensity*fv;}}
+        // Fire self-absorption — hot regions absorb some light even without density
+        // Prevents emission accumulating unbounded in fire-only regions
+        double fireAbsorb=std::clamp((localEmR+localEmG+localEmB)*0.1,0.0,2.0);
+        if(fireAbsorb>0.001) T*=std::exp(-fireAbsorb*step);
         // SMOKE: scatter + absorption
         if(dAcc){float density=openvdb::tools::BoxSampler::sample(*dAcc,iP)*(float)_densityMix;
             if(density>1e-6f){double se=density*ext,ss=density*scat;
+                // Emission illuminating smoke — fire acts as embedded light source
+                if(localEmR+localEmG+localEmB>0.001){
+                    double emScat=ss*T*step*(1.0/(4*M_PI));
+                    aR+=emScat*localEmR;aG+=emScat*localEmG;aB+=emScat*localEmB;}
                 for(const auto&lt:_lights){openvdb::Vec3d lD;
                     if(lt.isPoint){lD=openvdb::Vec3d(lt.pos[0]-wP[0],lt.pos[1]-wP[1],lt.pos[2]-wP[2]);double l=lD.length();if(l>1e-8)lD/=l;else lD=openvdb::Vec3d(0,1,0);}
                     else lD=openvdb::Vec3d(lt.dir[0],lt.dir[1],lt.dir[2]);

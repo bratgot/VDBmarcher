@@ -111,14 +111,18 @@ private:
     double _ambientIntensity  = 0.0;
 
     // ── Light Rig ──
-    int    _lightRig          = 1;   // 0=None 1=DaySky 2=GoldenHour 3=Overcast 4=BlueHour 5=Night 6=Studio3pt 7=StudioDramatic 8=StudioSoft
+    int    _skyPreset         = 2;   // 0=Off 1=Custom 2=DaySky 3=GoldenHour 4=Overcast 5=BlueHour 6=Night
+    double _skyMix            = 1.0; // master brightness for sun+sky
     double _sunElevation      = 45.0;
     double _sunAzimuth        = 180.0;
     double _sunIntensity      = 3.0;
     double _skyIntensity      = 0.4;
     double _turbidity         = 3.0;
     double _groundBounce      = 0.1;
+    int    _studioPreset      = 0;   // 0=Off 1=3-Point 2=Dramatic 3=Soft 4=Rim Only 5=Top Light
+    double _studioMix         = 0.0; // master brightness for studio lights
     double _studioKeyAzimuth  = 45.0;
+    double _studioKeyElevation= 40.0;
     double _studioKeyIntensity= 3.0;
     double _studioFillRatio   = 0.35;
     double _studioRimIntensity= 2.0;
