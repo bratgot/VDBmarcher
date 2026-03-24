@@ -80,7 +80,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
 
     Text_knob(f,
         "<font size='+2'><b>VDBRender</b></font>"
-        " <font color='#888' size='-1'>v2.0</font><br>"
+        " <font color='#888' size='-1'>v2.1</font><br>"
         "<font color='#aaa'>OpenVDB volume ray marcher</font>");
 
     File_knob(f,&_vdbFilePath,"file","VDB File");
@@ -92,6 +92,8 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "e.g. explosion_0001.vdb becomes explosion_####.vdb\n"
               "and explosion_1.vdb becomes explosion_####.vdb\n"
               "Enable this if your VDB sequence isn't animating.");
+    String_knob(f,&_origFilePath,"orig_file_path","");
+    SetFlags(f,Knob::INVISIBLE);
     Format_knob(f,&_formats,"format","Format");
     Tooltip(f,"Output resolution when no background plate is connected.\n"
               "If a BG is connected to input 0, its format is used instead.");
@@ -487,19 +489,30 @@ void VDBRenderIop::knobs(Knob_Callback f)
 int VDBRenderIop::knob_changed(Knob* k)
 {
     if(k->is("file")){_gridValid=false;_previewPoints.clear();return 1;}
-    if(k->is("auto_sequence")&&_autoSequence){
-        std::string p(_vdbFilePath?_vdbFilePath:"");
-        if(!p.empty()){
-            size_t dot=p.rfind(".vdb");if(dot==std::string::npos)dot=p.rfind(".VDB");
-            if(dot!=std::string::npos){
-                size_t end=dot;size_t start=end;
-                while(start>0&&p[start-1]>='0'&&p[start-1]<='9')--start;
-                if(start<end){
-                    int ndig=(int)(end-start);if(ndig<4)ndig=4;
-                    std::string padded(ndig,'#');
-                    p=p.substr(0,start)+padded+p.substr(end);
-                    knob("file")->set_text(p.c_str());
+    if(k->is("auto_sequence")){
+        if(_autoSequence){
+            // Store original path in hidden knob, then convert to ####
+            std::string p(_vdbFilePath?_vdbFilePath:"");
+            knob("orig_file_path")->set_text(p.c_str());
+            if(!p.empty()){
+                size_t dot=p.rfind(".vdb");if(dot==std::string::npos)dot=p.rfind(".VDB");
+                if(dot!=std::string::npos){
+                    size_t end=dot;size_t start=end;
+                    while(start>0&&p[start-1]>='0'&&p[start-1]<='9')--start;
+                    if(start<end){
+                        int ndig=(int)(end-start);if(ndig<4)ndig=4;
+                        std::string padded(ndig,'#');
+                        p=p.substr(0,start)+padded+p.substr(end);
+                        knob("file")->set_text(p.c_str());
+                    }
                 }
+            }
+        }else{
+            // Restore original path from hidden knob
+            const char* orig=_origFilePath?_origFilePath:"";
+            if(orig[0]){
+                knob("file")->set_text(orig);
+                knob("orig_file_path")->set_text("");
             }
         }
         _gridValid=false;_previewPoints.clear();return 1;
@@ -615,33 +628,49 @@ Op* VDBRenderIop::default_input(int idx) const{
     if(idx==0)return Iop::default_input(idx);
     return nullptr;}
 
-// Recursively walk the scene input tree to find LightOps and AxisOps
+// Recursively walk the scene input tree to find LightOps, Environment, and AxisOps
 void VDBRenderIop::gatherLights(Op* scnOp) {
     if(!scnOp) return;
     scnOp->validate(true);
 
-    // Check if this op is a Light
+    // Check class name first — Environment nodes are NOT LightOp subclasses
+    std::string cls(scnOp->Class());
+
+    // Classic Environment node (HDRI on input 1)
+    if(cls=="Environment"){
+        Iop* envIop=nullptr;
+        for(int i=0;i<scnOp->inputs();++i){
+            envIop=dynamic_cast<Iop*>(scnOp->input(i));
+            if(envIop) break;
+        }
+        if(envIop&&_envIntensity>0){
+            envIop->validate(true);
+            if(envIop!=_envIop||!_hasEnvMap){_envIop=envIop;_envDirty=true;}
+            if(Knob*rk=scnOp->knob("rotate")){
+                _envLightRotY=rk->get_value_at(outputContext().frame(),1);}
+        }
+        return;
+    }
+
+    // New EnvironmentLight node (has file knob, no HDRI input)
+    if(cls=="EnvironmentLight"){
+        if(Knob*fk=scnOp->knob("file")){
+            const char*fp=fk->get_text();
+            if(fp&&fp[0]&&_envIntensity>0){
+                // Read the HDRI file via a temporary Read node approach
+                // For now, store the path — we'll load it in _open
+                _envFilePath=std::string(fp);
+                _envDirty=true;
+                if(Knob*rk=scnOp->knob("rotate")){
+                    _envLightRotY=rk->get_value_at(outputContext().frame(),1);}
+            }
+        }
+        return;
+    }
+
+    // Check if this op is a regular Light
     LightOp* light = dynamic_cast<LightOp*>(scnOp);
     if(light) {
-        // Check if it's an EnvironLight — grab its HDRI input
-        std::string cls(light->Class());
-        if(cls.find("Environ")!=std::string::npos||cls.find("environ")!=std::string::npos){
-            // EnvironLight: input(0) is the HDRI Iop
-            Iop* envIop=nullptr;
-            if(light->inputs()>0) envIop=dynamic_cast<Iop*>(light->input(0));
-            if(envIop&&_envIntensity>0){
-                envIop->validate(true);
-                if(envIop!=_envIop||!_hasEnvMap){
-                    _envIop=envIop;_envDirty=true;
-                }
-                // Extract Y rotation from the EnvironLight's world transform
-                const auto em=light->worldTransform();
-                double yRot=std::atan2((double)em[2][0],(double)em[2][2])*180.0/M_PI;
-                _envLightRotY=yRot;
-            }
-            return; // don't add as a regular light
-        }
-
         const auto lm = light->worldTransform();
         CachedLight cl;
         cl.pos[0]=(double)lm[3][0]; cl.pos[1]=(double)lm[3][1]; cl.pos[2]=(double)lm[3][2];
@@ -778,7 +807,10 @@ void VDBRenderIop::append(Hash& hash) {
 // ═══ 3D Viewport ═══
 
 void VDBRenderIop::build_handles(ViewerContext*ctx){
-    if(!_gridValid||(!_showBbox&&!_showPoints))return;add_draw_handle(ctx);}
+    if(!_gridValid)return;
+    // Always add draw handle so Nuke can frame the volume (F key)
+    add_draw_handle(ctx);
+}
 
 void VDBRenderIop::rebuildPointCloud() {
     _previewPoints.clear();_maxDensity=1;if(!_floatGrid)return;
@@ -802,14 +834,18 @@ void VDBRenderIop::rebuildPointCloud() {
 void VDBRenderIop::draw_handle(ViewerContext*ctx) {
     if(!_gridValid)return;
     glPushAttrib(GL_CURRENT_BIT|GL_LINE_BIT|GL_ENABLE_BIT|GL_POINT_BIT);glDisable(GL_LIGHTING);
-    if(_showBbox){float co[8][3];int ci=0;
-        for(int iz=0;iz<=1;++iz)for(int iy=0;iy<=1;++iy)for(int ix=0;ix<=1;++ix){
-            double wx=ix?_bboxMax[0]:_bboxMin[0],wy=iy?_bboxMax[1]:_bboxMin[1],wz=iz?_bboxMax[2]:_bboxMin[2];
-            if(_hasVolumeXform){double tx=_volFwd[0][0]*wx+_volFwd[1][0]*wy+_volFwd[2][0]*wz+_volFwd[3][0];
-                double ty=_volFwd[0][1]*wx+_volFwd[1][1]*wy+_volFwd[2][1]*wz+_volFwd[3][1];
-                double tz=_volFwd[0][2]*wx+_volFwd[1][2]*wy+_volFwd[2][2]*wz+_volFwd[3][2];
-                wx=tx;wy=ty;wz=tz;}
-            co[ci][0]=(float)wx;co[ci][1]=(float)wy;co[ci][2]=(float)wz;++ci;}
+
+    // Always compute transformed corners for F-key framing
+    float co[8][3];int ci=0;
+    for(int iz=0;iz<=1;++iz)for(int iy=0;iy<=1;++iy)for(int ix=0;ix<=1;++ix){
+        double wx=ix?_bboxMax[0]:_bboxMin[0],wy=iy?_bboxMax[1]:_bboxMin[1],wz=iz?_bboxMax[2]:_bboxMin[2];
+        if(_hasVolumeXform){double tx=_volFwd[0][0]*wx+_volFwd[1][0]*wy+_volFwd[2][0]*wz+_volFwd[3][0];
+            double ty=_volFwd[0][1]*wx+_volFwd[1][1]*wy+_volFwd[2][1]*wz+_volFwd[3][1];
+            double tz=_volFwd[0][2]*wx+_volFwd[1][2]*wy+_volFwd[2][2]*wz+_volFwd[3][2];
+            wx=tx;wy=ty;wz=tz;}
+        co[ci][0]=(float)wx;co[ci][1]=(float)wy;co[ci][2]=(float)wz;++ci;}
+
+    if(_showBbox){
         glLineWidth(1.5f);glColor3f(0,1,0);glBegin(GL_LINES);
         for(int e=0;e<12;++e){glVertex3fv(co[_bboxEdges[e][0]]);glVertex3fv(co[_bboxEdges[e][1]]);}glEnd();
         float cx=0,cy=0,cz=0;for(int i=0;i<8;++i){cx+=co[i][0];cy+=co[i][1];cz+=co[i][2];}
@@ -817,7 +853,13 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
         for(int i=0;i<8;++i){float d=std::sqrt((co[i][0]-cx)*(co[i][0]-cx)+(co[i][1]-cy)*(co[i][1]-cy)+(co[i][2]-cz)*(co[i][2]-cz));if(d>sz)sz=d;}
         sz*=.05f;glColor3f(1,1,0);glBegin(GL_LINES);
         glVertex3f(cx-sz,cy,cz);glVertex3f(cx+sz,cy,cz);glVertex3f(cx,cy-sz,cz);glVertex3f(cx,cy+sz,cz);
-        glVertex3f(cx,cy,cz-sz);glVertex3f(cx,cy,cz+sz);glEnd();}
+        glVertex3f(cx,cy,cz-sz);glVertex3f(cx,cy,cz+sz);glEnd();
+    } else {
+        // Invisible corners for F-key framing
+        glPointSize(1);glColor4f(0,0,0,0);glBegin(GL_POINTS);
+        for(int i=0;i<8;++i)glVertex3fv(co[i]);
+        glEnd();
+    }
     if(_showPoints&&_floatGrid){
         int cf=(int)outputContext().frame()+_frameOffset;std::string cp=resolveFramePath(cf);
         if(_previewPoints.empty()||_cachedPointDensity!=_pointDensity||_cachedPointsPath!=cp
@@ -987,7 +1029,7 @@ void VDBRenderIop::_validate(bool for_real) {
 
 void VDBRenderIop::_request(int x,int y,int r,int t,ChannelMask channels,int count){
     Iop*bg=dynamic_cast<Iop*>(Op::input(0));
-    if(bg) bg->request(x,y,r,t,channels,count);
+    if(bg) bg->request(x,y,r,t,Mask_RGBA,count);  // only RGBA from BG, not AOV channels
     // Request full env image for caching
     if(_envIop&&_envDirty){
         const int ew=_envIop->info().format().width();
@@ -1015,12 +1057,14 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
     Row bgRow(x,r);
     bool hasBg=false;
     {Iop*bg=dynamic_cast<Iop*>(Op::input(0));
-     if(bg){bg->get(y,x,r,channels,bgRow);hasBg=true;}}
+     if(bg){bg->get(y,x,r,Mask_RGBA,bgRow);hasBg=true;}}
 
     if(!_gridValid||!_camValid||(!_floatGrid&&!_tempGrid&&!_flameGrid&&!_hasColorGrid)){
         foreach(z,channels){float*p=row.writable(z);
-            const float*bp=hasBg?bgRow[z]+x:nullptr;
-            for(int i=x;i<r;++i)p[i]=bp?bp[i-x]:0;}
+            if(hasBg&&(z==Chan_Red||z==Chan_Green||z==Chan_Blue||z==Chan_Alpha)){
+                const float*bp=bgRow[z];
+                for(int i=x;i<r;++i)p[i]=bp[i];}
+            else{for(int i=x;i<r;++i)p[i]=0;}}
         return;}
     const Format&fmt=format();int W=fmt.width(),H=fmt.height();
     // Proxy: effective render resolution
@@ -1031,17 +1075,28 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
     float gA[3]={(float)_gradStart[0],(float)_gradStart[1],(float)_gradStart[2]};
     float gB[3]={(float)_gradEnd[0],(float)_gradEnd[1],(float)_gradEnd[2]};
 
-    // AOV channel pointers — density and shadow are greyscale RGB
-    float*aovDenR=_aovDensity?row.writable(channel("vdb_density.red")):nullptr;
-    float*aovDenG=_aovDensity?row.writable(channel("vdb_density.green")):nullptr;
-    float*aovDenB=_aovDensity?row.writable(channel("vdb_density.blue")):nullptr;
-    float*aovEmR=_aovEmission?row.writable(channel("vdb_emission.red")):nullptr;
-    float*aovEmG=_aovEmission?row.writable(channel("vdb_emission.green")):nullptr;
-    float*aovEmB=_aovEmission?row.writable(channel("vdb_emission.blue")):nullptr;
-    float*aovShR=_aovShadow?row.writable(channel("vdb_shadow.red")):nullptr;
-    float*aovShG=_aovShadow?row.writable(channel("vdb_shadow.green")):nullptr;
-    float*aovShB=_aovShadow?row.writable(channel("vdb_shadow.blue")):nullptr;
-    float*aovDpP=_aovDepth?row.writable(channel("vdb_depth.red")):nullptr;
+    // AOV channel pointers — only get writable if channel is in the requested set
+    Channel chDenR=_aovDensity?channel("vdb_density.red"):Chan_Black;
+    Channel chDenG=_aovDensity?channel("vdb_density.green"):Chan_Black;
+    Channel chDenB=_aovDensity?channel("vdb_density.blue"):Chan_Black;
+    Channel chEmR=_aovEmission?channel("vdb_emission.red"):Chan_Black;
+    Channel chEmG=_aovEmission?channel("vdb_emission.green"):Chan_Black;
+    Channel chEmB=_aovEmission?channel("vdb_emission.blue"):Chan_Black;
+    Channel chShR=_aovShadow?channel("vdb_shadow.red"):Chan_Black;
+    Channel chShG=_aovShadow?channel("vdb_shadow.green"):Chan_Black;
+    Channel chShB=_aovShadow?channel("vdb_shadow.blue"):Chan_Black;
+    Channel chDpR=_aovDepth?channel("vdb_depth.red"):Chan_Black;
+
+    float*aovDenR=(_aovDensity&&channels.contains(chDenR))?row.writable(chDenR):nullptr;
+    float*aovDenG=(_aovDensity&&channels.contains(chDenG))?row.writable(chDenG):nullptr;
+    float*aovDenB=(_aovDensity&&channels.contains(chDenB))?row.writable(chDenB):nullptr;
+    float*aovEmR=(_aovEmission&&channels.contains(chEmR))?row.writable(chEmR):nullptr;
+    float*aovEmG=(_aovEmission&&channels.contains(chEmG))?row.writable(chEmG):nullptr;
+    float*aovEmB=(_aovEmission&&channels.contains(chEmB))?row.writable(chEmB):nullptr;
+    float*aovShR=(_aovShadow&&channels.contains(chShR))?row.writable(chShR):nullptr;
+    float*aovShG=(_aovShadow&&channels.contains(chShG))?row.writable(chShG):nullptr;
+    float*aovShB=(_aovShadow&&channels.contains(chShB))?row.writable(chShB):nullptr;
+    float*aovDpP=(_aovDepth&&channels.contains(chDpR))?row.writable(chDpR):nullptr;
 
     const float*bgR=hasBg?bgRow[Chan_Red]:nullptr;
     const float*bgG=hasBg?bgRow[Chan_Green]:nullptr;
@@ -1076,7 +1131,7 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
 
         // Accumulate across motion blur time samples
         float R=0,G=0,B=0,A=0;
-        float aovDen=0,aovEmRv=0,aovEmGv=0,aovEmBv=0,aovSh=0,aovDp=0;
+        float emAccR=0,emAccG=0,emAccB=0;
 
         for(int ts=0;ts<nTimeSamples;++ts){
             // Motion blur: offset ray origin by velocity * time
@@ -1090,9 +1145,9 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
                 mO=rayO+openvdb::Vec3d(vel[0],vel[1],vel[2])*tSample;
             }
 
-            float sR=0,sG=0,sB=0,sA=0;
-            if(scheme==kLit){marchRay(mO,rayD,sR,sG,sB,sA);sR*=ri;sG*=ri;sB*=ri;}
-            else if(scheme==kExplosion){marchRayExplosion(mO,rayD,sR,sG,sB,sA);sR*=ri;sG*=ri;sB*=ri;}
+            float sR=0,sG=0,sB=0,sA=0,sEmR=0,sEmG=0,sEmB=0;
+            if(scheme==kLit){marchRay(mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
+            else if(scheme==kExplosion){marchRayExplosion(mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
             else{float den=0,alpha=0;marchRayDensity(mO,rayD,den,alpha);
                 // Vec3 colour grid override
                 if(_hasColorGrid&&_colorGrid&&alpha>1e-6f){
@@ -1105,10 +1160,11 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
                 }
             }
             R+=sR;G+=sG;B+=sB;A+=sA;
+            emAccR+=sEmR;emAccG+=sEmG;emAccB+=sEmB;
         }
 
         // Average motion blur samples
-        if(nTimeSamples>1){float inv=1.0f/nTimeSamples;R*=inv;G*=inv;B*=inv;A*=inv;}
+        if(nTimeSamples>1){float inv=1.0f/nTimeSamples;R*=inv;G*=inv;B*=inv;A*=inv;emAccR*=inv;emAccG*=inv;emAccB*=inv;}
 
         // Composite volume OVER background
         if(hasBg){
@@ -1121,9 +1177,26 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
 
         // AOV writes
         if(aovDenR){aovDenR[ix]=A;aovDenG[ix]=A;aovDenB[ix]=A;}
-        if(aovEmR){aovEmR[ix]=R;aovEmG[ix]=G;aovEmB[ix]=B;}
+        if(aovEmR){aovEmR[ix]=emAccR;aovEmG[ix]=emAccG;aovEmB[ix]=emAccB;}
         if(aovShR){float sh=1.0f-A;aovShR[ix]=sh;aovShG[ix]=sh;aovShB[ix]=sh;}
-        if(aovDpP) aovDpP[ix]=0;
+        if(aovDpP){
+            // Compute depth: AABB ray intersection for first-hit distance
+            float depth=0;
+            if(A>1e-6f){
+                double tMin=0,tMax=1e20;
+                for(int a=0;a<3;++a){
+                    double invD=1.0/((a==0)?rayD[0]:(a==1)?rayD[1]:rayD[2]);
+                    double o=(a==0)?rayO[0]:(a==1)?rayO[1]:rayO[2];
+                    double bMin=(a==0)?_bboxMin[0]:(a==1)?_bboxMin[1]:_bboxMin[2];
+                    double bMax=(a==0)?_bboxMax[0]:(a==1)?_bboxMax[1]:_bboxMax[2];
+                    double t1=(bMin-o)*invD, t2=(bMax-o)*invD;
+                    if(t1>t2)std::swap(t1,t2);
+                    tMin=std::max(tMin,t1);tMax=std::min(tMax,t2);
+                }
+                if(tMax>=tMin&&tMax>0) depth=(float)std::max(tMin,0.0);
+            }
+            aovDpP[ix]=depth;
+        }
     }
 }
 
@@ -1184,15 +1257,15 @@ static const openvdb::Vec3d kDirs12[] = {
 // ═══ marchRay — Lit mode (HDDA + trilinear) ═══
 // [v2 TODO] Move inner loop to CUDA kernel with NanoVDB accessor
 
-void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA) const {
-    outR=outG=outB=outA=0;if(!_floatGrid)return;
+void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA,float&outEmR,float&outEmG,float&outEmB) const {
+    outR=outG=outB=outA=outEmR=outEmG=outEmB=0;if(!_floatGrid)return;
     const auto&xf=_floatGrid->transform();
     auto acc=_floatGrid->getConstAccessor();
     auto shAcc=_floatGrid->getConstAccessor(); // reused for all shadow rays
     double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0)),ext=_extinction,scat=_scattering;
     double g=std::clamp(_anisotropy,-.999,.999),g2=g*g,hgN=(1-g2)/(4*M_PI);
     int nSh=std::max(1,_shadowSteps);double bDiag=(_bboxMax-_bboxMin).length(),shStep=bDiag/(nSh*2);
-    double T=1,aR=0,aG=0,aB=0;
+    double T=1,aR=0,aG=0,aB=0,eR=0,eG=0,eB=0;
     std::unique_ptr<openvdb::FloatGrid::ConstAccessor> tAcc,fAcc;
     if(_hasTempGrid&&_tempGrid)tAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
     if(_hasFlameGrid&&_flameGrid)fAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
@@ -1282,11 +1355,15 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
         if(tAcc){float tv=openvdb::tools::BoxSampler::sample(*tAcc,iP)*(float)_tempMix;if(tv>.001f){
             double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
             double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
-            double em=_emissionIntensity*tS*T*step;aR+=bb.r*em;aG+=bb.g*em;aB+=bb.b*em;}}
+            double em=_emissionIntensity*tS*T*step;
+            double er=bb.r*em,eg=bb.g*em,eb=bb.b*em;
+            aR+=er;aG+=eg;aB+=eb;eR+=er;eG+=eg;eB+=eb;}}
         // Flame emission
         if(fAcc){float fv=openvdb::tools::BoxSampler::sample(*fAcc,iP)*(float)_flameMix;if(fv>.001f){
             Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
-            double fem=_flameIntensity*fv*T*step;aR+=fb.r*fem;aG+=fb.g*fem;aB+=fb.b*fem;}}
+            double fem=_flameIntensity*fv*T*step;
+            double fr=fb.r*fem,fg=fb.g*fem,fb2=fb.b*fem;
+            aR+=fr;aG+=fg;aB+=fb2;eR+=fr;eG+=fg;eB+=fb2;}}
         T*=std::exp(-se*step);
     };
 
@@ -1325,20 +1402,21 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
             t2+=curStep;}
     }
     outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1-T);
+    outEmR=(float)eR;outEmG=(float)eG;outEmB=(float)eB;
 }
 
 // ═══ marchRayExplosion — smoke + fire (HDDA + trilinear) ═══
 // [v2 TODO] Move inner loop to CUDA kernel with NanoVDB accessor
 
-void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA) const {
-    outR=outG=outB=outA=0;
+void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA,float&outEmR,float&outEmG,float&outEmB) const {
+    outR=outG=outB=outA=outEmR=outEmG=outEmB=0;
     openvdb::FloatGrid::Ptr xfGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
     if(!xfGrid)return;
     const auto&xf=xfGrid->transform();
     double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0)),ext=_extinction,scat=_scattering;
     double g=std::clamp(_anisotropy,-.999,.999),g2=g*g,hgN=(1-g2)/(4*M_PI);
     int nSh=std::max(1,_shadowSteps);double bDiag=(_bboxMax-_bboxMin).length(),shStep=bDiag/(nSh*2);
-    double T=1,aR=0,aG=0,aB=0;
+    double T=1,aR=0,aG=0,aB=0,eR=0,eG=0,eB=0;
     std::unique_ptr<openvdb::FloatGrid::ConstAccessor> dAcc,tAcc,fAcc;
     openvdb::FloatGrid::ConstAccessor shAcc=xfGrid->getConstAccessor(); // shadow ray accessor
     if(_floatGrid)dAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_floatGrid->getConstAccessor());
@@ -1350,11 +1428,15 @@ void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::
         if(tAcc){float tv=openvdb::tools::BoxSampler::sample(*tAcc,iP)*(float)_tempMix;if(tv>.001f){
             double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
             double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
-            double em=_emissionIntensity*tS*T*step;aR+=bb.r*em;aG+=bb.g*em;aB+=bb.b*em;}}
+            double em=_emissionIntensity*tS*T*step;
+            double er=bb.r*em,eg=bb.g*em,eb=bb.b*em;
+            aR+=er;aG+=eg;aB+=eb;eR+=er;eG+=eg;eB+=eb;}}
         // FIRE: flame emission
         if(fAcc){float fv=openvdb::tools::BoxSampler::sample(*fAcc,iP)*(float)_flameMix;if(fv>.001f){
             Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
-            double fem=_flameIntensity*fv*T*step;aR+=fb.r*fem;aG+=fb.g*fem;aB+=fb.b*fem;}}
+            double fem=_flameIntensity*fv*T*step;
+            double fr=fb.r*fem,fg=fb.g*fem,fb2=fb.b*fem;
+            aR+=fr;aG+=fg;aB+=fb2;eR+=fr;eG+=fg;eB+=fb2;}}
         // SMOKE: scatter + absorption
         if(dAcc){float density=openvdb::tools::BoxSampler::sample(*dAcc,iP)*(float)_densityMix;
             if(density>1e-6f){double se=density*ext,ss=density*scat;
@@ -1459,6 +1541,7 @@ void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::
             t2+=curStep;}
     }
     outR=(float)aR;outG=(float)aG;outB=(float)aB;outA=(float)(1-T);
+    outEmR=(float)eR;outEmG=(float)eG;outEmB=(float)eB;
 }
 
 // ═══ marchRayDensity — ramp modes (HDDA + trilinear) ═══

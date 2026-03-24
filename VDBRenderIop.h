@@ -80,6 +80,7 @@ private:
     // ── File ──
     const char* _vdbFilePath   = "";
     bool   _autoSequence       = false;
+    const char* _origFilePath  = "";  // hidden knob: stores path before auto-sequence
     const char* _gridName      = "density";
     const char* _tempGridName  = "";
     const char* _flameGridName = "";
@@ -121,7 +122,7 @@ private:
     int    _bounceRays        = 6;
     int    _scatterPreset     = 0;
     int    _qualityPreset     = 0;
-    bool   _adaptiveStep      = false;
+    bool   _adaptiveStep      = true;
     int    _proxyMode         = 0;     // 0=full, 1=3/4, 2=1/2, 3=1/4
 
     // ── Motion blur ──
@@ -192,7 +193,8 @@ private:
     bool   _hasEnvMap = false;
     bool   _envDirty  = false;
     DD::Image::Iop* _envIop = nullptr;
-    double _envLightRotY = 0;  // Y rotation from EnvironLight transform
+    double _envLightRotY = 0;
+    std::string _envFilePath;  // from EnvironmentLight file knob
     void   cacheEnvMap(DD::Image::Iop* envIop);
     void   sampleEnv(const openvdb::Vec3d& dir, float& r, float& g, float& b) const;
 
@@ -212,8 +214,8 @@ private:
     std::string resolveFramePath(int frame) const;
     void discoverGrids();
 
-    void marchRay(const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A) const;
-    void marchRayExplosion(const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A) const;
+    void marchRay(const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A,float&emR,float&emG,float&emB) const;
+    void marchRayExplosion(const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A,float&emR,float&emG,float&emB) const;
     void marchRayDensity(const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&den,float&alpha) const;
 
     DD::Image::Lock _loadLock;
