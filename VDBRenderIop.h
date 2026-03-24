@@ -214,9 +214,26 @@ private:
     std::string resolveFramePath(int frame) const;
     void discoverGrids();
 
-    void marchRay(const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A,float&emR,float&emG,float&emB) const;
-    void marchRayExplosion(const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A,float&emR,float&emG,float&emB) const;
-    void marchRayDensity(const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&den,float&alpha) const;
+    // Per-scanline ray march context — avoids per-pixel accessor creation
+    struct MarchCtx {
+        openvdb::FloatGrid::ConstAccessor densAcc;
+        openvdb::FloatGrid::ConstAccessor shAcc;
+        std::unique_ptr<openvdb::FloatGrid::ConstAccessor> tempAcc;
+        std::unique_ptr<openvdb::FloatGrid::ConstAccessor> flameAcc;
+        std::unique_ptr<openvdb::Vec3SGrid::ConstAccessor> velAcc;
+        std::unique_ptr<openvdb::Vec3SGrid::ConstAccessor> colorAcc;
+        double step, ext, scat, g, g2, hgN;
+        int nSh; double bDiag, shStep;
+        MarchCtx(const openvdb::FloatGrid::ConstAccessor&d,const openvdb::FloatGrid::ConstAccessor&s)
+            :densAcc(d),shAcc(s),step(0),ext(0),scat(0),g(0),g2(0),hgN(0),nSh(1),bDiag(0),shStep(0){}
+        MarchCtx(MarchCtx&&)=default;
+        MarchCtx&operator=(MarchCtx&&)=default;
+    };
+    MarchCtx makeMarchCtx() const;
+
+    void marchRay(MarchCtx&ctx,const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A,float&emR,float&emG,float&emB) const;
+    void marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A,float&emR,float&emG,float&emB) const;
+    void marchRayDensity(MarchCtx&ctx,const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&den,float&alpha) const;
 
     DD::Image::Lock _loadLock;
     std::string _loadedPath, _loadedGrid;

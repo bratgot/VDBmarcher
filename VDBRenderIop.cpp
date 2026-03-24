@@ -130,14 +130,23 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Double_knob(f,&_flameMix,"flame_mix","Flame Mix");SetRange(f,0,5);
     Tooltip(f,"Multiplier on flame values.\n"
               "0 = no flames. 1 = original. Higher = brighter.");
-    String_knob(f,&_velGridName,"vel_grid","Velocity");
-    Tooltip(f,"Vec3 grid for motion blur.\n"
+    Divider(f,"");
+    Text_knob(f,
+        "<font size='-1' color='#557'>"
+        "The following grids are in beta and may change in future releases."
+        "</font>");
+    String_knob(f,&_velGridName,"vel_grid","Velocity \xCE\xB2");
+    Tooltip(f,"[Beta] Vec3 grid for motion blur.\n"
               "Common names: vel, v, velocity\n"
-              "Enable motion blur in the Output tab to use this.");
-    String_knob(f,&_colorGridName,"color_grid","Colour");
-    Tooltip(f,"Vec3 grid for direct RGB colour from your simulation.\n"
+              "Enable motion blur in the Output tab to use this.\n\n"
+              "Note: Velocity-based motion blur is experimental.\n"
+              "Results may vary depending on simulation scale.");
+    String_knob(f,&_colorGridName,"color_grid","Colour \xCE\xB2");
+    Tooltip(f,"[Beta] Vec3 grid for direct RGB colour from your simulation.\n"
               "Common names: Cd, color, colour, rgb, albedo\n"
-              "Overrides the render mode colour when loaded.");
+              "Overrides the render mode colour when loaded.\n\n"
+              "Note: Colour grid support is experimental.\n"
+              "Currently active in ramp modes only.");
     Int_knob(f,&_frameOffset,"frame_offset","Frame Offset");
     Tooltip(f,"Offsets the timeline frame for sequences.\n"
               "Use negative values to shift the sequence earlier.\n"
@@ -1073,6 +1082,18 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
     float*rO=row.writable(Chan_Red),*gO=row.writable(Chan_Green),*bO=row.writable(Chan_Blue),*aO=row.writable(Chan_Alpha);
     ColorScheme scheme=static_cast<ColorScheme>(_colorScheme);
     float gA[3]={(float)_gradStart[0],(float)_gradStart[1],(float)_gradStart[2]};
+
+    // Create march context once per scanline (avoids per-pixel accessor creation)
+    MarchCtx ctx=makeMarchCtx();
+
+    // Pre-compute camera origin transform (same for all pixels in this row)
+    double ox=_camOrigin[0],oy=_camOrigin[1],oz=_camOrigin[2];
+    if(_hasVolumeXform){
+        double tx=_volInv[0][0]*ox+_volInv[1][0]*oy+_volInv[2][0]*oz+_volInv[3][0];
+        double ty=_volInv[0][1]*ox+_volInv[1][1]*oy+_volInv[2][1]*oz+_volInv[3][1];
+        double tz=_volInv[0][2]*ox+_volInv[1][2]*oy+_volInv[2][2]*oz+_volInv[3][2];
+        ox=tx;oy=ty;oz=tz;
+    }
     float gB[3]={(float)_gradEnd[0],(float)_gradEnd[1],(float)_gradEnd[2]};
 
     // AOV channel pointers — only get writable if channel is in the requested set
@@ -1117,11 +1138,7 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         double rdy=_camRot[0][1]*rcx+_camRot[1][1]*rcy+_camRot[2][1]*rcz;
         double rdz=_camRot[0][2]*rcx+_camRot[1][2]*rcy+_camRot[2][2]*rcz;
         double len=std::sqrt(rdx*rdx+rdy*rdy+rdz*rdz);if(len>1e-8){rdx/=len;rdy/=len;rdz/=len;}
-        double ox=_camOrigin[0],oy=_camOrigin[1],oz=_camOrigin[2];
         if(_hasVolumeXform){
-            double tx=_volInv[0][0]*ox+_volInv[1][0]*oy+_volInv[2][0]*oz+_volInv[3][0];
-            double ty=_volInv[0][1]*ox+_volInv[1][1]*oy+_volInv[2][1]*oz+_volInv[3][1];
-            double tz=_volInv[0][2]*ox+_volInv[1][2]*oy+_volInv[2][2]*oz+_volInv[3][2];ox=tx;oy=ty;oz=tz;
             double dx2=_volInv[0][0]*rdx+_volInv[1][0]*rdy+_volInv[2][0]*rdz;
             double dy2=_volInv[0][1]*rdx+_volInv[1][1]*rdy+_volInv[2][1]*rdz;
             double dz2=_volInv[0][2]*rdx+_volInv[1][2]*rdy+_volInv[2][2]*rdz;
@@ -1136,23 +1153,22 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         for(int ts=0;ts<nTimeSamples;++ts){
             // Motion blur: offset ray origin by velocity * time
             openvdb::Vec3d mO=rayO;
-            if(nTimeSamples>1&&_velGrid){
+            if(nTimeSamples>1&&ctx.velAcc){
                 double tNorm=(nTimeSamples>1)?(double)ts/(nTimeSamples-1):0.5;
                 double tSample=_shutterOpen+tNorm*shutterSpan;
-                // Sample velocity at ray origin
                 auto iP=_velGrid->transform().worldToIndex(rayO);
-                openvdb::Vec3s vel=openvdb::tools::BoxSampler::sample(_velGrid->getConstAccessor(),iP);
+                openvdb::Vec3s vel=openvdb::tools::BoxSampler::sample(*ctx.velAcc,iP);
                 mO=rayO+openvdb::Vec3d(vel[0],vel[1],vel[2])*tSample;
             }
 
             float sR=0,sG=0,sB=0,sA=0,sEmR=0,sEmG=0,sEmB=0;
-            if(scheme==kLit){marchRay(mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
-            else if(scheme==kExplosion){marchRayExplosion(mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
-            else{float den=0,alpha=0;marchRayDensity(mO,rayD,den,alpha);
+            if(scheme==kLit){marchRay(ctx,mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
+            else if(scheme==kExplosion){marchRayExplosion(ctx,mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
+            else{float den=0,alpha=0;marchRayDensity(ctx,mO,rayD,den,alpha);
                 // Vec3 colour grid override
-                if(_hasColorGrid&&_colorGrid&&alpha>1e-6f){
+                if(_hasColorGrid&&ctx.colorAcc&&alpha>1e-6f){
                     auto iPC=_colorGrid->transform().worldToIndex(mO);
-                    openvdb::Vec3s cv=openvdb::tools::BoxSampler::sample(_colorGrid->getConstAccessor(),iPC);
+                    openvdb::Vec3s cv=openvdb::tools::BoxSampler::sample(*ctx.colorAcc,iPC);
                     sR=cv[0]*ri*alpha;sG=cv[1]*ri*alpha;sB=cv[2]*ri*alpha;sA=alpha;
                 }else{
                     Color3 c=evalRamp(scheme,den,gA,gB,_tempMin,_tempMax);
@@ -1178,7 +1194,7 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         // AOV writes
         if(aovDenR){aovDenR[ix]=A;aovDenG[ix]=A;aovDenB[ix]=A;}
         if(aovEmR){aovEmR[ix]=emAccR;aovEmG[ix]=emAccG;aovEmB[ix]=emAccB;}
-        if(aovShR){float sh=1.0f-A;aovShR[ix]=sh;aovShG[ix]=sh;aovShB[ix]=sh;}
+        if(aovShR){float sh=(A>1e-6f)?(1.0f-A):0.0f;aovShR[ix]=sh;aovShG[ix]=sh;aovShB[ix]=sh;}
         if(aovDpP){
             // Compute depth: AABB ray intersection for first-hit distance
             float depth=0;
@@ -1254,21 +1270,35 @@ static const openvdb::Vec3d kDirs12[] = {
     {0.707,0,0.707},{0.707,0,-0.707},{-0.707,0,0.707},{-0.707,0,-0.707},
     {0,0.707,0.707},{0,0.707,-0.707},{0,-0.707,0.707},{0,-0.707,-0.707}};
 
-// ═══ marchRay — Lit mode (HDDA + trilinear) ═══
-// [v2 TODO] Move inner loop to CUDA kernel with NanoVDB accessor
+// ═══ Per-scanline march context ═══
 
-void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA,float&outEmR,float&outEmG,float&outEmB) const {
+VDBRenderIop::MarchCtx VDBRenderIop::makeMarchCtx() const {
+    static auto sEmpty=openvdb::FloatGrid::create();
+    const auto&tree=_floatGrid?_floatGrid->constTree():sEmpty->constTree();
+    openvdb::FloatGrid::ConstAccessor baseAcc(tree);
+    MarchCtx c(baseAcc,openvdb::FloatGrid::ConstAccessor(tree));
+    c.step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0));
+    c.ext=_extinction;c.scat=_scattering;
+    c.g=std::clamp(_anisotropy,-.999,.999);c.g2=c.g*c.g;c.hgN=(1-c.g2)/(4*M_PI);
+    c.nSh=std::max(1,_shadowSteps);c.bDiag=(_bboxMax-_bboxMin).length();c.shStep=c.bDiag/(c.nSh*2);
+    if(_hasTempGrid&&_tempGrid)c.tempAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
+    if(_hasFlameGrid&&_flameGrid)c.flameAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
+    if(_hasVelGrid&&_velGrid)c.velAcc=std::make_unique<openvdb::Vec3SGrid::ConstAccessor>(_velGrid->getConstAccessor());
+    if(_hasColorGrid&&_colorGrid)c.colorAcc=std::make_unique<openvdb::Vec3SGrid::ConstAccessor>(_colorGrid->getConstAccessor());
+    return c;
+}
+
+// ═══ marchRay — Lit mode (HDDA + trilinear) ═══
+
+void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA,float&outEmR,float&outEmG,float&outEmB) const {
     outR=outG=outB=outA=outEmR=outEmG=outEmB=0;if(!_floatGrid)return;
     const auto&xf=_floatGrid->transform();
-    auto acc=_floatGrid->getConstAccessor();
-    auto shAcc=_floatGrid->getConstAccessor(); // reused for all shadow rays
-    double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0)),ext=_extinction,scat=_scattering;
-    double g=std::clamp(_anisotropy,-.999,.999),g2=g*g,hgN=(1-g2)/(4*M_PI);
-    int nSh=std::max(1,_shadowSteps);double bDiag=(_bboxMax-_bboxMin).length(),shStep=bDiag/(nSh*2);
+    auto&acc=ctx.densAcc;auto&shAcc=ctx.shAcc;
+    double step=ctx.step,ext=ctx.ext,scat=ctx.scat;
+    double g=ctx.g,g2=ctx.g2,hgN=ctx.hgN;
+    int nSh=ctx.nSh;double bDiag=ctx.bDiag,shStep=ctx.shStep;
     double T=1,aR=0,aG=0,aB=0,eR=0,eG=0,eB=0;
-    std::unique_ptr<openvdb::FloatGrid::ConstAccessor> tAcc,fAcc;
-    if(_hasTempGrid&&_tempGrid)tAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
-    if(_hasFlameGrid&&_flameGrid)fAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
+    auto*tAcc=ctx.tempAcc.get();auto*fAcc=ctx.flameAcc.get();
 
     // Lambda: shade one sample at world position wP, index position iP
     auto shadeSample=[&](const openvdb::Vec3d&wP,const openvdb::Vec3d&iP){
@@ -1408,20 +1438,18 @@ void VDBRenderIop::marchRay(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir
 // ═══ marchRayExplosion — smoke + fire (HDDA + trilinear) ═══
 // [v2 TODO] Move inner loop to CUDA kernel with NanoVDB accessor
 
-void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA,float&outEmR,float&outEmG,float&outEmB) const {
+void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outR,float&outG,float&outB,float&outA,float&outEmR,float&outEmG,float&outEmB) const {
     outR=outG=outB=outA=outEmR=outEmG=outEmB=0;
     openvdb::FloatGrid::Ptr xfGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
     if(!xfGrid)return;
     const auto&xf=xfGrid->transform();
-    double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0)),ext=_extinction,scat=_scattering;
-    double g=std::clamp(_anisotropy,-.999,.999),g2=g*g,hgN=(1-g2)/(4*M_PI);
-    int nSh=std::max(1,_shadowSteps);double bDiag=(_bboxMax-_bboxMin).length(),shStep=bDiag/(nSh*2);
+    double step=ctx.step,ext=ctx.ext,scat=ctx.scat;
+    double g=ctx.g,g2=ctx.g2,hgN=ctx.hgN;
+    int nSh=ctx.nSh;double bDiag=ctx.bDiag,shStep=ctx.shStep;
     double T=1,aR=0,aG=0,aB=0,eR=0,eG=0,eB=0;
-    std::unique_ptr<openvdb::FloatGrid::ConstAccessor> dAcc,tAcc,fAcc;
-    openvdb::FloatGrid::ConstAccessor shAcc=xfGrid->getConstAccessor(); // shadow ray accessor
-    if(_floatGrid)dAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_floatGrid->getConstAccessor());
-    if(_hasTempGrid&&_tempGrid)tAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
-    if(_hasFlameGrid&&_flameGrid)fAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
+    auto&shAcc=ctx.shAcc;
+    auto*dAcc=_floatGrid?&ctx.densAcc:nullptr;
+    auto*tAcc=ctx.tempAcc.get();auto*fAcc=ctx.flameAcc.get();
 
     auto shadeSampleExplosion=[&](const openvdb::Vec3d&wP,const openvdb::Vec3d&iP){
         // FIRE: temperature emission (self-luminous, trilinear)
@@ -1546,13 +1574,12 @@ void VDBRenderIop::marchRayExplosion(const openvdb::Vec3d&origin,const openvdb::
 
 // ═══ marchRayDensity — ramp modes (HDDA + trilinear) ═══
 
-void VDBRenderIop::marchRayDensity(const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outD,float&outA) const {
+void VDBRenderIop::marchRayDensity(MarchCtx&ctx,const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outD,float&outA) const {
     outD=0;outA=0;if(!_floatGrid)return;
-    auto acc=_floatGrid->getConstAccessor();const auto&xf=_floatGrid->transform();
+    auto&acc=ctx.densAcc;const auto&xf=_floatGrid->transform();
     bool useTG=_hasTempGrid&&_tempGrid&&_colorScheme==kBlackbody;
-    std::unique_ptr<openvdb::FloatGrid::ConstAccessor> tA;
-    if(useTG)tA=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
-    double step=1.0/(std::max(_quality,1.0)*std::max(_quality,1.0)),ext=_extinction,T=1,wV=0;
+    auto*tA=ctx.tempAcc.get();
+    double step=ctx.step,ext=ctx.ext,T=1,wV=0;
 
     auto shadeDensity=[&](const openvdb::Vec3d&iP)->float{
         float d=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
