@@ -34,6 +34,7 @@ set(CMAKE_TARGET_DEFINITIONS_CXX
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "C:/Program Files/Nuke17.0v1/include"
+  "C:/dev/VDBmarcher"
   "C:/vcpkg/installed/x64-windows/include"
   "C:/vcpkg/installed/x64-windows/include/Imath"
   )

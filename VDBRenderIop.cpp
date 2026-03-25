@@ -17,6 +17,10 @@ const char* VDBRenderIop::HELP =
     "Single and multiple scatter volume renderer\n"
     "with deep output, environment lighting,\n"
     "and Henyey-Greenstein phase function.\n\n"
+#ifdef VDBRENDER_HAS_NEURAL
+    "Supports .nvdb neural compressed volumes\n"
+    "(10-100x smaller) alongside standard .vdb files.\n\n"
+#endif
     "Inputs:\n"
     "  bg  (0) — Background plate (sets resolution)\n"
     "  cam (1) — Camera\n"
@@ -80,8 +84,12 @@ void VDBRenderIop::knobs(Knob_Callback f)
 
     Text_knob(f,
         "<font size='+2'><b>VDBRender</b></font>"
-        " <font color='#888' size='-1'>v2.1</font><br>"
-        "<font color='#aaa'>OpenVDB volume ray marcher</font>");
+        " <font color='#888' size='-1'>v3.0</font><br>"
+        "<font color='#aaa'>OpenVDB volume ray marcher"
+#ifdef VDBRENDER_HAS_NEURAL
+        " + NeuralVDB"
+#endif
+        "</font>");
 
     File_knob(f,&_vdbFilePath,"file","VDB File");
     Tooltip(f,"Path to your .vdb file from Houdini, Ember, or other VDB exporters.\n"
@@ -601,6 +609,53 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Enumeration_knob(f,&_viewportColor,vp,"viewport_color","Viewport Colour");
     Tooltip(f,"Override the viewport colour scheme manually.\n"
               "Only applies when 'Link Colour to Render Mode' is off.");
+
+#ifdef VDBRENDER_HAS_NEURAL
+    // ═══════════════════════════════════════════════════
+    //  TAB: Neural
+    // ═══════════════════════════════════════════════════
+    Tab_knob(f,"Neural");
+
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "NeuralVDB compresses VDB files 10-100x using neural networks.<br>"
+        "Load a .nvdb file (created by nvdb_encoder.py) and all existing<br>"
+        "render modes, lighting, and deep output work automatically."
+        "</font>");
+
+    Divider(f,"Neural Decode");
+
+    Bool_knob(f,&_neuralUseCuda,"neural_cuda","CUDA Inference");
+    Tooltip(f,"Use GPU for neural network inference.\n"
+              "Requires CUDA-compatible GPU and LibTorch+CUDA build.\n"
+              "Falls back to CPU if unavailable.");
+
+    String_knob(f,&_neuralInfoRatio,"neural_info_ratio","Compression");
+    SetFlags(f,Knob::READ_ONLY|Knob::DO_NOT_WRITE);
+
+    String_knob(f,&_neuralInfoPSNR,"neural_info_psnr","PSNR");
+    SetFlags(f,Knob::READ_ONLY|Knob::DO_NOT_WRITE);
+
+    BeginClosedGroup(f,"grp_neural_info","Neural Technical Reference");
+    Text_knob(f,
+        "<font size='-1' color='#bbb'>"
+        "<b>NeuralVDB</b> (Kim et al. 2024) replaces lower VDB tree<br>"
+        "nodes with compact neural networks. The upper tree provides<br>"
+        "HDDA empty-space skipping. Two MLPs per volume:<br>"
+        "1. Topology classifier — predicts active voxel mask<br>"
+        "2. Value regressor — predicts density at active positions<br>"
+        "Both use Fourier positional encoding for detail."
+        "</font><br><br>"
+        "<font size='-1' color='#bbb'>"
+        "<b>Sampling</b> — Neural decode replaces BoxSampler at the<br>"
+        "leaf level. All lighting, shadows, phase function, multi-<br>"
+        "scatter, deep output, and AOVs work identically."
+        "</font><br><br>"
+        "<font size='-1' color='#888'>"
+        "Kim, Museth et al. (2024) — NeuralVDB, ACM TOG"
+        "</font>");
+    EndGroup(f);
+#endif
 }
 
 int VDBRenderIop::knob_changed(Knob* k)
@@ -1104,6 +1159,10 @@ void VDBRenderIop::append(Hash& hash) {
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
     if(input(1))hash.append(Op::input(1)->hash());
     if(input(2))hash.append(Op::input(2)->hash());
+#ifdef VDBRENDER_HAS_NEURAL
+    hash.append(_neuralMode);
+    hash.append(_neuralUseCuda);
+#endif
 }
 
 // ═══ 3D Viewport ═══
@@ -1255,13 +1314,60 @@ void VDBRenderIop::_validate(bool for_real) {
             double pz=_volInv[0][2]*cl.pos[0]+_volInv[1][2]*cl.pos[1]+_volInv[2][2]*cl.pos[2]+_volInv[3][2];
             cl.pos[0]=px;cl.pos[1]=py;cl.pos[2]=pz;}}}
 
-    // Load VDB
+    // Load VDB or NVDB
     {Guard guard(_loadLock);
     int curFrame=(int)outputContext().frame()+_frameOffset;
     std::string path2=resolveFramePath(curFrame);std::string grid(_gridName?_gridName:"");
     {std::string tp=path2;for(auto&c:tp)if(c=='\\')c='/';FILE*f=fopen(tp.c_str(),"rb");
      if(!f){std::string orig(_vdbFilePath?_vdbFilePath:"");if(orig!=path2){for(auto&c:orig)if(c=='\\')c='/';
          FILE*of=fopen(orig.c_str(),"rb");if(of){fclose(of);path2=orig;}}}else fclose(f);}
+
+#ifdef VDBRENDER_HAS_NEURAL
+    // ── Neural VDB path (.nvdb files) ──
+    bool isNVDB=false;
+    {size_t len=path2.size();
+     if(len>5&&(path2.substr(len-5)==".nvdb"||path2.substr(len-5)==".NVDB"))isNVDB=true;}
+
+    if(isNVDB){
+        if(!_gridValid||path2!=_loadedPath||curFrame!=_loadedFrame){
+            if(!_neural)_neural=std::make_unique<neural::NeuralDecoder>();
+            _neural->unload();_neuralMode=false;
+            _floatGrid.reset();_tempGrid.reset();_flameGrid.reset();_velGrid.reset();_colorGrid.reset();
+            _gridValid=false;_hasTempGrid=false;_hasFlameGrid=false;_hasVelGrid=false;_hasColorGrid=false;_previewPoints.clear();
+
+            std::string cp2=path2;for(auto&c:cp2)if(c=='\\')c='/';
+            if(_neural->load(cp2,_neuralUseCuda)){
+                _floatGrid=_neural->upperGrid();
+                _neuralMode=true;
+
+                auto ab=_floatGrid->evalActiveVoxelBoundingBox();
+                if(!ab.empty()){
+                    const auto&xf=_floatGrid->transform();
+                    openvdb::Vec3d corners[8];int ci2=0;
+                    for(int iz=0;iz<=1;++iz)for(int iy=0;iy<=1;++iy)for(int ix=0;ix<=1;++ix)
+                        corners[ci2++]=xf.indexToWorld(openvdb::Vec3d(ix?ab.max().x()+1.:ab.min().x(),
+                            iy?ab.max().y()+1.:ab.min().y(),iz?ab.max().z()+1.:ab.min().z()));
+                    _bboxMin=_bboxMax=corners[0];
+                    for(int i=1;i<8;++i)for(int a=0;a<3;++a){
+                        _bboxMin[a]=std::min(_bboxMin[a],corners[i][a]);
+                        _bboxMax[a]=std::max(_bboxMax[a],corners[i][a]);}
+                    _gridValid=true;_loadedPath=path2;_loadedGrid=grid;_loadedFrame=curFrame;
+                    _volRI.reset();
+                    try{_volRI=std::make_unique<VRI>(*_floatGrid);}catch(...){}
+
+                    char buf[64];
+                    std::snprintf(buf,sizeof(buf),"%.1fx",_neural->ratio());
+                    _neuralInfoRatioStr=buf;_neuralInfoRatio=_neuralInfoRatioStr.c_str();
+                    std::snprintf(buf,sizeof(buf),"%.1f dB",_neural->psnr());
+                    _neuralInfoPSNRStr=buf;_neuralInfoPSNR=_neuralInfoPSNRStr.c_str();
+                }else{error("NeuralVDB: no active voxels in upper tree.");}
+            }else{error("Failed to load .nvdb file: %s",path2.c_str());}
+        }
+    }else{
+        _neuralMode=false;
+#endif
+
+    // ── Standard OpenVDB path (.vdb files) ──
     if(!_gridValid||path2!=_loadedPath||grid!=_loadedGrid||curFrame!=_loadedFrame){
         _floatGrid.reset();_tempGrid.reset();_flameGrid.reset();_velGrid.reset();_colorGrid.reset();
         _gridValid=false;_hasTempGrid=false;_hasFlameGrid=false;_hasVelGrid=false;_hasColorGrid=false;_previewPoints.clear();
@@ -1319,7 +1425,12 @@ void VDBRenderIop::_validate(bool for_real) {
             openvdb::FloatGrid::Ptr riGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
             if(riGrid){try{_volRI=std::make_unique<VRI>(*riGrid);}catch(...){}}
         }catch(const std::exception&e){error("OpenVDB: %s",e.what());}catch(...){error("OpenVDB error.");}}
-    }}
+    }
+
+#ifdef VDBRENDER_HAS_NEURAL
+    } // close else from isNVDB check
+#endif
+    }
 }
 
 // ═══ engine ═══
@@ -1592,6 +1703,9 @@ VDBRenderIop::MarchCtx VDBRenderIop::makeMarchCtx() const {
     if(_hasFlameGrid&&_flameGrid)c.flameAcc=std::make_unique<openvdb::FloatGrid::ConstAccessor>(_flameGrid->getConstAccessor());
     if(_hasVelGrid&&_velGrid)c.velAcc=std::make_unique<openvdb::Vec3SGrid::ConstAccessor>(_velGrid->getConstAccessor());
     if(_hasColorGrid&&_colorGrid)c.colorAcc=std::make_unique<openvdb::Vec3SGrid::ConstAccessor>(_colorGrid->getConstAccessor());
+#ifdef VDBRENDER_HAS_NEURAL
+    if(_neuralMode&&_neural&&_neural->loaded()){c.neuralDec=_neural.get();c.neuralMode=true;}
+#endif
     return c;
 }
 
@@ -1609,8 +1723,8 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
 
     // Lambda: shade one sample at world position wP, index position iP
     auto shadeSample=[&](const openvdb::Vec3d&wP,const openvdb::Vec3d&iP){
-        // Trilinear density sample [v2 TODO: NanoVDB texture lookup]
-        float density=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
+        // Trilinear density sample — dispatches to BoxSampler or NeuralDecoder
+        float density=ctx.sampleDensity(iP)*(float)_densityMix;
         if(density<=1e-6f)return;
         double se=density*ext,ss=density*scat;
         // Direct lighting with shadow rays
@@ -1624,7 +1738,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
             for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
                 for(int a=0;a<3;++a)if(lw[a]<_bboxMin[a]||lw[a]>_bboxMax[a]){in=false;break;}if(!in)break;
                 auto li=xf.worldToIndex(lw);
-                lT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li)*ext*_shadowDensity*shStep);
+                lT*=std::exp(-(double)ctx.sampleShadow(li)*ext*_shadowDensity*shStep);
                 if(lT<.01)break;}
             double ctr=ss*phS*lT*T*step;aR+=ctr*lt.color[0];aG+=ctr*lt.color[1];aB+=ctr*lt.color[2];}
         // Ambient
@@ -1648,7 +1762,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
                 for(int si=0;si<nSh;++si){auto ew=wP+((si+1)*shStep)*eDir;bool in=true;
                     for(int a5=0;a5<3;++a5)if(ew[a5]<_bboxMin[a5]||ew[a5]>_bboxMax[a5]){in=false;break;}if(!in)break;
                     auto ei=xf.worldToIndex(ew);
-                    eT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,ei)*ext*_shadowDensity*shStep);
+                    eT*=std::exp(-(double)ctx.sampleShadow(ei)*ext*_shadowDensity*shStep);
                     if(eT<.01)break;}
                 double envC=ss*eT*T*step*_envIntensity*(4*M_PI/nEnv);
                 aR+=envC*eR;aG+=envC*eG;aB+=envC*eB;
@@ -1670,7 +1784,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
                         for(int a3=0;a3<3;++a3)if(bP[a3]<_bboxMin[a3]||bP[a3]>_bboxMax[a3]){inside=false;break;}
                         if(!inside)break;
                         auto bI=xf.worldToIndex(bP);
-                        float bDen=openvdb::tools::BoxSampler::sample(acc,bI)*(float)_densityMix;
+                        float bDen=ctx.sampleDensity(bI)*(float)_densityMix;
                         if(bDen<1e-6f)continue;
                         for(const auto&lt2:_lights){openvdb::Vec3d lD2;
                             if(lt2.isPoint){lD2=openvdb::Vec3d(lt2.pos[0]-bP[0],lt2.pos[1]-bP[1],lt2.pos[2]-bP[2]);
@@ -1680,7 +1794,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
                             for(int si=0;si<3;++si){auto lw2=bP+((si+1)*shStep*2)*lD2;bool in2=true;
                                 for(int a4=0;a4<3;++a4)if(lw2[a4]<_bboxMin[a4]||lw2[a4]>_bboxMax[a4]){in2=false;break;}if(!in2)break;
                                 auto li2=xf.worldToIndex(lw2);
-                                lT2*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li2)*ext*_shadowDensity*shStep*2);
+                                lT2*=std::exp(-(double)ctx.sampleShadow(li2)*ext*_shadowDensity*shStep*2);
                                 if(lT2<.01)break;}
                             double c2=bDen*scat*lT2;bR+=c2*lt2.color[0];bG+=c2*lt2.color[1];bB+=c2*lt2.color[2];}
                     }++su;}
@@ -1728,7 +1842,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
             if(wT1<=0)continue;if(wT0<0)wT0=0;
             for(double t2=wT0;t2<wT1&&T>.005;){
                 auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-                lastDen=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
+                lastDen=ctx.sampleDensity(iP)*(float)_densityMix;
                 shadeSample(wP,iP);
                 double curStep=step;
                 if(_adaptiveStep){curStep=step*(lastDen<0.01?4.0:lastDen<0.1?2.0:1.0);}
@@ -1743,7 +1857,7 @@ void VDBRenderIop::marchRay(MarchCtx&ctx,const openvdb::Vec3d&origin,const openv
         if(tEnter>=tExit||tExit<=0)return;
         for(double t2=tEnter;t2<tExit&&T>.005;){
             auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
-            lastDen=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
+            lastDen=ctx.sampleDensity(iP)*(float)_densityMix;
             shadeSample(wP,iP);
             double curStep=step;
             if(_adaptiveStep){curStep=step*(lastDen<0.01?4.0:lastDen<0.1?2.0:1.0);}
@@ -1791,7 +1905,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
         double fireAbsorb=std::clamp((localEmR+localEmG+localEmB)*0.1,0.0,2.0);
         if(fireAbsorb>0.001) T*=std::exp(-fireAbsorb*step);
         // SMOKE: scatter + absorption
-        if(dAcc){float density=openvdb::tools::BoxSampler::sample(*dAcc,iP)*(float)_densityMix;
+        if(dAcc){float density=ctx.sampleDensity(iP)*(float)_densityMix;
             if(density>1e-6f){double se=density*ext,ss=density*scat;
                 // Emission illuminating smoke — fire acts as embedded light source
                 if(localEmR+localEmG+localEmB>0.001){
@@ -1807,7 +1921,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
                     for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
                         for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
                         auto li=xf.worldToIndex(lw);
-                        lT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li)*ext*_shadowDensity*shStep);
+                        lT*=std::exp(-(double)ctx.sampleShadow(li)*ext*_shadowDensity*shStep);
                         if(lT<.01)break;}
                     double ctr=ss*phS*lT*T*step;aR+=ctr*lt.color[0];aG+=ctr*lt.color[1];aB+=ctr*lt.color[2];}
                 if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;aR+=amb;aG+=amb;aB+=amb;}
@@ -1827,7 +1941,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
                         for(int si=0;si<nSh;++si){auto ew=wP+((si+1)*shStep)*eDir;bool in2=true;
                             for(int a5=0;a5<3;++a5)if(ew[a5]<_bboxMin[a5]||ew[a5]>_bboxMax[a5]){in2=false;break;}if(!in2)break;
                             auto ei=xf.worldToIndex(ew);
-                            eT*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,ei)*ext*_shadowDensity*shStep);
+                            eT*=std::exp(-(double)ctx.sampleShadow(ei)*ext*_shadowDensity*shStep);
                             if(eT<.01)break;}
                         double envC=ss*eT*T*step*_envIntensity*(4*M_PI/nEnv);
                         aR+=envC*eR;aG+=envC*eG;aB+=envC*eB;++used;}
@@ -1844,7 +1958,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
                             for(int bs=1;bs<=nBSteps;++bs){auto bP=wP+(bs*bounceStep2)*bDir;bool inside=true;
                                 for(int a3=0;a3<3;++a3)if(bP[a3]<_bboxMin[a3]||bP[a3]>_bboxMax[a3]){inside=false;break;}
                                 if(!inside)break;auto bI=xf.worldToIndex(bP);
-                                float bDen=openvdb::tools::BoxSampler::sample(*dAcc,bI)*(float)_densityMix;
+                                float bDen=ctx.sampleDensity(bI)*(float)_densityMix;
                                 if(bDen<1e-6f)continue;
                                 for(const auto&lt2:_lights){openvdb::Vec3d lD2;
                                     if(lt2.isPoint){lD2=openvdb::Vec3d(lt2.pos[0]-bP[0],lt2.pos[1]-bP[1],lt2.pos[2]-bP[2]);
@@ -1854,7 +1968,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
                                     for(int si=0;si<3;++si){auto lw2=bP+((si+1)*shStep*2)*lD2;bool in2=true;
                                         for(int a4=0;a4<3;++a4)if(lw2[a4]<_bboxMin[a4]||lw2[a4]>_bboxMax[a4]){in2=false;break;}if(!in2)break;
                                         auto li2=xf.worldToIndex(lw2);
-                                        lT2*=std::exp(-(double)openvdb::tools::BoxSampler::sample(shAcc,li2)*ext*_shadowDensity*shStep*2);
+                                        lT2*=std::exp(-(double)ctx.sampleShadow(li2)*ext*_shadowDensity*shStep*2);
                                         if(lT2<.01)break;}
                                     double c2=bDen*scat*lT2;bR+=c2*lt2.color[0];bG+=c2*lt2.color[1];bB+=c2*lt2.color[2];}
                             }++su;}
@@ -1879,7 +1993,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
                 auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
                 shadeSampleExplosion(wP,iP);
                 double curStep=step;
-                if(_adaptiveStep&&dAcc){float ld=openvdb::tools::BoxSampler::sample(*dAcc,iP)*(float)_densityMix;
+                if(_adaptiveStep&&dAcc){float ld=ctx.sampleDensity(iP)*(float)_densityMix;
                     curStep=step*(ld<0.01?4.0:ld<0.1?2.0:1.0);}
                 t2+=curStep;}
         }
@@ -1893,7 +2007,7 @@ void VDBRenderIop::marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&origin,co
             auto wP=origin+t2*dir;auto iP=xf.worldToIndex(wP);
             shadeSampleExplosion(wP,iP);
             double curStep=step;
-            if(_adaptiveStep&&dAcc){float ld=openvdb::tools::BoxSampler::sample(*dAcc,iP)*(float)_densityMix;
+            if(_adaptiveStep&&dAcc){float ld=ctx.sampleDensity(iP)*(float)_densityMix;
                 curStep=step*(ld<0.01?4.0:ld<0.1?2.0:1.0);}
             t2+=curStep;}
     }
@@ -1911,7 +2025,7 @@ void VDBRenderIop::marchRayDensity(MarchCtx&ctx,const openvdb::Vec3d&origin,cons
     double step=ctx.step,ext=ctx.ext,T=1,wV=0;
 
     auto shadeDensity=[&](const openvdb::Vec3d&iP)->float{
-        float d=openvdb::tools::BoxSampler::sample(acc,iP)*(float)_densityMix;
+        float d=ctx.sampleDensity(iP)*(float)_densityMix;
         if(d>1e-6f){double se=d*ext,ab=T*(1-std::exp(-se*step));
             float val=d;if(useTG){float tv=openvdb::tools::BoxSampler::sample(*tA,iP)*(float)_tempMix;
                 val=(float)std::clamp((tv-_tempMin)/(_tempMax-_tempMin),0.,1.);}
@@ -2046,7 +2160,12 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
                         double fem=_flameIntensity*fv*T*step;
                         slabR+=fb.r*(float)fem;slabG+=fb.g*(float)fem;slabB+=fb.b*(float)fem;}}
 
-                    if(dAcc){float density=dAcc->getValue(ijk)*(float)_densityMix;
+                    if(dAcc){
+#ifdef VDBRENDER_HAS_NEURAL
+                        float density=(_neuralMode&&_neural)?_neural->sampleDensity(iP)*(float)_densityMix:dAcc->getValue(ijk)*(float)_densityMix;
+#else
+                        float density=dAcc->getValue(ijk)*(float)_densityMix;
+#endif
                         if(density>1e-6f){double se=density*ext,ss=density*scat;
                             for(const auto&lt:_lights){openvdb::Vec3d lD;
                                 if(lt.isPoint){lD=openvdb::Vec3d(lt.pos[0]-wP[0],lt.pos[1]-wP[1],lt.pos[2]-wP[2]);
@@ -2057,12 +2176,23 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
                                 else{double dn=1+g2-2*g*cosT2;ph=hgN/std::pow(dn,1.5);}
                                 double phS=ph*4*M_PI;
                                 double lT=1;
-                                if(_floatGrid){auto la=_floatGrid->getConstAccessor();
+                                if(_floatGrid){
+#ifdef VDBRENDER_HAS_NEURAL
+                                    if(_neuralMode&&_neural){
+                                        for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
+                                            for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
+                                            auto li=xf.worldToIndex(lw);
+                                            lT*=std::exp(-(double)_neural->sampleDensity(li)*ext*_shadowDensity*shStep);
+                                            if(lT<.01)break;}
+                                    }else
+#endif
+                                    {auto la=_floatGrid->getConstAccessor();
                                     for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
                                         for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
                                         auto li=xf.worldToIndex(lw);
                                         lT*=std::exp(-(double)la.getValue(openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shStep);
                                         if(lT<.01)break;}}
+                                }
                                 double ctr=ss*phS*lT*T*step;
                                 slabR+=(float)(ctr*lt.color[0]);slabG+=(float)(ctr*lt.color[1]);slabB+=(float)(ctr*lt.color[2]);}
                             if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;

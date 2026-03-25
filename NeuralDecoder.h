@@ -300,7 +300,8 @@ private:
     openvdb::math::Transform::Ptr _xform;
     openvdb::CoordBBox _bbox;
 
-    torch::jit::script::Module _topoModel, _valModel;
+   // mutable: forward() is non-const in TorchScript API
+    mutable torch::jit::script::Module _topoModel, _valModel;
     std::unique_ptr<PosEncoder> _encoder;
     mutable BlockCache _cache;
     float _ratio = 1.0f;

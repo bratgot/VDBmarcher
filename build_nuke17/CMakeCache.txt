@@ -70,6 +70,9 @@ CMAKE_CXX_FLAGS_RELEASE:STRING=/O2 /Ob2 /DNDEBUG
 //Flags used by the CXX compiler during RELWITHDEBINFO builds.
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=/Zi /O2 /Ob1 /DNDEBUG
 
+//No help, variable specified on the command line.
+CMAKE_CXX_STANDARD:UNINITIALIZED=20
+
 //Libraries linked by default with all C++ applications.
 CMAKE_CXX_STANDARD_LIBRARIES:STRING=kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
 
@@ -272,6 +275,9 @@ LIBLZMA_LIBRARY_DEBUG:FILEPATH=C:/vcpkg/installed/x64-windows/debug/lib/lzma.lib
 //Path to a library.
 LIBLZMA_LIBRARY_RELEASE:FILEPATH=C:/vcpkg/installed/x64-windows/lib/lzma.lib
 
+//Path to LibTorch C++ distribution
+LIBTORCH_PATH:PATH=
+
 //Nuke install directory (e.g. C:/Program Files/Nuke17.0v1)
 NUKE_ROOT:PATH=C:/Program Files/Nuke17.0v1
 
@@ -320,6 +326,9 @@ VCPKG_TRACE_FIND_PACKAGE:BOOL=OFF
 
 //Enables messages from the VCPKG toolchain for debugging purposes.
 VCPKG_VERBOSE:BOOL=OFF
+
+//Enable NeuralVDB neural compressed volume support
+VDBRENDER_NEURAL:BOOL=OFF
 
 //Value Computed by CMake
 VDBRender_BINARY_DIR:STATIC=C:/dev/VDBmarcher/build_nuke17
@@ -688,6 +697,8 @@ LIBLZMA_INCLUDE_DIR-ADVANCED:INTERNAL=1
 LIBLZMA_LIBRARY_DEBUG-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: LIBLZMA_LIBRARY_RELEASE
 LIBLZMA_LIBRARY_RELEASE-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: OpenVDB_INCLUDE_DIR
+OpenVDB_INCLUDE_DIR-ADVANCED:INTERNAL=1
 //Install the dependencies listed in your manifest:
 //\n    If this is off, you will have to manually install your dependencies.
 //\n    See https://github.com/microsoft/vcpkg/tree/master/docs/specifications/manifests.md
