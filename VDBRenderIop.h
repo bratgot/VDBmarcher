@@ -1,6 +1,7 @@
 #pragma once
 // VDBRender — OpenVDB Volume Ray Marcher for Nuke 17
 // Created by Marten Blumen
+// [NEURAL] NeuralVDB integration — neural compressed volume support
 
 #include <openvdb/openvdb.h>
 #include <openvdb/io/File.h>
@@ -8,11 +9,9 @@
 #include <openvdb/tools/RayIntersector.h>
 #include <openvdb/math/Ray.h>
 
-// NanoVDB — requires OpenVDB 13 for compatible API
-// [v2] Upgrade to OpenVDB 13, then:
-// #include <nanovdb/NanoVDB.h>
-// #include <nanovdb/tools/CreateNanoGrid.h>
-// #include <nanovdb/math/SampleFromVoxels.h>
+#ifdef VDBRENDER_HAS_NEURAL
+#include "NeuralDecoder.h"
+#endif
 
 #include <DDImage/Iop.h>
 #include <DDImage/DeepOp.h>
@@ -44,14 +43,12 @@ public:
     const char* Class()     const override { return CLASS; }
     const char* node_help() const override { return HELP; }
 
-    // Inputs: 0=bg, 1=cam, 2=scn, 3=env
     int         minimum_inputs() const override { return 3; }
     int         maximum_inputs() const override { return 3; }
     const char* input_label(int idx, char* buf) const override;
     bool        test_input(int idx, DD::Image::Op* op) const override;
     Op*         default_input(int idx) const override;
 
-    // 2D Iop
     void _validate(bool for_real) override;
     void _open() override;
     void _request(int x, int y, int r, int t, DD::Image::ChannelMask, int count) override;
@@ -60,7 +57,6 @@ public:
     void build_handles(DD::Image::ViewerContext* ctx) override;
     void draw_handle(DD::Image::ViewerContext* ctx) override;
 
-    // DeepOp
     DD::Image::Op* op() override { return static_cast<DD::Image::Iop*>(this); }
     void getDeepRequests(DD::Image::Box box, const DD::Image::ChannelSet& channels,
                          int count, std::vector<DD::Image::RequestData>& reqData) override;
@@ -80,7 +76,7 @@ private:
     // ── File ──
     const char* _vdbFilePath   = "";
     bool   _autoSequence       = false;
-    const char* _origFilePath  = "";  // hidden knob: stores path before auto-sequence
+    const char* _origFilePath  = "";
     const char* _gridName      = "density";
     const char* _tempGridName  = "";
     const char* _flameGridName = "";
@@ -111,16 +107,16 @@ private:
     double _ambientIntensity  = 0.0;
 
     // ── Light Rig ──
-    int    _skyPreset         = 2;   // 0=Off 1=Custom 2=DaySky 3=GoldenHour 4=Overcast 5=BlueHour 6=Night
-    double _skyMix            = 1.0; // master brightness for sun+sky
+    int    _skyPreset         = 2;
+    double _skyMix            = 1.0;
     double _sunElevation      = 45.0;
     double _sunAzimuth        = 180.0;
     double _sunIntensity      = 3.0;
     double _skyIntensity      = 0.4;
     double _turbidity         = 3.0;
     double _groundBounce      = 0.1;
-    int    _studioPreset      = 0;   // 0=Off 1=3-Point 2=Dramatic 3=Soft 4=Rim Only 5=Top Light
-    double _studioMix         = 0.0; // master brightness for studio lights
+    int    _studioPreset      = 0;
+    double _studioMix         = 0.0;
     double _studioKeyAzimuth  = 45.0;
     double _studioKeyElevation= 40.0;
     double _studioKeyIntensity= 3.0;
@@ -128,8 +124,8 @@ private:
     double _studioRimIntensity= 2.0;
     void   buildLightRig();
     double _envIntensity      = 1.0;
-    double _envDiffuse        = 0.5;  // 0=sharp, 1=fully diffuse
-    double _envRotate         = 0.0;   // degrees, 0-360
+    double _envDiffuse        = 0.5;
+    double _envRotate         = 0.0;
 
     // ── Quality ──
     double _quality           = 3.0;
@@ -141,12 +137,12 @@ private:
     int    _scatterPreset     = 0;
     int    _qualityPreset     = 0;
     bool   _adaptiveStep      = true;
-    int    _proxyMode         = 0;     // 0=full, 1=3/4, 2=1/2, 3=1/4
+    int    _proxyMode         = 0;
 
     // ── Motion blur ──
     const char* _velGridName  = "";
     bool   _motionBlur        = false;
-    int    _shutterPreset     = 1;   // 0=start, 1=center, 2=end, 3=custom
+    int    _shutterPreset     = 1;
     double _shutterOpen       = -0.5;
     double _shutterClose      = 0.5;
     int    _motionSamples     = 3;
@@ -179,17 +175,8 @@ private:
     int  _loadedFrame=-1;
 
     // ── Ray acceleration (HDDA empty-space skipping) ──
-    // VolumeRayIntersector uses the grid's topology to skip empty nodes.
-    // Master copy built at validate time; shallow-copied per thread in march funcs.
-    // [v2 TODO] Replace with NanoVDB grid + CUDA kernel for GPU rendering.
     using VRI = openvdb::tools::VolumeRayIntersector<openvdb::FloatGrid>;
-    std::unique_ptr<VRI> _volRI;  // master, built from density grid
-
-    // ── NanoVDB grids [v2 — requires OpenVDB 13] ──
-    // Convert OpenVDB → NanoVDB at load time for ~2x faster CPU access.
-    // Same handles upload to GPU via cudaMemcpy for CUDA rendering.
-    // using NanoHandle = nanovdb::GridHandle<nanovdb::HostBuffer>;
-    // NanoHandle _nanoDensity, _nanoTemp, _nanoFlame;
+    std::unique_ptr<VRI> _volRI;
 
     // ── Camera ──
     openvdb::Vec3d _camOrigin;
@@ -200,7 +187,7 @@ private:
     bool _hasVolumeXform=false;
     double _volFwd[4][4], _volInv[4][4];
 
-    // ── Lights (gathered from scene input) ──
+    // ── Lights ──
     struct CachedLight { double dir[3], color[3], pos[3]; bool isPoint; };
     std::vector<CachedLight> _lights;
     void gatherLights(DD::Image::Op* scnOp);
@@ -212,7 +199,7 @@ private:
     bool   _envDirty  = false;
     DD::Image::Iop* _envIop = nullptr;
     double _envLightRotY = 0;
-    std::string _envFilePath;  // from EnvironmentLight file knob
+    std::string _envFilePath;
     void   cacheEnvMap(DD::Image::Iop* envIop);
     void   sampleEnv(const openvdb::Vec3d& dir, float& r, float& g, float& b) const;
 
@@ -232,7 +219,29 @@ private:
     std::string resolveFramePath(int frame) const;
     void discoverGrids();
 
-    // Per-scanline ray march context — avoids per-pixel accessor creation
+    // ══════════════════════════════════════════════════════════
+    //  [NEURAL] NeuralVDB integration
+    // ══════════════════════════════════════════════════════════
+
+#ifdef VDBRENDER_HAS_NEURAL
+    // Neural decoder — loads .nvdb files, provides sampleDensity()
+    std::unique_ptr<neural::NeuralDecoder> _neural;
+    bool _neuralMode       = false;   // true when .nvdb is loaded
+    bool _neuralUseCuda    = false;   // knob: use CUDA for inference
+    float _neuralTopoThreshold = 0.5f; // knob: topology classifier threshold
+
+    // Info strings (read-only knobs)
+    const char* _neuralInfoRatio = "";
+    const char* _neuralInfoPSNR  = "";
+    std::string _neuralInfoRatioStr, _neuralInfoPSNRStr;
+#endif
+
+    // ══════════════════════════════════════════════════════════
+    //  Per-scanline march context
+    // ══════════════════════════════════════════════════════════
+
+    // MarchCtx pools grid accessors per scanline for thread safety.
+    // [NEURAL] Adds sampling abstraction that dispatches to OpenVDB or neural.
     struct MarchCtx {
         openvdb::FloatGrid::ConstAccessor densAcc;
         openvdb::FloatGrid::ConstAccessor shAcc;
@@ -242,6 +251,36 @@ private:
         std::unique_ptr<openvdb::Vec3SGrid::ConstAccessor> colorAcc;
         double step, ext, scat, g, g2, hgN;
         int nSh; double bDiag, shStep;
+
+#ifdef VDBRENDER_HAS_NEURAL
+        // [NEURAL] Neural decode state — set by makeMarchCtx when _neuralMode
+        const neural::NeuralDecoder* neuralDec = nullptr;
+        bool neuralMode = false;
+
+        // [NEURAL] Unified density sample: BoxSampler or neural decode
+        // Call this everywhere instead of BoxSampler::sample(densAcc, iP)
+        inline float sampleDensity(const openvdb::Vec3d& iP) const {
+            if (neuralMode && neuralDec)
+                return neuralDec->sampleDensity(iP);
+            return openvdb::tools::BoxSampler::sample(densAcc, iP);
+        }
+
+        // [NEURAL] Unified shadow sample
+        inline float sampleShadow(const openvdb::Vec3d& iP) const {
+            if (neuralMode && neuralDec)
+                return neuralDec->sampleDensity(iP); // shadow uses same density
+            return openvdb::tools::BoxSampler::sample(shAcc, iP);
+        }
+#else
+        // Non-neural build: direct BoxSampler (zero overhead, inlined)
+        inline float sampleDensity(const openvdb::Vec3d& iP) const {
+            return openvdb::tools::BoxSampler::sample(densAcc, iP);
+        }
+        inline float sampleShadow(const openvdb::Vec3d& iP) const {
+            return openvdb::tools::BoxSampler::sample(shAcc, iP);
+        }
+#endif
+
         MarchCtx(const openvdb::FloatGrid::ConstAccessor&d,const openvdb::FloatGrid::ConstAccessor&s)
             :densAcc(d),shAcc(s),step(0),ext(0),scat(0),g(0),g2(0),hgN(0),nSh(1),bDiag(0),shStep(0){}
         MarchCtx(MarchCtx&&)=default;

@@ -1,0 +1,11 @@
+# NeuralVDB Python tools requirements
+# Install: pip install -r requirements.txt
+
+torch>=2.2.0
+numpy>=1.24.0
+tqdm>=4.65.0
+
+# OpenVDB Python bindings — install from source or conda
+# pip install pyopenvdb  (may require OpenVDB system library)
+# conda install -c conda-forge pyopenvdb
+pyopenvdb>=11.0.0
