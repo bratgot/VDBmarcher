@@ -226,14 +226,17 @@ private:
 #ifdef VDBRENDER_HAS_NEURAL
     // Neural decoder — loads .nvdb files, provides sampleDensity()
     std::unique_ptr<neural::NeuralDecoder> _neural;
-    bool _neuralMode       = false;   // true when .nvdb is loaded
+    bool _neuralMode       = false;   // true when live neural (not decoded)
     bool _neuralUseCuda    = false;   // knob: use CUDA for inference
-    float _neuralTopoThreshold = 0.5f; // knob: topology classifier threshold
+    bool _neuralDecodeToGrid = true;  // knob: decode to grid at load (recommended)
+    int  _neuralBatchSize  = 4096;    // knob: voxels per forward pass
+    float _neuralTopoThreshold = 0.5f;
 
     // Info strings (read-only knobs)
     const char* _neuralInfoRatio = "";
     const char* _neuralInfoPSNR  = "";
-    std::string _neuralInfoRatioStr, _neuralInfoPSNRStr;
+    const char* _neuralInfoMode  = "";
+    std::string _neuralInfoRatioStr, _neuralInfoPSNRStr, _neuralInfoModeStr;
 #endif
 
     // ══════════════════════════════════════════════════════════

@@ -630,10 +630,27 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Requires CUDA-compatible GPU and LibTorch+CUDA build.\n"
               "Falls back to CPU if unavailable.");
 
+    Bool_knob(f,&_neuralDecodeToGrid,"neural_decode_grid","Decode to Grid");
+    Tooltip(f,"DEFAULT ON (recommended). Decode all voxels into a\n"
+              "standard VDB grid at load time. Rendering then uses\n"
+              "BoxSampler at full speed — zero neural overhead.\n\n"
+              "Turn OFF for live neural inference per sample (slower\n"
+              "rendering but uses less memory — the decoded grid\n"
+              "doesn't need to fit in RAM alongside the original).");
+    SetFlags(f,Knob::STARTLINE);
+
+    Int_knob(f,&_neuralBatchSize,"neural_batch_size","Batch Size");
+    Tooltip(f,"Number of voxels per neural network forward pass.\n"
+              "Larger = faster decode, more GPU memory.\n"
+              "4096 is a good default. Try 16384 for large volumes on GPU.");
+
     String_knob(f,&_neuralInfoRatio,"neural_info_ratio","Compression");
     SetFlags(f,Knob::READ_ONLY|Knob::DO_NOT_WRITE);
 
     String_knob(f,&_neuralInfoPSNR,"neural_info_psnr","PSNR");
+    SetFlags(f,Knob::READ_ONLY|Knob::DO_NOT_WRITE);
+
+    String_knob(f,&_neuralInfoMode,"neural_info_mode","Decode Mode");
     SetFlags(f,Knob::READ_ONLY|Knob::DO_NOT_WRITE);
 
     BeginClosedGroup(f,"grp_neural_info","Neural Technical Reference");
@@ -1162,6 +1179,8 @@ void VDBRenderIop::append(Hash& hash) {
 #ifdef VDBRENDER_HAS_NEURAL
     hash.append(_neuralMode);
     hash.append(_neuralUseCuda);
+    hash.append(_neuralDecodeToGrid);
+    hash.append(_neuralBatchSize);
 #endif
 }
 
@@ -1337,8 +1356,24 @@ void VDBRenderIop::_validate(bool for_real) {
 
             std::string cp2=path2;for(auto&c:cp2)if(c=='\\')c='/';
             if(_neural->load(cp2,_neuralUseCuda)){
-                _floatGrid=_neural->upperGrid();
-                _neuralMode=true;
+
+                if(_neuralDecodeToGrid){
+                    // DECODE-TO-GRID: batched neural decode → standard FloatGrid
+                    // Rendering uses BoxSampler at full speed, zero neural overhead
+                    auto decoded=_neural->decodeToGrid(_neuralBatchSize);
+                    if(decoded&&decoded->activeVoxelCount()>0){
+                        _floatGrid=decoded;
+                        _neuralMode=false; // BoxSampler path — no per-sample neural dispatch
+                    }else{
+                        // Fallback to upper tree if decode fails
+                        _floatGrid=_neural->upperGrid();
+                        _neuralMode=true;
+                    }
+                }else{
+                    // LIVE NEURAL: per-sample inference during rendering (lower memory)
+                    _floatGrid=_neural->upperGrid();
+                    _neuralMode=true;
+                }
 
                 auto ab=_floatGrid->evalActiveVoxelBoundingBox();
                 if(!ab.empty()){
@@ -1360,7 +1395,11 @@ void VDBRenderIop::_validate(bool for_real) {
                     _neuralInfoRatioStr=buf;_neuralInfoRatio=_neuralInfoRatioStr.c_str();
                     std::snprintf(buf,sizeof(buf),"%.1f dB",_neural->psnr());
                     _neuralInfoPSNRStr=buf;_neuralInfoPSNR=_neuralInfoPSNRStr.c_str();
-                }else{error("NeuralVDB: no active voxels in upper tree.");}
+
+                    // Mode info
+                    _neuralInfoModeStr=_neuralMode?"Live Neural":"Decoded to Grid";
+                    _neuralInfoMode=_neuralInfoModeStr.c_str();
+                }else{error("NeuralVDB: no active voxels.");}
             }else{error("Failed to load .nvdb file: %s",path2.c_str());}
         }
     }else{

@@ -694,7 +694,7 @@ ZLIB_LIBRARY_RELEASE:FILEPATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64
 Z_VCPKG_BUILTIN_POWERSHELL_PATH:FILEPATH=C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
 
 //Path to a program.
-Z_VCPKG_CL:FILEPATH=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+Z_VCPKG_CL:FILEPATH=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/cl.exe
 
 //Path to a program.
 Z_VCPKG_PWSH_PATH:FILEPATH=Z_VCPKG_PWSH_PATH-NOTFOUND
@@ -1055,7 +1055,7 @@ CUDA_CUDA_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_GENERATED_OUTPUT_DIR
 CUDA_GENERATED_OUTPUT_DIR-ADVANCED:INTERNAL=1
 //Returned GPU architectures from detect_gpus tool
-CUDA_GPU_DETECT_OUTPUT:INTERNAL=
+CUDA_GPU_DETECT_OUTPUT:INTERNAL=12.0
 //ADVANCED property for variable: CUDA_HOST_COMPILATION_CPP
 CUDA_HOST_COMPILATION_CPP-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_NVCC_FLAGS
@@ -1270,7 +1270,7 @@ _Python_INTERPRETER_SIGNATURE:INTERNAL=bd52cec0454c7cd0052c4cdb960bc52d
 //NumPy reason failure
 _Python_NumPy_REASON_FAILURE:INTERNAL=
 //Result of TRY_COMPILE
-compile_result:INTERNAL=FALSE
+compile_result:INTERNAL=TRUE
 //Result of try_run()
 run_result:INTERNAL=0
 

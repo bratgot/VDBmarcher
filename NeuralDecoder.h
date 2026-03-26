@@ -1,20 +1,26 @@
 #pragma once
 // NeuralDecoder.h — Neural volume decoder for VDBRender integration
-// Replaces BoxSampler::sample() at the grid accessor level.
+// v2: Decode-to-grid + batched inference optimizations
 //
-// Design: keeps the upper VDB tree for HDDA empty-space skipping,
-// replaces lower leaf nodes with compact MLPs. The VolumeRayIntersector
-// still works because the upper tree topology is preserved.
+// Two decode modes:
+//   1. DECODE-TO-GRID (default, recommended by NeuralVDB paper):
+//      At load time, decode all active voxels via batched neural inference
+//      into a standard FloatGrid. Rendering then uses BoxSampler at full
+//      speed — zero neural overhead per sample.
 //
-// Usage in MarchCtx:
-//   float d = _neuralMode ? _neural->sampleDensity(iP) : BoxSampler::sample(acc, iP);
+//   2. LIVE NEURAL (fallback, lower memory):
+//      Per-sample neural inference during rendering. Slower but the decoded
+//      grid doesn't need to fit in memory alongside the original.
 //
-// Requires LibTorch (C++ distribution, cxx11 ABI)
+// Usage in _validate:
+//   _neural->load(path);
+//   _floatGrid = _neural->decodeToGrid(4096); // batched decode
+//   // rendering uses BoxSampler on decoded grid — no neural dispatch needed
 
 #ifdef VDBRENDER_HAS_NEURAL
 
 #include <torch/torch.h>
-#include <torch/script.h>
+
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/Interpolation.h>
 
@@ -22,17 +28,15 @@
 #include <string>
 #include <vector>
 #include <mutex>
-#include <unordered_map>
 #include <cmath>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <chrono>
 
 namespace neural {
 
 // ─── Positional Encoding ───────────────────────────────────────────
-// Fourier features for high-frequency detail capture.
-// Maps xyz → [xyz, sin(2^k π xyz), cos(2^k π xyz)] for k = 0..L-1
 class PosEncoder {
 public:
     explicit PosEncoder(int L = 6) : _L(L) {
@@ -59,59 +63,8 @@ private:
     torch::Tensor _bands;
 };
 
-// ─── Block Cache (LRU) ────────────────────────────────────────────
-// Caches decoded 8^3 voxel blocks keyed by upper-tree node index.
-// Prevents redundant inference when multiple rays hit the same region.
-struct DecodedBlock {
-    openvdb::Coord origin;
-    std::vector<float> values;  // 8^3 = 512 floats
-    int dim = 8;
-};
-
-class BlockCache {
-public:
-    explicit BlockCache(size_t cap = 256 * 1024 * 1024)
-        : _cap(cap) {}
-
-    const DecodedBlock* get(uint64_t key) const {
-        std::lock_guard<std::mutex> lk(_mtx);
-        auto it = _map.find(key);
-        if (it == _map.end()) return nullptr;
-        it->second.tick = _tick++;
-        return &it->second.blk;
-    }
-
-    void put(uint64_t key, DecodedBlock blk) {
-        std::lock_guard<std::mutex> lk(_mtx);
-        size_t bytes = blk.values.size() * 4 + sizeof(DecodedBlock);
-        while (_used + bytes > _cap && !_map.empty()) evictOne();
-        _map[key] = {std::move(blk), _tick++};
-        _used += bytes;
-    }
-
-    void clear() {
-        std::lock_guard<std::mutex> lk(_mtx);
-        _map.clear(); _used = 0;
-    }
-
-private:
-    void evictOne() {
-        auto oldest = _map.begin();
-        for (auto it = _map.begin(); it != _map.end(); ++it)
-            if (it->second.tick < oldest->second.tick) oldest = it;
-        _used -= oldest->second.blk.values.size() * 4 + sizeof(DecodedBlock);
-        _map.erase(oldest);
-    }
-    struct Entry { DecodedBlock blk; mutable int64_t tick; };
-    mutable std::mutex _mtx;
-    std::unordered_map<uint64_t, Entry> _map;
-    size_t _cap, _used = 0;
-    mutable int64_t _tick = 0;
-};
-
 // ─── NVDB File Format ──────────────────────────────────────────────
-// Binary layout: Header(128) + [SectionHeader(16) + Data]...
-static constexpr uint32_t NVDB_MAGIC = 0x4E564442; // "NVDB"
+static constexpr uint32_t NVDB_MAGIC = 0x4E564442;
 
 #pragma pack(push, 1)
 struct NVDBHeader {
@@ -130,23 +83,55 @@ struct SectHead {
 };
 #pragma pack(pop)
 
+// ─── Network Modules (reconstructed from header config) ────────────
+struct TopoClassifier : torch::nn::Module {
+    torch::nn::Sequential layers{nullptr};
+    TopoClassifier(int in, int h, int n) {
+        layers = torch::nn::Sequential();
+        layers->push_back(torch::nn::Linear(in, h));
+        layers->push_back(torch::nn::ReLU());
+        for (int i = 1; i < n - 1; i++) {
+            layers->push_back(torch::nn::Linear(h, h));
+            layers->push_back(torch::nn::ReLU());
+        }
+        layers->push_back(torch::nn::Linear(h, 1));
+        layers->push_back(torch::nn::Sigmoid());
+        register_module("layers", layers);
+    }
+    torch::Tensor forward(torch::Tensor x) { return layers->forward(x).squeeze(-1); }
+};
+
+struct ValRegressor : torch::nn::Module {
+    torch::nn::Sequential layers{nullptr};
+    ValRegressor(int in, int h, int n) {
+        layers = torch::nn::Sequential();
+        layers->push_back(torch::nn::Linear(in, h));
+        layers->push_back(torch::nn::ReLU());
+        for (int i = 1; i < n - 1; i++) {
+            layers->push_back(torch::nn::Linear(h, h));
+            layers->push_back(torch::nn::ReLU());
+        }
+        layers->push_back(torch::nn::Linear(h, 1));
+        register_module("layers", layers);
+    }
+    torch::Tensor forward(torch::Tensor x) { return layers->forward(x).squeeze(-1); }
+};
+
 // ─── Neural Decoder ────────────────────────────────────────────────
-// Single-point sampling interface compatible with VDBRender's march loop.
-// Keeps upper VDB tree for HDDA, uses MLPs for leaf-level decode.
 class NeuralDecoder {
 public:
-    NeuralDecoder() : _cache(512ULL * 1024 * 1024) {}
+    NeuralDecoder() {}
 
     bool load(const std::string& path, bool useCuda = false) {
         _dev = (useCuda && torch::cuda::is_available())
              ? torch::Device(torch::kCUDA) : torch::kCPU;
 
-        // Read .nvdb header + section offsets
         std::ifstream ifs(path, std::ios::binary);
         if (!ifs.is_open()) return false;
         ifs.read((char*)&_hdr, sizeof(_hdr));
         if (_hdr.magic != NVDB_MAGIC) return false;
 
+        // Read section index
         struct Sect { uint32_t type; uint64_t off, sz; };
         std::vector<Sect> sects;
         uint64_t pos = sizeof(NVDBHeader);
@@ -159,7 +144,6 @@ public:
             pos += sizeof(SectHead) + sh.size;
         }
 
-        // Read sections by type
         auto readSect = [&](uint32_t t) -> std::vector<uint8_t> {
             for (auto& s : sects) if (s.type == t) {
                 std::vector<uint8_t> d(s.sz);
@@ -170,10 +154,9 @@ public:
             return {};
         };
 
-        // Upper VDB tree (section 0x01) → reconstruct OpenVDB grid for HDDA
+        // Upper VDB tree (section 0x01)
         auto treeData = readSect(0x01);
         if (!treeData.empty()) {
-            // Write to temp file, load via OpenVDB I/O
             std::string tmp = path + ".upper.tmp.vdb";
             { std::ofstream o(tmp, std::ios::binary);
               o.write((char*)treeData.data(), treeData.size()); }
@@ -191,7 +174,19 @@ public:
         _xform = _upperGrid->transformPtr();
         _bbox = _upperGrid->evalActiveVoxelBoundingBox();
 
-        // Load parameters into reconstructed network
+        // Pre-compute normalisation bounds (cached, not per-sample)
+        auto bmin = _xform->indexToWorld(_bbox.min().asVec3d());
+        auto bmax = _xform->indexToWorld((_bbox.max() + openvdb::Coord(1)).asVec3d());
+        _normCenter = (bmin + bmax) * 0.5;
+        _normExtent = (bmax - bmin) * 0.5;
+        for (int i = 0; i < 3; i++)
+            if (std::abs(_normExtent[i]) < 1e-6) _normExtent[i] = 1.0;
+
+        // Create encoder
+        _encoder = std::make_unique<PosEncoder>(_hdr.numFreq);
+        int encDim = _encoder->dim();
+
+        // Load parameters into reconstructed networks
         auto loadParams = [&](const std::vector<uint8_t>& data, torch::nn::Module& mod) -> bool {
             if (data.empty()) return false;
             try {
@@ -203,7 +198,6 @@ public:
                               << " model=" << params.size() << "\n";
                     return false;
                 }
-                int pi = 0;
                 for (auto& p : params) {
                     int32_t ndim; std::memcpy(&ndim, ptr, 4); ptr += 4;
                     std::vector<int64_t> shape(ndim);
@@ -214,7 +208,6 @@ public:
                     auto t = torch::from_blob((void*)ptr, shape, torch::kFloat32).clone().to(_dev);
                     p.set_data(t);
                     ptr += nbytes;
-                    pi++;
                 }
                 return true;
             } catch (const std::exception& e) {
@@ -223,16 +216,13 @@ public:
             }
         };
 
-        // Reconstruct networks from header config + load weights
-        int encDim = _encoder->dim();
-
         // Topology model (section 0x02)
         auto topoData = readSect(0x02);
         if (!topoData.empty()) {
-            _topoLayers = std::make_shared<TopoClassifier>(encDim, _hdr.topoH, _hdr.topoL);
-            _topoLayers->to(_dev);
-            if (loadParams(topoData, *_topoLayers)) {
-                _topoLayers->eval();
+            _topoNet = std::make_shared<TopoClassifier>(encDim, _hdr.topoH, _hdr.topoL);
+            _topoNet->to(_dev);
+            if (loadParams(topoData, *_topoNet)) {
+                _topoNet->eval();
                 _hasTopo = true;
             }
         }
@@ -240,19 +230,17 @@ public:
         // Value model (section 0x03)
         auto valData = readSect(0x03);
         if (!valData.empty()) {
-            _valLayers = std::make_shared<ValRegressor>(encDim, _hdr.valH, _hdr.valL);
-            _valLayers->to(_dev);
-            if (loadParams(valData, *_valLayers)) {
-                _valLayers->eval();
+            _valNet = std::make_shared<ValRegressor>(encDim, _hdr.valH, _hdr.valL);
+            _valNet->to(_dev);
+            if (loadParams(valData, *_valNet)) {
+                _valNet->eval();
                 _hasVal = true;
             }
         }
 
-        _encoder = std::make_unique<PosEncoder>(_hdr.numFreq);
         ifs.close();
         _loaded = true;
 
-        // Compression stats
         if (_hdr.compBytes > 0)
             _ratio = (float)_hdr.origBytes / (float)_hdr.compBytes;
 
@@ -262,30 +250,178 @@ public:
     }
 
     void unload() {
-        _upperGrid.reset(); _xform.reset(); _cache.clear();
+        _upperGrid.reset(); _xform.reset();
+        _topoNet.reset(); _valNet.reset();
         _hasTopo = _hasVal = _loaded = false;
     }
 
     bool loaded() const { return _loaded; }
 
-    // ── Single-point sampling (drop-in for BoxSampler::sample) ──
-    // Takes INDEX-space position (same as BoxSampler), returns float value.
-    // This is what gets called from VDBRender's march lambdas.
-    float sampleDensity(const openvdb::Vec3d& indexPos) const {
-        if (!_loaded || !_hasVal) return 0.0f;
+    // ═══════════════════════════════════════════════════════════════
+    //  OPTIMIZATION 1: Decode-to-Grid
+    //  Recommended by NeuralVDB paper (Kim et al. 2024):
+    //  "online random access via inference is too slow for real-time
+    //   applications — decode neural→regular VDB first, then render"
+    //
+    //  One-time batched decode of all active voxels → FloatGrid.
+    //  After this, rendering uses BoxSampler at full speed.
+    //  batchSize controls GPU memory vs throughput tradeoff.
+    // ═══════════════════════════════════════════════════════════════
 
-        // Quick upper-tree check: is this region active?
-        openvdb::Coord ijk((int)std::floor(indexPos[0]),
-                           (int)std::floor(indexPos[1]),
-                           (int)std::floor(indexPos[2]));
-        if (!_upperGrid->tree().isValueOn(ijk)) return 0.0f;
+    openvdb::FloatGrid::Ptr decodeToGrid(int batchSize = 4096) const {
+        if (!_loaded || !_hasVal) return nullptr;
 
-        // Convert index → world → normalised coords for the network
-        openvdb::Vec3d worldP = _xform->indexToWorld(indexPos);
-        return decodePoint(worldP);
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        // Collect all active voxel coordinates from upper tree
+        std::vector<openvdb::Coord> activeCoords;
+        activeCoords.reserve(_upperGrid->activeVoxelCount());
+        for (auto iter = _upperGrid->cbeginValueOn(); iter; ++iter)
+            activeCoords.push_back(iter.getCoord());
+
+        int N = (int)activeCoords.size();
+        std::cout << "[NeuralVDB] Decoding " << N << " active voxels";
+        if (_dev.is_cuda()) std::cout << " (CUDA)";
+        std::cout << "..." << std::flush;
+
+        // Create output grid with same transform
+        auto outGrid = openvdb::FloatGrid::create(0.0f);
+        outGrid->setTransform(_xform->copy());
+        outGrid->setGridClass(openvdb::GRID_FOG_VOLUME);
+        auto outAcc = outGrid->getAccessor();
+
+        torch::NoGradGuard ng;
+
+        // Process in batches — single tensor creation + forward pass per batch
+        for (int start = 0; start < N; start += batchSize) {
+            int end = std::min(start + batchSize, N);
+            int batchN = end - start;
+
+            // Build normalised coordinate tensor
+            auto coords = torch::zeros({batchN, 3}, torch::kFloat32);
+            auto ca = coords.accessor<float, 2>();
+            for (int i = 0; i < batchN; i++) {
+                auto worldP = _xform->indexToWorld(activeCoords[start + i].asVec3d());
+                ca[i][0] = (float)((worldP[0] - _normCenter[0]) / _normExtent[0]);
+                ca[i][1] = (float)((worldP[1] - _normCenter[1]) / _normExtent[1]);
+                ca[i][2] = (float)((worldP[2] - _normCenter[2]) / _normExtent[2]);
+            }
+            coords = coords.to(_dev);
+
+            // Encode — one call for entire batch
+            auto encoded = _encoder->encode(coords);
+
+            // Topology filter
+            std::vector<bool> topoMask(batchN, true);
+            if (_hasTopo && _topoNet) {
+                auto topoPred = _topoNet->forward(encoded);
+                auto topoCpu = topoPred.cpu();
+                auto topoA = topoCpu.accessor<float, 1>();
+                for (int i = 0; i < batchN; i++)
+                    topoMask[i] = (topoA[i] >= 0.5f);
+            }
+
+            // Value prediction — one forward pass for entire batch
+            auto valPred = _valNet->forward(encoded);
+            auto valCpu = valPred.cpu();
+            auto valA = valCpu.accessor<float, 1>();
+           
+
+            // Write decoded values to output grid
+            for (int i = 0; i < batchN; i++) {
+                if (!topoMask[i]) continue;
+                float v = std::clamp(valA[i], 0.0f, 1.0f);
+                if (v > 1e-6f)
+                    outAcc.setValue(activeCoords[start + i], v);
+            }
+
+            // Progress indicator
+            if ((start / batchSize) % 100 == 0 && start > 0)
+                std::cout << "." << std::flush;
+        }
+
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        int64_t decodedCount = outGrid->activeVoxelCount();
+        std::cout << " done (" << (int)ms << "ms, "
+                  << decodedCount << " voxels, "
+                  << (int)(N / (ms / 1000.0)) << " voxels/sec)\n";
+
+        return outGrid;
     }
 
-    // Accessors for VDBRender integration
+    // ═══════════════════════════════════════════════════════════════
+    //  OPTIMIZATION 2: Batched live sampling
+    //  For live neural mode (when decode-to-grid is disabled).
+    //  Collects N positions, runs one forward pass instead of N.
+    // ═══════════════════════════════════════════════════════════════
+
+    void sampleDensityBatch(const openvdb::Vec3d* indexPositions, float* outValues,
+                            int count) const {
+        if (!_loaded || !_hasVal || count == 0) {
+            for (int i = 0; i < count; i++) outValues[i] = 0.0f;
+            return;
+        }
+
+        torch::NoGradGuard ng;
+
+        // Filter by upper tree activity, build batch
+        std::vector<int> activeIdx;
+        activeIdx.reserve(count);
+        auto coords = torch::zeros({count, 3}, torch::kFloat32);
+        auto ca = coords.accessor<float, 2>();
+
+        for (int i = 0; i < count; i++) {
+            outValues[i] = 0.0f;
+            openvdb::Coord ijk((int)std::floor(indexPositions[i][0]),
+                               (int)std::floor(indexPositions[i][1]),
+                               (int)std::floor(indexPositions[i][2]));
+            if (!_upperGrid->tree().isValueOn(ijk)) continue;
+
+            auto worldP = _xform->indexToWorld(indexPositions[i]);
+            int idx = (int)activeIdx.size();
+            ca[idx][0] = (float)((worldP[0] - _normCenter[0]) / _normExtent[0]);
+            ca[idx][1] = (float)((worldP[1] - _normCenter[1]) / _normExtent[1]);
+            ca[idx][2] = (float)((worldP[2] - _normCenter[2]) / _normExtent[2]);
+            activeIdx.push_back(i);
+        }
+
+        if (activeIdx.empty()) return;
+
+        int batchN = (int)activeIdx.size();
+        coords = coords.slice(0, 0, batchN).to(_dev);
+        auto encoded = _encoder->encode(coords);
+
+        // Topology filter
+        std::vector<bool> topoMask(batchN, true);
+        if (_hasTopo && _topoNet) {
+            auto topoPred = _topoNet->forward(encoded);
+            auto topoCpu = topoPred.cpu();
+            auto topoA = topoCpu.accessor<float, 1>();
+
+            for (int i = 0; i < batchN; i++)
+                topoMask[i] = (topoA[i] >= 0.5f);
+        }
+
+        // Value regression — single forward pass
+        auto valPred = _valNet->forward(encoded);
+        auto valCpu2 = valPred.cpu();
+        auto valA = valCpu2.accessor<float, 1>();
+
+        for (int i = 0; i < batchN; i++) {
+            if (!topoMask[i]) continue;
+            outValues[activeIdx[i]] = std::clamp(valA[i], 0.0f, 1.0f);
+        }
+    }
+
+    // Single-point sampling (compatibility — uses batch of 1)
+    float sampleDensity(const openvdb::Vec3d& indexPos) const {
+        float result = 0.0f;
+        sampleDensityBatch(&indexPos, &result, 1);
+        return result;
+    }
+
+    // Accessors
     openvdb::FloatGrid::Ptr         upperGrid()  const { return _upperGrid; }
     openvdb::math::Transform::Ptr   transform()  const { return _xform; }
     openvdb::CoordBBox              activeBBox() const { return _bbox; }
@@ -294,35 +430,6 @@ public:
     const NVDBHeader&               header()     const { return _hdr; }
 
 private:
-    float decodePoint(const openvdb::Vec3d& worldP) const {
-        torch::NoGradGuard ng;
-
-        // Normalise to [-1,1] based on grid bbox
-        auto bmin = _xform->indexToWorld(_bbox.min().asVec3d());
-        auto bmax = _xform->indexToWorld((_bbox.max() + openvdb::Coord(1)).asVec3d());
-        auto center = (bmin + bmax) * 0.5;
-        auto extent = (bmax - bmin) * 0.5;
-        for (int i = 0; i < 3; i++)
-            if (std::abs(extent[i]) < 1e-6) extent[i] = 1.0;
-
-        float nx = (float)((worldP[0] - center[0]) / extent[0]);
-        float ny = (float)((worldP[1] - center[1]) / extent[1]);
-        float nz = (float)((worldP[2] - center[2]) / extent[2]);
-
-        auto coords = torch::tensor({{nx, ny, nz}}, torch::kFloat32).to(_dev);
-        auto encoded = _encoder->encode(coords);
-
-        // Topology check
-        if (_hasTopo && _topoLayers) {
-            auto topo = _topoLayers->forward(encoded);
-            if (topo.item<float>() < 0.5f) return 0.0f;
-        }
-
-        if (!_valLayers) return 0.0f;
-        auto val = _valLayers->forward(encoded);
-        return std::clamp(val.item<float>(), 0.0f, 1.0f);
-    }
-
     bool _loaded = false, _hasTopo = false, _hasVal = false;
     NVDBHeader _hdr;
     torch::Device _dev = torch::kCPU;
@@ -331,36 +438,13 @@ private:
     openvdb::math::Transform::Ptr _xform;
     openvdb::CoordBBox _bbox;
 
-   // Network modules (reconstructed from header config, weights from file)
-    struct TopoClassifier : torch::nn::Module {
-        torch::nn::Sequential layers{nullptr};
-        TopoClassifier(int in, int h, int n) {
-            layers = torch::nn::Sequential();
-            layers->push_back(torch::nn::Linear(in, h));
-            layers->push_back(torch::nn::ReLU());
-            for (int i = 1; i < n - 1; i++) { layers->push_back(torch::nn::Linear(h, h)); layers->push_back(torch::nn::ReLU()); }
-            layers->push_back(torch::nn::Linear(h, 1));
-            layers->push_back(torch::nn::Sigmoid());
-            register_module("layers", layers);
-        }
-        torch::Tensor forward(torch::Tensor x) { return layers->forward(x).squeeze(-1); }
-    };
-    struct ValRegressor : torch::nn::Module {
-        torch::nn::Sequential layers{nullptr};
-        ValRegressor(int in, int h, int n) {
-            layers = torch::nn::Sequential();
-            layers->push_back(torch::nn::Linear(in, h));
-            layers->push_back(torch::nn::ReLU());
-            for (int i = 1; i < n - 1; i++) { layers->push_back(torch::nn::Linear(h, h)); layers->push_back(torch::nn::ReLU()); }
-            layers->push_back(torch::nn::Linear(h, 1));
-            register_module("layers", layers);
-        }
-        torch::Tensor forward(torch::Tensor x) { return layers->forward(x).squeeze(-1); }
-    };
-    mutable std::shared_ptr<TopoClassifier> _topoLayers;
-    mutable std::shared_ptr<ValRegressor> _valLayers;
+    // Pre-computed normalisation (avoids recomputing per sample)
+    openvdb::Vec3d _normCenter, _normExtent;
+
+    // Reconstructed networks (raw parameter serialization, no TorchScript)
+    mutable std::shared_ptr<TopoClassifier> _topoNet;
+    mutable std::shared_ptr<ValRegressor> _valNet;
     std::unique_ptr<PosEncoder> _encoder;
-    mutable BlockCache _cache;
     float _ratio = 1.0f;
 };
 

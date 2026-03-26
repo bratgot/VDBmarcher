@@ -4867,7 +4867,6 @@ CMakeFiles/VDBRender.dir/VDBRenderIop.cpp.obj
  C:/libtorch/include/c10/util/Exception.h
  C:/libtorch/include/c10/util/ExclusivelyOwned.h
  C:/libtorch/include/c10/util/ExclusivelyOwnedTensorTraits.h
- C:/libtorch/include/c10/util/FbcodeMaps.h
  C:/libtorch/include/c10/util/Flags.h
  C:/libtorch/include/c10/util/Float4_e2m1fn_x2.h
  C:/libtorch/include/c10/util/Float8_e4m3fn.h
@@ -4930,10 +4929,6 @@ CMakeFiles/VDBRender.dir/VDBRenderIop.cpp.obj
  C:/libtorch/include/c10/util/string_view.h
  C:/libtorch/include/c10/util/strong_type.h
  C:/libtorch/include/c10/util/typeid.h
- C:/libtorch/include/caffe2/serialize/inline_container.h
- C:/libtorch/include/caffe2/serialize/istream_adapter.h
- C:/libtorch/include/caffe2/serialize/read_adapter_interface.h
- C:/libtorch/include/caffe2/serialize/versions.h
  C:/libtorch/include/fmt/base.h
  C:/libtorch/include/fmt/format-inl.h
  C:/libtorch/include/fmt/format.h
@@ -5131,7 +5126,6 @@ CMakeFiles/VDBRender.dir/VDBRenderIop.cpp.obj
  C:/libtorch/include/torch/csrc/api/include/torch/utils.h
  C:/libtorch/include/torch/csrc/api/include/torch/version.h
  C:/libtorch/include/torch/csrc/api/include/torch/xpu.h
- C:/libtorch/include/torch/csrc/autograd/InferenceMode.h
  C:/libtorch/include/torch/csrc/autograd/anomaly_mode.h
  C:/libtorch/include/torch/csrc/autograd/autograd.h
  C:/libtorch/include/torch/csrc/autograd/autograd_not_implemented_fallback.h
@@ -5162,21 +5156,10 @@ CMakeFiles/VDBRender.dir/VDBRenderIop.cpp.obj
  C:/libtorch/include/torch/csrc/jit/api/method.h
  C:/libtorch/include/torch/csrc/jit/api/module.h
  C:/libtorch/include/torch/csrc/jit/api/object.h
- C:/libtorch/include/torch/csrc/jit/frontend/error_report.h
  C:/libtorch/include/torch/csrc/jit/frontend/function_schema_parser.h
- C:/libtorch/include/torch/csrc/jit/frontend/lexer.h
  C:/libtorch/include/torch/csrc/jit/frontend/name_mangler.h
- C:/libtorch/include/torch/csrc/jit/frontend/parser_constants.h
- C:/libtorch/include/torch/csrc/jit/frontend/resolver.h
- C:/libtorch/include/torch/csrc/jit/frontend/schema_matching.h
- C:/libtorch/include/torch/csrc/jit/frontend/script_type_parser.h
  C:/libtorch/include/torch/csrc/jit/frontend/source_range.h
- C:/libtorch/include/torch/csrc/jit/frontend/strtod.h
- C:/libtorch/include/torch/csrc/jit/frontend/sugared_value.h
  C:/libtorch/include/torch/csrc/jit/frontend/tracer.h
- C:/libtorch/include/torch/csrc/jit/frontend/tree.h
- C:/libtorch/include/torch/csrc/jit/frontend/tree_views.h
- C:/libtorch/include/torch/csrc/jit/frontend/versioned_symbols.h
  C:/libtorch/include/torch/csrc/jit/ir/attributes.h
  C:/libtorch/include/torch/csrc/jit/ir/constants.h
  C:/libtorch/include/torch/csrc/jit/ir/graph_node_list.h
@@ -5185,18 +5168,12 @@ CMakeFiles/VDBRender.dir/VDBRenderIop.cpp.obj
  C:/libtorch/include/torch/csrc/jit/ir/scope.h
  C:/libtorch/include/torch/csrc/jit/python/update_graph_executor_opt.h
  C:/libtorch/include/torch/csrc/jit/runtime/argument_spec.h
- C:/libtorch/include/torch/csrc/jit/runtime/custom_operator.h
  C:/libtorch/include/torch/csrc/jit/runtime/graph_executor.h
  C:/libtorch/include/torch/csrc/jit/runtime/interpreter.h
  C:/libtorch/include/torch/csrc/jit/runtime/jit_exception.h
  C:/libtorch/include/torch/csrc/jit/runtime/operator.h
  C:/libtorch/include/torch/csrc/jit/runtime/operator_options.h
  C:/libtorch/include/torch/csrc/jit/runtime/variable_tensor_list.h
- C:/libtorch/include/torch/csrc/jit/serialization/import.h
- C:/libtorch/include/torch/csrc/jit/serialization/pickle.h
- C:/libtorch/include/torch/csrc/jit/serialization/pickler.h
- C:/libtorch/include/torch/csrc/jit/serialization/pickler_helper.h
- C:/libtorch/include/torch/csrc/jit/serialization/unpickler.h
  C:/libtorch/include/torch/csrc/profiler/api.h
  C:/libtorch/include/torch/csrc/profiler/events.h
  C:/libtorch/include/torch/csrc/profiler/orchestration/observer.h
@@ -5257,7 +5234,6 @@ CMakeFiles/VDBRender.dir/VDBRenderIop.cpp.obj
  C:/libtorch/include/torch/headeronly/util/quint8.h
  C:/libtorch/include/torch/headeronly/version.h
  C:/libtorch/include/torch/library.h
- C:/libtorch/include/torch/script.h
  vcpkg_installed/x64-windows/include/Imath/ImathConfig.h
  vcpkg_installed/x64-windows/include/Imath/ImathExport.h
  vcpkg_installed/x64-windows/include/Imath/ImathNamespace.h

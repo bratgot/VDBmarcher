@@ -434,7 +434,7 @@ bool writeNVDB(const std::string& outPath, const VDBData& data,
 
     std::string topoBytes = saveParams(*topo);
     std::string valBytes = saveParams(*val);
-    
+
 
     // Serialize upper VDB tree to temp file, read bytes
     std::string treeBytes;
