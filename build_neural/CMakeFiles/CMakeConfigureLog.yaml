@@ -61,14 +61,14 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-9qpm6m"
-      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-9qpm6m"
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-8pdgfe"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-8pdgfe"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      VCPKG_INSTALLED_DIR: "C:/vcpkg/installed"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
       VCPKG_PREFER_SYSTEM_LIBS: "OFF"
       VCPKG_TARGET_TRIPLET: "x64-windows"
       Z_VCPKG_ROOT_DIR: "C:/vcpkg"
@@ -76,27 +76,27 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-9qpm6m'
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-8pdgfe'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_06929\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_06929.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_06929.dir\\build
-        Building CXX object CMakeFiles/cmTC_06929.dir/CMakeCXXCompilerABI.cpp.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmA593.tmp
-        Linking CXX executable cmTC_06929.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_06929.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_06929.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmA5C3.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_45e8f\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_45e8f.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_45e8f.dir\\build
+        Building CXX object CMakeFiles/cmTC_45e8f.dir/CMakeCXXCompilerABI.cpp.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm4210.tmp
+        Linking CXX executable cmTC_45e8f.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_45e8f.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_45e8f.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm4250.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_06929.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_06929.dir/embed.manifest
+        Create CMakeFiles\\cmTC_45e8f.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_45e8f.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_06929.dir/manifest.res CMakeFiles\\cmTC_06929.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_45e8f.dir/manifest.res CMakeFiles\\cmTC_45e8f.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_06929.dir\\objects1.rsp /out:cmTC_06929.exe /implib:cmTC_06929.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-9qpm6m\\cmTC_06929.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_06929.dir/intermediate.manifest CMakeFiles\\cmTC_06929.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_45e8f.dir\\objects1.rsp /out:cmTC_45e8f.exe /implib:cmTC_45e8f.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-8pdgfe\\cmTC_45e8f.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_45e8f.dir/intermediate.manifest CMakeFiles\\cmTC_45e8f.dir/manifest.res
         MT:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_06929.dir/intermediate.manifest /out:CMakeFiles\\cmTC_06929.dir/embed.manifest /notify_update
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_45e8f.dir/intermediate.manifest /out:CMakeFiles\\cmTC_45e8f.dir/embed.manifest /notify_update
         RC Pass 2:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_06929.dir/manifest.res CMakeFiles\\cmTC_06929.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_45e8f.dir/manifest.res CMakeFiles\\cmTC_45e8f.dir/manifest.rc
         FINAL LINK:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_06929.dir\\objects1.rsp /out:cmTC_06929.exe /implib:cmTC_06929.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-9qpm6m\\cmTC_06929.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_06929.dir/intermediate.manifest CMakeFiles\\cmTC_06929.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_45e8f.dir\\objects1.rsp /out:cmTC_45e8f.exe /implib:cmTC_45e8f.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-8pdgfe\\cmTC_45e8f.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_45e8f.dir/intermediate.manifest CMakeFiles\\cmTC_45e8f.dir/manifest.res
         
       exitCode: 0
   -
@@ -111,14 +111,14 @@ events:
     checks:
       - "Detecting CXX compile features"
     directories:
-      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-2enu6v"
-      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-2enu6v"
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-9so48a"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-9so48a"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      VCPKG_INSTALLED_DIR: "C:/vcpkg/installed"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
       VCPKG_PREFER_SYSTEM_LIBS: "OFF"
       VCPKG_TARGET_TRIPLET: "x64-windows"
       Z_VCPKG_ROOT_DIR: "C:/vcpkg"
@@ -126,27 +126,27 @@ events:
       variable: "CMAKE_CXX_FEATURE_TEST"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-2enu6v'
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-9so48a'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_ea7e8\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_ea7e8.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_ea7e8.dir\\build
-        Building CXX object CMakeFiles/cmTC_ea7e8.dir/feature_tests.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmA739.tmp
-        Linking CXX executable cmTC_ea7e8.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_ea7e8.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_ea7e8.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmA779.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_c9321\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_c9321.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_c9321.dir\\build
+        Building CXX object CMakeFiles/cmTC_c9321.dir/feature_tests.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm43B6.tmp
+        Linking CXX executable cmTC_c9321.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_c9321.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_c9321.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm43E6.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_ea7e8.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_ea7e8.dir/embed.manifest
+        Create CMakeFiles\\cmTC_c9321.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_c9321.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_ea7e8.dir/manifest.res CMakeFiles\\cmTC_ea7e8.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_c9321.dir/manifest.res CMakeFiles\\cmTC_c9321.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_ea7e8.dir\\objects1.rsp /out:cmTC_ea7e8.exe /implib:cmTC_ea7e8.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-2enu6v\\cmTC_ea7e8.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_ea7e8.dir/intermediate.manifest CMakeFiles\\cmTC_ea7e8.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_c9321.dir\\objects1.rsp /out:cmTC_c9321.exe /implib:cmTC_c9321.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-9so48a\\cmTC_c9321.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_c9321.dir/intermediate.manifest CMakeFiles\\cmTC_c9321.dir/manifest.res
         MT:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_ea7e8.dir/intermediate.manifest /out:CMakeFiles\\cmTC_ea7e8.dir/embed.manifest /notify_update
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_c9321.dir/intermediate.manifest /out:CMakeFiles\\cmTC_c9321.dir/embed.manifest /notify_update
         RC Pass 2:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_ea7e8.dir/manifest.res CMakeFiles\\cmTC_ea7e8.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_c9321.dir/manifest.res CMakeFiles\\cmTC_c9321.dir/manifest.rc
         FINAL LINK:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_ea7e8.dir\\objects1.rsp /out:cmTC_ea7e8.exe /implib:cmTC_ea7e8.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-2enu6v\\cmTC_ea7e8.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_ea7e8.dir/intermediate.manifest CMakeFiles\\cmTC_ea7e8.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_c9321.dir\\objects1.rsp /out:cmTC_c9321.exe /implib:cmTC_c9321.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-9so48a\\cmTC_c9321.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_c9321.dir/intermediate.manifest CMakeFiles\\cmTC_c9321.dir/manifest.res
         
       exitCode: 0
   -
@@ -161,14 +161,14 @@ events:
     checks:
       - "Detecting CXX compile features"
     directories:
-      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-g5hjt4"
-      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-g5hjt4"
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-rk9704"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-rk9704"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      VCPKG_INSTALLED_DIR: "C:/vcpkg/installed"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
       VCPKG_PREFER_SYSTEM_LIBS: "OFF"
       VCPKG_TARGET_TRIPLET: "x64-windows"
       Z_VCPKG_ROOT_DIR: "C:/vcpkg"
@@ -176,27 +176,27 @@ events:
       variable: "CMAKE_CXX_FEATURE_TEST"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-g5hjt4'
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-rk9704'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_a7d3d\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_a7d3d.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_a7d3d.dir\\build
-        Building CXX object CMakeFiles/cmTC_a7d3d.dir/feature_tests.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmA8FE.tmp
-        Linking CXX executable cmTC_a7d3d.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_a7d3d.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_a7d3d.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmA93E.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_d222c\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_d222c.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_d222c.dir\\build
+        Building CXX object CMakeFiles/cmTC_d222c.dir/feature_tests.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm454C.tmp
+        Linking CXX executable cmTC_d222c.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_d222c.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d222c.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm458C.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_a7d3d.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_a7d3d.dir/embed.manifest
+        Create CMakeFiles\\cmTC_d222c.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_d222c.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_a7d3d.dir/manifest.res CMakeFiles\\cmTC_a7d3d.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_d222c.dir/manifest.res CMakeFiles\\cmTC_d222c.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_a7d3d.dir\\objects1.rsp /out:cmTC_a7d3d.exe /implib:cmTC_a7d3d.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-g5hjt4\\cmTC_a7d3d.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_a7d3d.dir/intermediate.manifest CMakeFiles\\cmTC_a7d3d.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d222c.dir\\objects1.rsp /out:cmTC_d222c.exe /implib:cmTC_d222c.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-rk9704\\cmTC_d222c.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_d222c.dir/intermediate.manifest CMakeFiles\\cmTC_d222c.dir/manifest.res
         MT:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_a7d3d.dir/intermediate.manifest /out:CMakeFiles\\cmTC_a7d3d.dir/embed.manifest /notify_update
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_d222c.dir/intermediate.manifest /out:CMakeFiles\\cmTC_d222c.dir/embed.manifest /notify_update
         RC Pass 2:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_a7d3d.dir/manifest.res CMakeFiles\\cmTC_a7d3d.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_d222c.dir/manifest.res CMakeFiles\\cmTC_d222c.dir/manifest.rc
         FINAL LINK:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_a7d3d.dir\\objects1.rsp /out:cmTC_a7d3d.exe /implib:cmTC_a7d3d.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-g5hjt4\\cmTC_a7d3d.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_a7d3d.dir/intermediate.manifest CMakeFiles\\cmTC_a7d3d.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d222c.dir\\objects1.rsp /out:cmTC_d222c.exe /implib:cmTC_d222c.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-rk9704\\cmTC_d222c.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_d222c.dir/intermediate.manifest CMakeFiles\\cmTC_d222c.dir/manifest.res
         
       exitCode: 0
   -
@@ -208,24 +208,24 @@ events:
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/FindThreads.cmake:163 (_threads_check_libc)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/tbb/TBBConfig.cmake:3 (find_dependency)"
+      - "build_neural/vcpkg_installed/x64-windows/share/tbb/TBBConfig.cmake:3 (find_dependency)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/openvdb/FindOpenVDB.cmake:491 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/openvdb/vcpkg-cmake-wrapper.cmake:10 (_find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/openvdb/FindOpenVDB.cmake:491 (find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/openvdb/vcpkg-cmake-wrapper.cmake:10 (_find_package)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
       - "CMakeLists.txt:14 (find_package)"
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-prelke"
-      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-prelke"
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-a44htd"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-a44htd"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      CMAKE_MODULE_PATH: "C:/vcpkg/installed/x64-windows/share/openvdb"
-      VCPKG_INSTALLED_DIR: "C:/vcpkg/installed"
+      CMAKE_MODULE_PATH: "C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/openvdb"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
       VCPKG_PREFER_SYSTEM_LIBS: "OFF"
       VCPKG_TARGET_TRIPLET: "x64-windows"
       Z_VCPKG_ROOT_DIR: "C:/vcpkg"
@@ -233,19 +233,19 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-prelke'
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-a44htd'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_c7750\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_c7750.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_c7750.dir\\build
-        Building CXX object CMakeFiles/cmTC_c7750.dir/src.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmAAE3.tmp
-        C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-prelke\\src.cxx(1,10): fatal error: 'pthread.h' file not found
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_1e59d\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_1e59d.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_1e59d.dir\\build
+        Building CXX object CMakeFiles/cmTC_1e59d.dir/src.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm4711.tmp
+        C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-a44htd\\src.cxx(1,10): fatal error: 'pthread.h' file not found
             1 | #include <pthread.h>
               |          ^~~~~~~~~~~
         1 error generated.
-        NMAKE : fatal error U1077: 'C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmAAE3.tmp' : return code '0x1'
+        NMAKE : fatal error U1077: 'C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm4711.tmp' : return code '0x1'
         Stop.
-        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_c7750.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_c7750.dir\\build' : return code '0x2'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_1e59d.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_1e59d.dir\\build' : return code '0x2'
         Stop.
         
       exitCode: 2
@@ -257,24 +257,24 @@ events:
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/FindThreads.cmake:175 (_threads_check_lib)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/tbb/TBBConfig.cmake:3 (find_dependency)"
+      - "build_neural/vcpkg_installed/x64-windows/share/tbb/TBBConfig.cmake:3 (find_dependency)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/openvdb/FindOpenVDB.cmake:491 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/openvdb/vcpkg-cmake-wrapper.cmake:10 (_find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/openvdb/FindOpenVDB.cmake:491 (find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/openvdb/vcpkg-cmake-wrapper.cmake:10 (_find_package)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
       - "CMakeLists.txt:14 (find_package)"
     checks:
       - "Looking for pthread_create in pthreads"
     directories:
-      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-851olc"
-      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-851olc"
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-pqe0fo"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-pqe0fo"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      CMAKE_MODULE_PATH: "C:/vcpkg/installed/x64-windows/share/openvdb"
-      VCPKG_INSTALLED_DIR: "C:/vcpkg/installed"
+      CMAKE_MODULE_PATH: "C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/openvdb"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
       VCPKG_PREFER_SYSTEM_LIBS: "OFF"
       VCPKG_TARGET_TRIPLET: "x64-windows"
       Z_VCPKG_ROOT_DIR: "C:/vcpkg"
@@ -282,26 +282,26 @@ events:
       variable: "CMAKE_HAVE_PTHREADS_CREATE"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-851olc'
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-pqe0fo'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_bf2b9\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_bf2b9.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_bf2b9.dir\\build
-        Building CXX object CMakeFiles/cmTC_bf2b9.dir/CheckFunctionExists.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmAB9E.tmp
-        Linking CXX executable cmTC_bf2b9.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_bf2b9.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_bf2b9.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmABDE.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_d32a5\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_d32a5.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_d32a5.dir\\build
+        Building CXX object CMakeFiles/cmTC_d32a5.dir/CheckFunctionExists.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm47BD.tmp
+        Linking CXX executable cmTC_d32a5.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_d32a5.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d32a5.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm47FD.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_bf2b9.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_bf2b9.dir/embed.manifest
+        Create CMakeFiles\\cmTC_d32a5.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_d32a5.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_bf2b9.dir/manifest.res CMakeFiles\\cmTC_bf2b9.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_d32a5.dir/manifest.res CMakeFiles\\cmTC_d32a5.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_bf2b9.dir\\objects1.rsp /out:cmTC_bf2b9.exe /implib:cmTC_bf2b9.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-851olc\\cmTC_bf2b9.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_bf2b9.dir/intermediate.manifest CMakeFiles\\cmTC_bf2b9.dir/manifest.res
-        LINK Pass 1: command "C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_bf2b9.dir\\objects1.rsp /out:cmTC_bf2b9.exe /implib:cmTC_bf2b9.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-851olc\\cmTC_bf2b9.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_bf2b9.dir/intermediate.manifest CMakeFiles\\cmTC_bf2b9.dir/manifest.res" failed (exit code 1) with the following output:
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d32a5.dir\\objects1.rsp /out:cmTC_d32a5.exe /implib:cmTC_d32a5.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-pqe0fo\\cmTC_d32a5.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_d32a5.dir/intermediate.manifest CMakeFiles\\cmTC_d32a5.dir/manifest.res
+        LINK Pass 1: command "C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d32a5.dir\\objects1.rsp /out:cmTC_d32a5.exe /implib:cmTC_d32a5.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-pqe0fo\\cmTC_d32a5.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_d32a5.dir/intermediate.manifest CMakeFiles\\cmTC_d32a5.dir/manifest.res" failed (exit code 1) with the following output:
         lld-link: error: could not open 'pthreads.lib': no such file or directory
-        NMAKE : fatal error U1077: '"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_bf2b9.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_bf2b9.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmABDE.tmp' : return code '0xffffffff'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_d32a5.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d32a5.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm47FD.tmp' : return code '0xffffffff'
         Stop.
-        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_bf2b9.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_bf2b9.dir\\build' : return code '0x2'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_d32a5.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_d32a5.dir\\build' : return code '0x2'
         Stop.
         
       exitCode: 2
@@ -313,24 +313,24 @@ events:
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/FindThreads.cmake:176 (_threads_check_lib)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/tbb/TBBConfig.cmake:3 (find_dependency)"
+      - "build_neural/vcpkg_installed/x64-windows/share/tbb/TBBConfig.cmake:3 (find_dependency)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/openvdb/FindOpenVDB.cmake:491 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/openvdb/vcpkg-cmake-wrapper.cmake:10 (_find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/openvdb/FindOpenVDB.cmake:491 (find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/openvdb/vcpkg-cmake-wrapper.cmake:10 (_find_package)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
       - "CMakeLists.txt:14 (find_package)"
     checks:
       - "Looking for pthread_create in pthread"
     directories:
-      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-3k5j7v"
-      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-3k5j7v"
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-vt44d8"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-vt44d8"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      CMAKE_MODULE_PATH: "C:/vcpkg/installed/x64-windows/share/openvdb"
-      VCPKG_INSTALLED_DIR: "C:/vcpkg/installed"
+      CMAKE_MODULE_PATH: "C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/openvdb"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
       VCPKG_PREFER_SYSTEM_LIBS: "OFF"
       VCPKG_TARGET_TRIPLET: "x64-windows"
       Z_VCPKG_ROOT_DIR: "C:/vcpkg"
@@ -338,26 +338,26 @@ events:
       variable: "CMAKE_HAVE_PTHREAD_CREATE"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-3k5j7v'
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-vt44d8'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_e50b4\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_e50b4.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_e50b4.dir\\build
-        Building CXX object CMakeFiles/cmTC_e50b4.dir/CheckFunctionExists.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmACC7.tmp
-        Linking CXX executable cmTC_e50b4.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_e50b4.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_e50b4.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmAD06.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_f721a\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_f721a.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_f721a.dir\\build
+        Building CXX object CMakeFiles/cmTC_f721a.dir/CheckFunctionExists.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm48F6.tmp
+        Linking CXX executable cmTC_f721a.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_f721a.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_f721a.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm4935.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_e50b4.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_e50b4.dir/embed.manifest
+        Create CMakeFiles\\cmTC_f721a.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_f721a.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_e50b4.dir/manifest.res CMakeFiles\\cmTC_e50b4.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_f721a.dir/manifest.res CMakeFiles\\cmTC_f721a.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_e50b4.dir\\objects1.rsp /out:cmTC_e50b4.exe /implib:cmTC_e50b4.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-3k5j7v\\cmTC_e50b4.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_e50b4.dir/intermediate.manifest CMakeFiles\\cmTC_e50b4.dir/manifest.res
-        LINK Pass 1: command "C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_e50b4.dir\\objects1.rsp /out:cmTC_e50b4.exe /implib:cmTC_e50b4.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-3k5j7v\\cmTC_e50b4.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_e50b4.dir/intermediate.manifest CMakeFiles\\cmTC_e50b4.dir/manifest.res" failed (exit code 1) with the following output:
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_f721a.dir\\objects1.rsp /out:cmTC_f721a.exe /implib:cmTC_f721a.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-vt44d8\\cmTC_f721a.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_f721a.dir/intermediate.manifest CMakeFiles\\cmTC_f721a.dir/manifest.res
+        LINK Pass 1: command "C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_f721a.dir\\objects1.rsp /out:cmTC_f721a.exe /implib:cmTC_f721a.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-vt44d8\\cmTC_f721a.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_f721a.dir/intermediate.manifest CMakeFiles\\cmTC_f721a.dir/manifest.res" failed (exit code 1) with the following output:
         lld-link: error: could not open 'pthread.lib': no such file or directory
-        NMAKE : fatal error U1077: '"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_e50b4.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_e50b4.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmAD06.tmp' : return code '0xffffffff'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_f721a.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_f721a.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm4935.tmp' : return code '0xffffffff'
         Stop.
-        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_e50b4.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_e50b4.dir\\build' : return code '0x2'
+        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_f721a.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_f721a.dir\\build' : return code '0x2'
         Stop.
         
       exitCode: 2
@@ -369,29 +369,29 @@ events:
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/FindBZip2.cmake:93 (CHECK_SYMBOL_EXISTS)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/boost_iostreams/boost_iostreams-config.cmake:61 (find_dependency)"
+      - "build_neural/vcpkg_installed/x64-windows/share/boost_iostreams/boost_iostreams-config.cmake:61 (find_dependency)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/boost/BoostConfig.cmake:67 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/boost/BoostConfig.cmake:128 (boostcfg_find_component)"
-      - "C:/vcpkg/installed/x64-windows/share/boost/vcpkg-cmake-wrapper.cmake:3 (_find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/boost/BoostConfig.cmake:67 (find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/boost/BoostConfig.cmake:128 (boostcfg_find_component)"
+      - "build_neural/vcpkg_installed/x64-windows/share/boost/vcpkg-cmake-wrapper.cmake:3 (_find_package)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
       - "C:/Program Files/CMake/share/cmake-3.28/Modules/FindBoost.cmake:594 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/boost/vcpkg-cmake-wrapper.cmake:3 (_find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/boost/vcpkg-cmake-wrapper.cmake:3 (_find_package)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
-      - "C:/vcpkg/installed/x64-windows/share/openvdb/FindOpenVDB.cmake:632 (find_package)"
-      - "C:/vcpkg/installed/x64-windows/share/openvdb/vcpkg-cmake-wrapper.cmake:10 (_find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/openvdb/FindOpenVDB.cmake:632 (find_package)"
+      - "build_neural/vcpkg_installed/x64-windows/share/openvdb/vcpkg-cmake-wrapper.cmake:10 (_find_package)"
       - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
       - "CMakeLists.txt:14 (find_package)"
     directories:
-      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-erasg2"
-      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-erasg2"
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-yhw4js"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-yhw4js"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      CMAKE_MODULE_PATH: "C:/vcpkg/installed/x64-windows/share/openvdb"
-      VCPKG_INSTALLED_DIR: "C:/vcpkg/installed"
+      CMAKE_MODULE_PATH: "C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/openvdb"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
       VCPKG_PREFER_SYSTEM_LIBS: "OFF"
       VCPKG_TARGET_TRIPLET: "x64-windows"
       Z_VCPKG_ROOT_DIR: "C:/vcpkg"
@@ -399,27 +399,27 @@ events:
       variable: "BZIP2_NEED_PREFIX"
       cached: true
       stdout: |
-        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-erasg2'
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-yhw4js'
         
-        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_32e24\\fast
-        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_32e24.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_32e24.dir\\build
-        Building CXX object CMakeFiles/cmTC_32e24.dir/CheckSymbolExists.cxx.obj
-        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nmAECB.tmp
-        Linking CXX executable cmTC_32e24.exe
-        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_32e24.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_32e24.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nmAF1A.tmp
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_90184\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_90184.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_90184.dir\\build
+        Building CXX object CMakeFiles/cmTC_90184.dir/CheckSymbolExists.cxx.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm4ADA.tmp
+        Linking CXX executable cmTC_90184.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_90184.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_90184.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm4B1A.tmp
         Visual Studio Incremental Link with embedded manifests
-        Create CMakeFiles\\cmTC_32e24.dir/manifest.rc
-        Create empty: CMakeFiles\\cmTC_32e24.dir/embed.manifest
+        Create CMakeFiles\\cmTC_90184.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_90184.dir/embed.manifest
         RC Pass 1:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_32e24.dir/manifest.res CMakeFiles\\cmTC_32e24.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_90184.dir/manifest.res CMakeFiles\\cmTC_90184.dir/manifest.rc
         LINK Pass 1:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_32e24.dir\\objects1.rsp /out:cmTC_32e24.exe /implib:cmTC_32e24.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-erasg2\\cmTC_32e24.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\vcpkg\\installed\\x64-windows\\debug\\lib\\bz2d.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_32e24.dir/intermediate.manifest CMakeFiles\\cmTC_32e24.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_90184.dir\\objects1.rsp /out:cmTC_90184.exe /implib:cmTC_90184.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-yhw4js\\cmTC_90184.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\dev\\VDBmarcher\\build_neural\\vcpkg_installed\\x64-windows\\debug\\lib\\bz2d.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_90184.dir/intermediate.manifest CMakeFiles\\cmTC_90184.dir/manifest.res
         MT:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_32e24.dir/intermediate.manifest /out:CMakeFiles\\cmTC_32e24.dir/embed.manifest /notify_update
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_90184.dir/intermediate.manifest /out:CMakeFiles\\cmTC_90184.dir/embed.manifest /notify_update
         RC Pass 2:
-        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_32e24.dir/manifest.res CMakeFiles\\cmTC_32e24.dir/manifest.rc
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_90184.dir/manifest.res CMakeFiles\\cmTC_90184.dir/manifest.rc
         FINAL LINK:
-        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_32e24.dir\\objects1.rsp /out:cmTC_32e24.exe /implib:cmTC_32e24.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-erasg2\\cmTC_32e24.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\vcpkg\\installed\\x64-windows\\debug\\lib\\bz2d.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_32e24.dir/intermediate.manifest CMakeFiles\\cmTC_32e24.dir/manifest.res
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_90184.dir\\objects1.rsp /out:cmTC_90184.exe /implib:cmTC_90184.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-yhw4js\\cmTC_90184.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\dev\\VDBmarcher\\build_neural\\vcpkg_installed\\x64-windows\\debug\\lib\\bz2d.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_90184.dir/intermediate.manifest CMakeFiles\\cmTC_90184.dir/manifest.res
         
       exitCode: 0
   -
@@ -436,8 +436,608 @@ events:
     message: |
       Checking whether the CUDA compiler is NVIDIA using "" matched "nvcc: NVIDIA \\(R\\) Cuda compiler driver":
       nvcc: NVIDIA (R) Cuda compiler driver
-      Copyright (c) 2005-2026 NVIDIA Corporation
-      Built on Mon_Mar__2_21:54:11_Pacific_Standard_Time_2026
-      Cuda compilation tools, release 13.2, V13.2.51
-      Build cuda_13.2.r13.2/compiler.37434383_0
+      Copyright (c) 2005-2024 NVIDIA Corporation
+      Built on Fri_Jun_14_16:44:19_Pacific_Daylight_Time_2024
+      Cuda compilation tools, release 12.6, V12.6.20
+      Build cuda_12.6.r12.6/compiler.34431801_0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:53 (__determine_compiler_id_test)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCUDACompiler.cmake:135 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:56 (enable_language)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    message: |
+      Compiling the CUDA compiler identification source file "CMakeCUDACompilerId.cu" succeeded.
+      Compiler: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe 
+      Build flags: 
+      Id flags: --keep;--keep-dir;tmp;-ccbin=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/cl.exe -v
+      
+      The output was:
+      0
+      
+      C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA>call "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../../VC/Auxiliary/Build/vcvars64.bat" 
+      **********************************************************************
+      ** Visual Studio 2022 Developer Command Prompt v17.14.13
+      ** Copyright (c) 2025 Microsoft Corporation
+      **********************************************************************
+      [vcvarsall.bat] Environment initialized for: 'x64'
+      #$ C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../../VC/Auxiliary/Build/vcvars64.bat
+      #$ ALLUSERSPROFILE=C:\\ProgramData
+      #$ AMDRMSDKPATH=C:\\Program Files\\AMD\\RyzenMasterSDK\\
+      #$ APPDATA=C:\\Users\\marty\\AppData\\Roaming
+      #$ CommandPromptType=Native
+      #$ CommonProgramFiles=C:\\Program Files\\Common Files
+      #$ CommonProgramFiles(x86)=C:\\Program Files (x86)\\Common Files
+      #$ CommonProgramW6432=C:\\Program Files\\Common Files
+      #$ COMPUTERNAME=VITAMINC
+      #$ ComSpec=C:\\WINDOWS\\system32\\cmd.exe
+      #$ CUDAHOSTCXX=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\cl.exe
+      #$ CUDA_PATH=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6
+      #$ CUDA_PATH_V12_6=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6
+      #$ CXX=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-cl.exe
+      #$ DevEnvDir=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\
+      #$ DriverData=C:\\Windows\\System32\\Drivers\\DriverData
+      #$ EFC_10488_1592913036=1
+      #$ ExtensionSdkDir=C:\\Program Files (x86)\\Microsoft SDKs\\Windows Kits\\10\\ExtensionSDKs
+      #$ EXTERNAL_INCLUDE=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\ATLMFC\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\VS\\include;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.26100.0\\ucrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\um;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\shared;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\winrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\cppwinrt;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\ATLMFC\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\VS\\include;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.26100.0\\ucrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\um;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\shared;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\winrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\cppwinrt
+      #$ Framework40Version=v4.0
+      #$ FrameworkDir=C:\\Windows\\Microsoft.NET\\Framework64\\
+      #$ FrameworkDir64=C:\\Windows\\Microsoft.NET\\Framework64\\
+      #$ FrameworkVersion=v4.0.30319
+      #$ FrameworkVersion64=v4.0.30319
+      #$ HOMEDRIVE=C:
+      #$ HOMEPATH=\\Users\\marty
+      #$ INCLUDE=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\ATLMFC\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\VS\\include;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.26100.0\\ucrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\um;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\shared;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\winrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\cppwinrt;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\ATLMFC\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\VS\\include;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.26100.0\\ucrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\um;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\shared;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\winrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.26100.0\\\\cppwinrt
+      #$ is_x64_arch=true
+      #$ LIB=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\ATLMFC\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.26100.0\\ucrt\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\\\lib\\10.0.26100.0\\\\um\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\ATLMFC\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.26100.0\\ucrt\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\\\lib\\10.0.26100.0\\\\um\\x64
+      #$ LIBPATH=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\ATLMFC\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x86\\store\\references;C:\\Program Files (x86)\\Windows Kits\\10\\UnionMetadata\\10.0.26100.0;C:\\Program Files (x86)\\Windows Kits\\10\\References\\10.0.26100.0;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\ATLMFC\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x86\\store\\references;C:\\Program Files (x86)\\Windows Kits\\10\\UnionMetadata\\10.0.26100.0;C:\\Program Files (x86)\\Windows Kits\\10\\References\\10.0.26100.0;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319
+      #$ LOCALAPPDATA=C:\\Users\\marty\\AppData\\Local
+      #$ LOGONSERVER=\\\\VITAMINC
+      #$ NUMBER_OF_PROCESSORS=24
+      #$ OneDrive=C:\\Users\\marty\\OneDrive
+      #$ OneDriveConsumer=C:\\Users\\marty\\OneDrive
+      #$ OS=Windows_NT
+      #$ Path=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\libnvvp;;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\CMake\\bin;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2024.3.0\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Launcher\\;C:\\Users\\marty\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\marty\\AppData\\Local\\Python\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg
+      #$ PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+      #$ Platform=x64
+      #$ PROCESSOR_ARCHITECTURE=AMD64
+      #$ PROCESSOR_IDENTIFIER=AMD64 Family 23 Model 113 Stepping 0, AuthenticAMD
+      #$ PROCESSOR_LEVEL=23
+      #$ PROCESSOR_REVISION=7100
+      #$ ProgramData=C:\\ProgramData
+      #$ ProgramFiles=C:\\Program Files
+      #$ ProgramFiles(x86)=C:\\Program Files (x86)
+      #$ ProgramW6432=C:\\Program Files
+      #$ PROMPT=$P$G
+      #$ PSModulePath=C:\\Program Files\\WindowsPowerShell\\Modules;C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\Modules
+      #$ PUBLIC=C:\\Users\\Public
+      #$ RC=C:/Program Files (x86)/Windows Kits/10/bin/10.0.26100.0/x64/rc.exe
+      #$ SESSIONNAME=Console
+      #$ SystemDrive=C:
+      #$ SystemRoot=C:\\WINDOWS
+      #$ UCRTVersion=10.0.26100.0
+      #$ UniversalCRTSdkDir=C:\\Program Files (x86)\\Windows Kits\\10\\
+      #$ USERDOMAIN=VITAMINC
+      #$ USERDOMAIN_ROAMINGPROFILE=VITAMINC
+      #$ USERNAME=marty
+      #$ USERPROFILE=C:\\Users\\marty
+      #$ VCIDEInstallDir=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\
+      #$ VCINSTALLDIR=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\
+      #$ VCPKG_ROOT=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg
+      #$ VCToolsInstallDir=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\
+      #$ VCToolsRedistDir=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Redist\\MSVC\\14.44.35112\\
+      #$ VCToolsVersion=14.44.35207
+      #$ VisualStudioVersion=17.0
+      #$ VS170COMNTOOLS=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\
+      #$ VSCMD_ARG_app_plat=Desktop
+      #$ VSCMD_ARG_HOST_ARCH=x64
+      #$ VSCMD_ARG_TGT_ARCH=x64
+      #$ VSCMD_VER=17.14.13
+      #$ vsconsoleoutput=1
+      #$ VSINSTALLDIR=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\
+      #$ windir=C:\\WINDOWS
+      #$ WindowsLibPath=C:\\Program Files (x86)\\Windows Kits\\10\\UnionMetadata\\10.0.26100.0;C:\\Program Files (x86)\\Windows Kits\\10\\References\\10.0.26100.0
+      #$ WindowsSdkBinPath=C:\\Program Files (x86)\\Windows Kits\\10\\bin\\
+      #$ WindowsSdkDir=C:\\Program Files (x86)\\Windows Kits\\10\\
+      #$ WindowsSDKLibVersion=10.0.26100.0\\
+      #$ WindowsSdkVerBinPath=C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\
+      #$ WindowsSDKVersion=10.0.26100.0\\
+      #$ __DOTNET_ADD_64BIT=1
+      #$ __DOTNET_PREFERRED_BITNESS=64
+      #$ __VSCMD_PREINIT_PATH=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\libnvvp;;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\CMake\\bin;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2024.3.0\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Launcher\\;C:\\Users\\marty\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\marty\\AppData\\Local\\Python\\bin
+      #$ __VSCMD_PREINIT_VCToolsVersion=14.44.35207
+      #$ __VSCMD_PREINIT_VS170COMNTOOLS=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\
+      #$ PATH=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\libnvvp;;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\CMake\\bin;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2024.3.0\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Launcher\\;C:\\Users\\marty\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\marty\\AppData\\Local\\Python\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg
+      #$ _NVVM_BRANCH_=nvvm
+      #$ _SPACE_= 
+      #$ _CUDART_=cudart
+      #$ _HERE_=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin
+      #$ _THERE_=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin
+      #$ _TARGET_SIZE_=
+      #$ _TARGET_DIR_=
+      #$ _TARGET_SIZE_=64
+      #$ _WIN_PLATFORM_=x64
+      #$ TOP=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/..
+      #$ CICC_PATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../nvvm/bin
+      #$ NVVMIR_LIBRARY_DIR=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../nvvm/libdevice
+      #$ PATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../nvvm/bin;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib;C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\libnvvp;;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\CMake\\bin;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2024.3.0\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Launcher\\;C:\\Users\\marty\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\marty\\AppData\\Local\\Python\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg
+      #$ INCLUDES="-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"  
+      #$ LIBRARIES=  "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"
+      #$ CUDAFE_FLAGS=
+      #$ PTXAS_FLAGS=
+      #$ erase tmp/a_dlink.reg.c
+      CMakeCUDACompilerId.cu
+      #$ resource file tmp/CMakeCUDACompilerId.cpp4.ii.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -E -TP -EHsc -D__CUDACC__ -D__NVCC__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 -FI "cuda_runtime.h" "CMakeCUDACompilerId.cu" ]
+      #$ cl.exe @"tmp/CMakeCUDACompilerId.cpp4.ii.res" > "tmp/CMakeCUDACompilerId.cpp4.ii" 
+      CMakeCUDACompilerId.cu
+      #$ cudafe++ --ms_c++14 --microsoft_version=1944 --msvc_target_version=1944 --compiler_bindir "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../.." --sdk_dir "C:/Program Files (x86)/Windows Kits/10/" --display_error_number --orig_src_file_name "CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --m64 --parse_templates --gen_c_file_name "tmp/CMakeCUDACompilerId.cudafe1.cpp" --stub_file_name "CMakeCUDACompilerId.cudafe1.stub.c" --gen_module_id_file --module_id_file_name "tmp/CMakeCUDACompilerId.module_id" "tmp/CMakeCUDACompilerId.cpp4.ii" 
+      #$ resource file tmp/CMakeCUDACompilerId.cpp1.ii.res: [-D__CUDA_ARCH__=520 -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -E -TP  -DCUDA_DOUBLE_MATH_FUNCTIONS -EHsc -D__CUDACC__ -D__NVCC__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 -FI "cuda_runtime.h" "CMakeCUDACompilerId.cu" ]
+      #$ cl.exe @"tmp/CMakeCUDACompilerId.cpp1.ii.res" > "tmp/CMakeCUDACompilerId.cpp1.ii" 
+      CMakeCUDACompilerId.cu
+      #$ ""%CICC_PATH%\\cicc" --ms_c++14 --microsoft_version=1944 --msvc_target_version=1944 --compiler_bindir "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../.." --sdk_dir "C:/Program Files (x86)/Windows Kits/10/" --display_error_number --orig_src_file_name "CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed  -arch compute_52 -m64 --no-version-ident -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 --include_file_name "CMakeCUDACompilerId.fatbin.c" -tused --module_id_file_name "tmp/CMakeCUDACompilerId.module_id" --gen_c_file_name "tmp/CMakeCUDACompilerId.cudafe1.c" --stub_file_name "tmp/CMakeCUDACompilerId.cudafe1.stub.c" --gen_device_file_name "tmp/CMakeCUDACompilerId.cudafe1.gpu"  "tmp/CMakeCUDACompilerId.cpp1.ii" -o "tmp/CMakeCUDACompilerId.ptx""
+      #$ ptxas -arch=sm_52 -m64 "tmp/CMakeCUDACompilerId.ptx"  -o "tmp/CMakeCUDACompilerId.sm_52.cubin" 
+      #$ fatbinary --create="tmp/CMakeCUDACompilerId.fatbin" -64 --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " "--image3=kind=elf,sm=52,file=tmp/CMakeCUDACompilerId.sm_52.cubin" "--image3=kind=ptx,sm=52,file=tmp/CMakeCUDACompilerId.ptx" --embedded-fatbin="tmp/CMakeCUDACompilerId.fatbin.c" 
+      #$ resource file tmp/CMakeCUDACompilerId.obj.res: [-D__CUDA_ARCH__=520 -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -c -TP  -DCUDA_DOUBLE_MATH_FUNCTIONS -EHsc "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"   "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.cudafe1.cpp" ]
+      #$ cl.exe @"tmp/CMakeCUDACompilerId.obj.res" -Fo"tmp/CMakeCUDACompilerId.obj" 
+      CMakeCUDACompilerId.cudafe1.cpp
+      #$ resource file tmp/a_dlink.sm_52.cubin.optf: [-m64 --arch=sm_52 --register-link-binaries="tmp/a_dlink.reg.c"    "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64" -cpu-arch=X86_64 "tmp/CMakeCUDACompilerId.obj"  cudadevrt.lib  -o "tmp/a_dlink.sm_52.cubin"]
+      #$ nvlink -optf "tmp/a_dlink.sm_52.cubin.optf"
+      #$ fatbinary --create="tmp/a_dlink.fatbin" -64 --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " -link "--image3=kind=elf,sm=52,file=tmp/a_dlink.sm_52.cubin" --embedded-fatbin="tmp/a_dlink.fatbin.c" 
+      #$ resource file tmp/a_dlink.obj.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -c -TP -EHsc -DFATBINFILE="\\"tmp/a_dlink.fatbin.c\\"" -DREGISTERLINKBINARYFILE="\\"tmp/a_dlink.reg.c\\"" -I. -D__NV_EXTRA_INITIALIZATION= -D__NV_EXTRA_FINALIZATION= -D__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin\\crt\\link.stub" ]
+      #$ cl.exe @"tmp/a_dlink.obj.res" -Fo"tmp/a_dlink.obj" 
+      link.stub
+      #$ resource file tmp/a.exe.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib]
+      #$ cl.exe @"tmp/a.exe.res" -Fe"a.exe" 
+         Creating library a.lib and object a.exp
+      
+      
+      Compilation of the CUDA compiler identification source "CMakeCUDACompilerId.cu" produced "a.exe"
+      
+      Compilation of the CUDA compiler identification source "CMakeCUDACompilerId.cu" produced "a.exp"
+      
+      Compilation of the CUDA compiler identification source "CMakeCUDACompilerId.cu" produced "a.lib"
+      
+      The CUDA compiler identification is NVIDIA, found in:
+        C:/dev/VDBmarcher/build_neural/CMakeFiles/3.28.3/CompilerIdCUDA/a.exe
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:1182 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:247 (CMAKE_DETERMINE_MSVC_SHOWINCLUDES_PREFIX)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCUDACompiler.cmake:135 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:56 (enable_language)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    message: |
+      Detecting CUDA compiler /showIncludes prefix:
+        nvcc fatal   : Don't know what to do with 'C:/c'
+        
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:1182 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:247 (CMAKE_DETERMINE_MSVC_SHOWINCLUDES_PREFIX)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCUDACompiler.cmake:135 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:56 (enable_language)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    message: |
+      Detecting CUDA compiler /showIncludes prefix:
+        nvcc fatal   : Don't know what to do with 'C:/c'
+        
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/Internal/CMakeNVCCParseImplicitInfo.cmake:128 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCUDACompiler.cmake:246 (cmake_nvcc_parse_implicit_info)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:56 (enable_language)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    message: |
+      Parsed CUDA nvcc implicit link information:
+        found 'PATH=' string: [C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\libnvvp;;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\CMake\\bin;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2024.3.0\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Launcher\\;C:\\Users\\marty\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\marty\\AppData\\Local\\Python\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg]
+        found 'LIBRARIES=' string: ["/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"]
+        found 'INCLUDES=' string: ["-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"  ]
+        considering line: []
+        considering line: [C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA>call "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../../VC/Auxiliary/Build/vcvars64.bat" ]
+        considering line: [**********************************************************************]
+        considering line: [** Visual Studio 2022 Developer Command Prompt v17.14.13]
+        considering line: [** Copyright (c) 2025 Microsoft Corporation]
+        considering line: [**********************************************************************]
+        considering line: [[vcvarsall.bat] Environment initialized for: 'x64']
+        considering line: [C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../../VC/Auxiliary/Build/vcvars64.bat]
+        considering line: [erase tmp/a_dlink.reg.c]
+        considering line: [CMakeCUDACompilerId.cu]
+        considering line: [resource file tmp/CMakeCUDACompilerId.cpp4.ii.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -E -TP -EHsc -D__CUDACC__ -D__NVCC__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 -FI "cuda_runtime.h" "CMakeCUDACompilerId.cu" ]]
+        considering line: [cl.exe @"tmp/CMakeCUDACompilerId.cpp4.ii.res" > "tmp/CMakeCUDACompilerId.cpp4.ii" ]
+        considering line: [CMakeCUDACompilerId.cu]
+        considering line: [cudafe++ --ms_c++14 --microsoft_version=1944 --msvc_target_version=1944 --compiler_bindir "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../.." --sdk_dir "C:/Program Files (x86)/Windows Kits/10/" --display_error_number --orig_src_file_name "CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --m64 --parse_templates --gen_c_file_name "tmp/CMakeCUDACompilerId.cudafe1.cpp" --stub_file_name "CMakeCUDACompilerId.cudafe1.stub.c" --gen_module_id_file --module_id_file_name "tmp/CMakeCUDACompilerId.module_id" "tmp/CMakeCUDACompilerId.cpp4.ii" ]
+        considering line: [resource file tmp/CMakeCUDACompilerId.cpp1.ii.res: [-D__CUDA_ARCH__=520 -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -E -TP  -DCUDA_DOUBLE_MATH_FUNCTIONS -EHsc -D__CUDACC__ -D__NVCC__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 -FI "cuda_runtime.h" "CMakeCUDACompilerId.cu" ]]
+        considering line: [cl.exe @"tmp/CMakeCUDACompilerId.cpp1.ii.res" > "tmp/CMakeCUDACompilerId.cpp1.ii" ]
+        considering line: [CMakeCUDACompilerId.cu]
+        considering line: [""%CICC_PATH%\\cicc" --ms_c++14 --microsoft_version=1944 --msvc_target_version=1944 --compiler_bindir "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../.." --sdk_dir "C:/Program Files (x86)/Windows Kits/10/" --display_error_number --orig_src_file_name "CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed  -arch compute_52 -m64 --no-version-ident -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 --include_file_name "CMakeCUDACompilerId.fatbin.c" -tused --module_id_file_name "tmp/CMakeCUDACompilerId.module_id" --gen_c_file_name "tmp/CMakeCUDACompilerId.cudafe1.c" --stub_file_name "tmp/CMakeCUDACompilerId.cudafe1.stub.c" --gen_device_file_name "tmp/CMakeCUDACompilerId.cudafe1.gpu"  "tmp/CMakeCUDACompilerId.cpp1.ii" -o "tmp/CMakeCUDACompilerId.ptx""]
+        considering line: [ptxas -arch=sm_52 -m64 "tmp/CMakeCUDACompilerId.ptx"  -o "tmp/CMakeCUDACompilerId.sm_52.cubin" ]
+        considering line: [fatbinary --create="tmp/CMakeCUDACompilerId.fatbin" -64 --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " "--image3=kind=elf,sm=52,file=tmp/CMakeCUDACompilerId.sm_52.cubin" "--image3=kind=ptx,sm=52,file=tmp/CMakeCUDACompilerId.ptx" --embedded-fatbin="tmp/CMakeCUDACompilerId.fatbin.c" ]
+        considering line: [resource file tmp/CMakeCUDACompilerId.obj.res: [-D__CUDA_ARCH__=520 -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -c -TP  -DCUDA_DOUBLE_MATH_FUNCTIONS -EHsc "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"   "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.cudafe1.cpp" ]]
+        considering line: [cl.exe @"tmp/CMakeCUDACompilerId.obj.res" -Fo"tmp/CMakeCUDACompilerId.obj" ]
+        considering line: [CMakeCUDACompilerId.cudafe1.cpp]
+        considering line: [resource file tmp/a_dlink.sm_52.cubin.optf: [-m64 --arch=sm_52 --register-link-binaries="tmp/a_dlink.reg.c"    "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64" -cpu-arch=X86_64 "tmp/CMakeCUDACompilerId.obj"  cudadevrt.lib  -o "tmp/a_dlink.sm_52.cubin"]]
+          extracted link line: [resource file tmp/a_dlink.sm_52.cubin.optf: [-m64 --arch=sm_52 --register-link-binaries="tmp/a_dlink.reg.c"    "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64" -cpu-arch=X86_64 "tmp/CMakeCUDACompilerId.obj"  cudadevrt.lib  -o "tmp/a_dlink.sm_52.cubin"]]
+        considering line: [nvlink -optf "tmp/a_dlink.sm_52.cubin.optf"]
+          ignoring nvlink line
+        considering line: [fatbinary --create="tmp/a_dlink.fatbin" -64 --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " -link "--image3=kind=elf,sm=52,file=tmp/a_dlink.sm_52.cubin" --embedded-fatbin="tmp/a_dlink.fatbin.c" ]
+        considering line: [resource file tmp/a_dlink.obj.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -c -TP -EHsc -DFATBINFILE="\\"tmp/a_dlink.fatbin.c\\"" -DREGISTERLINKBINARYFILE="\\"tmp/a_dlink.reg.c\\"" -I. -D__NV_EXTRA_INITIALIZATION= -D__NV_EXTRA_FINALIZATION= -D__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin\\crt\\link.stub" ]]
+        considering line: [cl.exe @"tmp/a_dlink.obj.res" -Fo"tmp/a_dlink.obj" ]
+        considering line: [link.stub]
+        considering line: [resource file tmp/a.exe.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib]]
+          extracted link line: [resource file tmp/a.exe.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib]]
+        considering line: [cl.exe @"tmp/a.exe.res" -Fe"a.exe" ]
+          extracted link line: [cl.exe -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib -Fe"a.exe" ]
+        considering line: [   Creating library a.lib and object a.exp]
+        considering line: []
+      
+        link line regex: [^( *|.*[/\\])(lld-link\\.exe|link\\.exe|lld-link|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        link line: [cuda-fake-ld cl.exe -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib -Fe"a.exe" ]
+          arg [cuda-fake-ld] ==> ignore
+          arg [cl.exe] ==> recognize MSVC cl
+          arg [-D__CUDA_ARCH_LIST__=520] ==> ignore
+          arg [-D__NV_LEGACY_LAUNCH] ==> ignore
+          arg [-nologo] ==> ignore
+          arg [C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj] ==> ignore
+          arg [C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj] ==> ignore
+          arg [-link] ==> ignore MSVC cl option
+          arg [-INCREMENTAL:NO] ==> ignore
+          arg [/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64] ==> dir [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64]
+          arg [cudadevrt.lib] ==> lib [cudadevrt.lib]
+          arg [cudart_static.lib] ==> lib [cudart_static.lib]
+          arg [-Fea.exe] ==> ignore
+        collapse library dir [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64] ==> [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64]
+        implicit libs: [cudadevrt.lib;cudart_static.lib]
+        implicit objs: []
+        implicit dirs: [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64]
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/Internal/CMakeNVCCParseImplicitInfo.cmake:146 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCUDACompiler.cmake:246 (cmake_nvcc_parse_implicit_info)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:56 (enable_language)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    message: |
+      Parsed CUDA nvcc include information:
+        found 'PATH=' string: [C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\Llvm\\x64\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\libnvvp;;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\CMake\\bin;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2024.3.0\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python311\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Python314\\;C:\\Users\\marty\\AppData\\Local\\Programs\\Python\\Launcher\\;C:\\Users\\marty\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\marty\\AppData\\Local\\Python\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg]
+        found 'LIBRARIES=' string: ["/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"]
+        found 'INCLUDES=' string: ["-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"  ]
+        considering line: []
+        considering line: [C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA>call "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../../VC/Auxiliary/Build/vcvars64.bat" ]
+        considering line: [**********************************************************************]
+        considering line: [** Visual Studio 2022 Developer Command Prompt v17.14.13]
+        considering line: [** Copyright (c) 2025 Microsoft Corporation]
+        considering line: [**********************************************************************]
+        considering line: [[vcvarsall.bat] Environment initialized for: 'x64']
+        considering line: [C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../../VC/Auxiliary/Build/vcvars64.bat]
+        considering line: [erase tmp/a_dlink.reg.c]
+        considering line: [CMakeCUDACompilerId.cu]
+        considering line: [resource file tmp/CMakeCUDACompilerId.cpp4.ii.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -E -TP -EHsc -D__CUDACC__ -D__NVCC__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 -FI "cuda_runtime.h" "CMakeCUDACompilerId.cu" ]]
+        considering line: [cl.exe @"tmp/CMakeCUDACompilerId.cpp4.ii.res" > "tmp/CMakeCUDACompilerId.cpp4.ii" ]
+        considering line: [CMakeCUDACompilerId.cu]
+        considering line: [cudafe++ --ms_c++14 --microsoft_version=1944 --msvc_target_version=1944 --compiler_bindir "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../.." --sdk_dir "C:/Program Files (x86)/Windows Kits/10/" --display_error_number --orig_src_file_name "CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --m64 --parse_templates --gen_c_file_name "tmp/CMakeCUDACompilerId.cudafe1.cpp" --stub_file_name "CMakeCUDACompilerId.cudafe1.stub.c" --gen_module_id_file --module_id_file_name "tmp/CMakeCUDACompilerId.module_id" "tmp/CMakeCUDACompilerId.cpp4.ii" ]
+        considering line: [resource file tmp/CMakeCUDACompilerId.cpp1.ii.res: [-D__CUDA_ARCH__=520 -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -E -TP  -DCUDA_DOUBLE_MATH_FUNCTIONS -EHsc -D__CUDACC__ -D__NVCC__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 -FI "cuda_runtime.h" "CMakeCUDACompilerId.cu" ]]
+        considering line: [cl.exe @"tmp/CMakeCUDACompilerId.cpp1.ii.res" > "tmp/CMakeCUDACompilerId.cpp1.ii" ]
+        considering line: [CMakeCUDACompilerId.cu]
+        considering line: [""%CICC_PATH%\\cicc" --ms_c++14 --microsoft_version=1944 --msvc_target_version=1944 --compiler_bindir "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/../../../../../../.." --sdk_dir "C:/Program Files (x86)/Windows Kits/10/" --display_error_number --orig_src_file_name "CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed  -arch compute_52 -m64 --no-version-ident -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 --include_file_name "CMakeCUDACompilerId.fatbin.c" -tused --module_id_file_name "tmp/CMakeCUDACompilerId.module_id" --gen_c_file_name "tmp/CMakeCUDACompilerId.cudafe1.c" --stub_file_name "tmp/CMakeCUDACompilerId.cudafe1.stub.c" --gen_device_file_name "tmp/CMakeCUDACompilerId.cudafe1.gpu"  "tmp/CMakeCUDACompilerId.cpp1.ii" -o "tmp/CMakeCUDACompilerId.ptx""]
+        considering line: [ptxas -arch=sm_52 -m64 "tmp/CMakeCUDACompilerId.ptx"  -o "tmp/CMakeCUDACompilerId.sm_52.cubin" ]
+        considering line: [fatbinary --create="tmp/CMakeCUDACompilerId.fatbin" -64 --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " "--image3=kind=elf,sm=52,file=tmp/CMakeCUDACompilerId.sm_52.cubin" "--image3=kind=ptx,sm=52,file=tmp/CMakeCUDACompilerId.ptx" --embedded-fatbin="tmp/CMakeCUDACompilerId.fatbin.c" ]
+        considering line: [resource file tmp/CMakeCUDACompilerId.obj.res: [-D__CUDA_ARCH__=520 -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -c -TP  -DCUDA_DOUBLE_MATH_FUNCTIONS -EHsc "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"   "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.cudafe1.cpp" ]]
+        considering line: [cl.exe @"tmp/CMakeCUDACompilerId.obj.res" -Fo"tmp/CMakeCUDACompilerId.obj" ]
+        considering line: [CMakeCUDACompilerId.cudafe1.cpp]
+        considering line: [resource file tmp/a_dlink.sm_52.cubin.optf: [-m64 --arch=sm_52 --register-link-binaries="tmp/a_dlink.reg.c"    "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64" -cpu-arch=X86_64 "tmp/CMakeCUDACompilerId.obj"  cudadevrt.lib  -o "tmp/a_dlink.sm_52.cubin"]]
+          extracted link line: [resource file tmp/a_dlink.sm_52.cubin.optf: [-m64 --arch=sm_52 --register-link-binaries="tmp/a_dlink.reg.c"    "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64" -cpu-arch=X86_64 "tmp/CMakeCUDACompilerId.obj"  cudadevrt.lib  -o "tmp/a_dlink.sm_52.cubin"]]
+        considering line: [nvlink -optf "tmp/a_dlink.sm_52.cubin.optf"]
+          ignoring nvlink line
+        considering line: [fatbinary --create="tmp/a_dlink.fatbin" -64 --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " -link "--image3=kind=elf,sm=52,file=tmp/a_dlink.sm_52.cubin" --embedded-fatbin="tmp/a_dlink.fatbin.c" ]
+        considering line: [resource file tmp/a_dlink.obj.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo -c -TP -EHsc -DFATBINFILE="\\"tmp/a_dlink.fatbin.c\\"" -DREGISTERLINKBINARYFILE="\\"tmp/a_dlink.reg.c\\"" -I. -D__NV_EXTRA_INITIALIZATION= -D__NV_EXTRA_FINALIZATION= -D__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__  "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../include"    -D__CUDACC_VER_MAJOR__=12 -D__CUDACC_VER_MINOR__=6 -D__CUDACC_VER_BUILD__=20 -D__CUDA_API_VER_MAJOR__=12 -D__CUDA_API_VER_MINOR__=6 -D__NVCC_DIAG_PRAGMA_SUPPORT__=1 "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin\\crt\\link.stub" ]]
+        considering line: [cl.exe @"tmp/a_dlink.obj.res" -Fo"tmp/a_dlink.obj" ]
+        considering line: [link.stub]
+        considering line: [resource file tmp/a.exe.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib]]
+          extracted link line: [resource file tmp/a.exe.res: [-D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib]]
+        considering line: [cl.exe @"tmp/a.exe.res" -Fe"a.exe" ]
+          extracted link line: [cl.exe -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib -Fe"a.exe" ]
+        considering line: [   Creating library a.lib and object a.exp]
+        considering line: []
+      
+        link line regex: [^( *|.*[/\\])(lld-link\\.exe|link\\.exe|lld-link|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        link line: [cuda-fake-ld cl.exe -D__CUDA_ARCH_LIST__=520 -D__NV_LEGACY_LAUNCH -nologo "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj" "C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64"  cudadevrt.lib  cudart_static.lib -Fe"a.exe" ]
+          arg [cuda-fake-ld] ==> ignore
+          arg [cl.exe] ==> recognize MSVC cl
+          arg [-D__CUDA_ARCH_LIST__=520] ==> ignore
+          arg [-D__NV_LEGACY_LAUNCH] ==> ignore
+          arg [-nologo] ==> ignore
+          arg [C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\a_dlink.obj] ==> ignore
+          arg [C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\3.28.3\\CompilerIdCUDA\\tmp\\CMakeCUDACompilerId.obj] ==> ignore
+          arg [-link] ==> ignore MSVC cl option
+          arg [-INCREMENTAL:NO] ==> ignore
+          arg [/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64] ==> dir [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64]
+          arg [cudadevrt.lib] ==> lib [cudadevrt.lib]
+          arg [cudart_static.lib] ==> lib [cudart_static.lib]
+          arg [-Fea.exe] ==> ignore
+        collapse library dir [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/../lib/x64] ==> [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64]
+        implicit libs: [cudadevrt.lib;cudart_static.lib]
+        implicit objs: []
+        implicit dirs: [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeTestCUDACompiler.cmake:19 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:56 (enable_language)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    checks:
+      - "Detecting CUDA compiler ABI info"
+    directories:
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-sedn57"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-sedn57"
+    cmakeVariables:
+      CMAKE_CUDA_ARCHITECTURES: "52"
+      CMAKE_CUDA_FLAGS: "-D_WINDOWS -Xcompiler=\" /EHsc\""
+      CMAKE_CUDA_FLAGS_DEBUG: "-Xcompiler=\" -Zi -Ob0 -Od /RTC1\""
+      CMAKE_CUDA_RUNTIME_LIBRARY: "Static"
+      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/libtorch/share/cmake/Caffe2;C:/libtorch/share/cmake/Caffe2/public/../Modules_CUDA_fix"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "C:/vcpkg"
+    buildResult:
+      variable: "CMAKE_CUDA_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-sedn57'
+        
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_ccb31\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_ccb31.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_ccb31.dir\\build
+        Building CUDA object CMakeFiles/cmTC_ccb31.dir/CMakeCUDACompilerABI.cu.obj
+        	C:\\PROGRA~1\\NVIDIA~2\\CUDA\\v12.6\\bin\\nvcc.exe -forward-unknown-to-host-compiler -ccbin=C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1438~1.331\\bin\\Hostx64\\x64\\cl.exe   -D_WINDOWS -Xcompiler=" /EHsc"  -Xcompiler=" -Zi -Ob0 -Od /RTC1" "--generate-code=arch=compute_52,code=[compute_52,sm_52]" -Xcompiler=-MDd   -Xcompiler=-v -MD -MT CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj -MF CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj.d -x cu -c "C:\\Program Files\\CMake\\share\\cmake-3.28\\Modules\\CMakeCUDACompilerABI.cu" -o CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj -Xcompiler=-FdCMakeFiles\\cmTC_ccb31.dir\\,-FS
+        cl : Command line warning D9002 : ignoring unknown option '-v'
+        CMakeCUDACompilerABI.cu
+        cl : Command line warning D9002 : ignoring unknown option '-v'
+        CMakeCUDACompilerABI.cu
+        CMakeCUDACompilerABI.cu
+        cl : Command line warning D9002 : ignoring unknown option '-v'
+        tmpxft_0000319c_00000000-10_CMakeCUDACompilerABI.cudafe1.cpp
+        C:\\Program Files\\CMake\\share\\cmake-3.28\\Modules\\CMakeCompilerCUDAArch.h(10): warning C4305: 'return': truncation from 'int' to 'bool'
+        Linking CUDA executable cmTC_ccb31.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_ccb31.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo "CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj"  @C:\\Users\\marty\\AppData\\Local\\Temp\\nm743C.tmp
+        Visual Studio Incremental Link with embedded manifests
+        Create CMakeFiles\\cmTC_ccb31.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_ccb31.dir/embed.manifest
+        RC Pass 1:
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_ccb31.dir/manifest.res CMakeFiles\\cmTC_ccb31.dir/manifest.rc
+        LINK Pass 1:
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj /out:cmTC_ccb31.exe /implib:cmTC_ccb31.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-sedn57\\cmTC_ccb31.pdb /version:0.0 /machine:x64 -v /debug /INCREMENTAL cudadevrt.lib cudart_static.lib -LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64 /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_ccb31.dir/intermediate.manifest CMakeFiles\\cmTC_ccb31.dir/manifest.res
+        lld-link: warning: ignoring unknown argument '-v'
+        MT:
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_ccb31.dir/intermediate.manifest /out:CMakeFiles\\cmTC_ccb31.dir/embed.manifest /notify_update
+        RC Pass 2:
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_ccb31.dir/manifest.res CMakeFiles\\cmTC_ccb31.dir/manifest.rc
+        FINAL LINK:
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj /out:cmTC_ccb31.exe /implib:cmTC_ccb31.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-sedn57\\cmTC_ccb31.pdb /version:0.0 /machine:x64 -v /debug /INCREMENTAL cudadevrt.lib cudart_static.lib -LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64 /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_ccb31.dir/intermediate.manifest CMakeFiles\\cmTC_ccb31.dir/manifest.res
+        lld-link: warning: ignoring unknown argument '-v'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:127 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeTestCUDACompiler.cmake:19 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:56 (enable_language)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    message: |
+      Parsed CUDA implicit include dir info: rv=start
+        warn: unable to parse implicit include dirs!
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:159 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeTestCUDACompiler.cmake:19 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:56 (enable_language)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    message: |
+      Parsed CUDA implicit link information:
+        link line regex: [^( *|.*[/\\])(lld-link\\.exe|link\\.exe|lld-link|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        ignore line: [Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeScratch/TryCompile-sedn57']
+        ignore line: []
+        ignore line: [Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_ccb31\\fast]
+        ignore line: [	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_ccb31.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_ccb31.dir\\build]
+        ignore line: [Building CUDA object CMakeFiles/cmTC_ccb31.dir/CMakeCUDACompilerABI.cu.obj]
+        ignore line: [	C:\\PROGRA~1\\NVIDIA~2\\CUDA\\v12.6\\bin\\nvcc.exe -forward-unknown-to-host-compiler -ccbin=C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1438~1.331\\bin\\Hostx64\\x64\\cl.exe   -D_WINDOWS -Xcompiler=" /EHsc"  -Xcompiler=" -Zi -Ob0 -Od /RTC1" "--generate-code=arch=compute_52 code=[compute_52 sm_52]" -Xcompiler=-MDd   -Xcompiler=-v -MD -MT CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj -MF CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj.d -x cu -c "C:\\Program Files\\CMake\\share\\cmake-3.28\\Modules\\CMakeCUDACompilerABI.cu" -o CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj -Xcompiler=-FdCMakeFiles\\cmTC_ccb31.dir\\ -FS]
+        ignore line: [cl : Command line warning D9002 : ignoring unknown option '-v']
+        ignore line: [CMakeCUDACompilerABI.cu]
+        ignore line: [cl : Command line warning D9002 : ignoring unknown option '-v']
+        ignore line: [CMakeCUDACompilerABI.cu]
+        ignore line: [CMakeCUDACompilerABI.cu]
+        ignore line: [cl : Command line warning D9002 : ignoring unknown option '-v']
+        ignore line: [tmpxft_0000319c_00000000-10_CMakeCUDACompilerABI.cudafe1.cpp]
+        ignore line: [C:\\Program Files\\CMake\\share\\cmake-3.28\\Modules\\CMakeCompilerCUDAArch.h(10): warning C4305: 'return': truncation from 'int' to 'bool']
+        ignore line: [Linking CUDA executable cmTC_ccb31.exe]
+        ignore line: [	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_ccb31.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo "CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj"  @C:\\Users\\marty\\AppData\\Local\\Temp\\nm743C.tmp]
+        ignore line: [Visual Studio Incremental Link with embedded manifests]
+        ignore line: [Create CMakeFiles\\cmTC_ccb31.dir/manifest.rc]
+        ignore line: [Create empty: CMakeFiles\\cmTC_ccb31.dir/embed.manifest]
+        ignore line: [RC Pass 1:]
+        ignore line: [C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_ccb31.dir/manifest.res CMakeFiles\\cmTC_ccb31.dir/manifest.rc]
+        ignore line: [LINK Pass 1:]
+        link line: [C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj /out:cmTC_ccb31.exe /implib:cmTC_ccb31.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-sedn57\\cmTC_ccb31.pdb /version:0.0 /machine:x64 -v /debug /INCREMENTAL cudadevrt.lib cudart_static.lib -LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64 /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_ccb31.dir/intermediate.manifest CMakeFiles\\cmTC_ccb31.dir/manifest.res]
+          arg [C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe] ==> ignore
+          arg [/nologo] ==> ignore
+          arg [CMakeFiles\\cmTC_ccb31.dir\\CMakeCUDACompilerABI.cu.obj] ==> ignore
+          arg [/out:cmTC_ccb31.exe] ==> ignore
+          arg [/implib:cmTC_ccb31.lib] ==> ignore MSVC link option
+          arg [/pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeScratch\\TryCompile-sedn57\\cmTC_ccb31.pdb] ==> ignore
+          arg [/version:0.0] ==> ignore
+          arg [/machine:x64] ==> ignore
+          arg [-v] ==> ignore
+          arg [/debug] ==> ignore
+          arg [/INCREMENTAL] ==> ignore
+          arg [cudadevrt.lib] ==> lib [cudadevrt.lib]
+          arg [cudart_static.lib] ==> lib [cudart_static.lib]
+          arg [-LIBPATH:C:/Program] ==> dir [C:/Program]
+          arg [Files/NVIDIA] ==> ignore
+          arg [GPU] ==> ignore
+          arg [Computing] ==> ignore
+          arg [Toolkit/CUDA/v12.6/lib/x64] ==> ignore
+          arg [/MANIFEST] ==> ignore
+          arg [/MANIFESTFILE:CMakeFiles\\cmTC_ccb31.dir/intermediate.manifest] ==> ignore
+          arg [CMakeFiles\\cmTC_ccb31.dir/manifest.res] ==> ignore
+        collapse library dir [C:/Program] ==> [C:/Program]
+        implicit libs: [cudadevrt.lib;cudart_static.lib]
+        implicit objs: []
+        implicit dirs: [C:/Program]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_run-v1"
+    backtrace:
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:108 (try_run)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    directories:
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeTmp"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CUDA_ARCHITECTURES: "52"
+      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
+      CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
+      CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/libtorch/share/cmake/Caffe2;C:/libtorch/share/cmake/Caffe2/public/../Modules_CUDA_fix"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "C:/vcpkg"
+    buildResult:
+      variable: "compile_result"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_d0f98\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_d0f98.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_d0f98.dir\\build
+        Building CXX object CMakeFiles/cmTC_d0f98.dir/detect_cuda_version.cc.obj
+        	C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\clang-cl.exe @C:\\Users\\marty\\AppData\\Local\\Temp\\nm83FB.tmp
+        Linking CXX executable cmTC_d0f98.exe
+        	"C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\\cmTC_d0f98.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests -- C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d0f98.dir\\objects1.rsp @C:\\Users\\marty\\AppData\\Local\\Temp\\nm8479.tmp
+        Visual Studio Incremental Link with embedded manifests
+        Create CMakeFiles\\cmTC_d0f98.dir/manifest.rc
+        Create empty: CMakeFiles\\cmTC_d0f98.dir/embed.manifest
+        RC Pass 1:
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_d0f98.dir/manifest.res CMakeFiles\\cmTC_d0f98.dir/manifest.rc
+        LINK Pass 1:
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d0f98.dir\\objects1.rsp /out:cmTC_d0f98.exe /implib:cmTC_d0f98.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeTmp\\cmTC_d0f98.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\lib\\x64\\cudart_static.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_d0f98.dir/intermediate.manifest CMakeFiles\\cmTC_d0f98.dir/manifest.res
+        MT:
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe /nologo /manifest CMakeFiles\\cmTC_d0f98.dir/intermediate.manifest /out:CMakeFiles\\cmTC_d0f98.dir/embed.manifest /notify_update
+        RC Pass 2:
+        C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe /fo CMakeFiles\\cmTC_d0f98.dir/manifest.res CMakeFiles\\cmTC_d0f98.dir/manifest.rc
+        FINAL LINK:
+        C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\Llvm\\x64\\bin\\lld-link.exe /nologo @CMakeFiles\\cmTC_d0f98.dir\\objects1.rsp /out:cmTC_d0f98.exe /implib:cmTC_d0f98.lib /pdb:C:\\dev\\VDBmarcher\\build_neural\\CMakeFiles\\CMakeTmp\\cmTC_d0f98.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\lib\\x64\\cudart_static.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_d0f98.dir/intermediate.manifest CMakeFiles\\cmTC_d0f98.dir/manifest.res
+        
+      exitCode: 0
+    runResult:
+      variable: "run_result"
+      cached: true
+      stdout: |
+        12.6
+      exitCode: 0
+  -
+    kind: "try_run-v1"
+    backtrace:
+      - "C:/libtorch/share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/select_compute_arch.cmake:128 (try_run)"
+      - "C:/libtorch/share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/select_compute_arch.cmake:188 (CUDA_DETECT_INSTALLED_GPUS)"
+      - "C:/libtorch/share/cmake/Caffe2/public/utils.cmake:331 (cuda_select_nvcc_arch_flags)"
+      - "C:/libtorch/share/cmake/Caffe2/public/cuda.cmake:329 (torch_cuda_get_nvcc_gencode_flag)"
+      - "C:/libtorch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "C:/libtorch/share/cmake/Torch/TorchConfig.cmake:62 (find_package)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:908 (_find_package)"
+      - "CMakeLists.txt:25 (find_package)"
+    directories:
+      source: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeTmp"
+      binary: "C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CUDA_ARCHITECTURES: "52"
+      CMAKE_CUDA_FLAGS: "-D_WINDOWS -Xcompiler=\" /EHsc\""
+      CMAKE_CUDA_FLAGS_DEBUG: "-Xcompiler=\" -Zi -Ob0 -Od /RTC1\""
+      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-scan-deps.exe"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/libtorch/share/cmake/Caffe2;C:/libtorch/share/cmake/Caffe2/public/../Modules_CUDA_fix"
+      VCPKG_INSTALLED_DIR: "C:/dev/VDBmarcher/build_neural/vcpkg_installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "C:/vcpkg"
+    buildResult:
+      variable: "compile_result"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/dev/VDBmarcher/build_neural/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): "C:/Program Files/CMake/bin/cmake.exe" -E env VERBOSE=1 nmake -f Makefile /nologo cmTC_6dfd2\\fast
+        	"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_6dfd2.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_6dfd2.dir\\build
+        Building CUDA object CMakeFiles/cmTC_6dfd2.dir/detect_cuda_compute_capabilities.cu.obj
+        	C:\\PROGRA~1\\NVIDIA~2\\CUDA\\v12.6\\bin\\nvcc.exe -forward-unknown-to-host-compiler -ccbin=C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1438~1.331\\bin\\Hostx64\\x64\\cl.exe   -D_WINDOWS -Xcompiler=" /EHsc"  -Xcompiler=" -Zi -Ob0 -Od /RTC1" -std=c++20 "--generate-code=arch=compute_52,code=[compute_52,sm_52]" -Xcompiler=-MDd -MD -MT CMakeFiles\\cmTC_6dfd2.dir\\detect_cuda_compute_capabilities.cu.obj -MF CMakeFiles\\cmTC_6dfd2.dir\\detect_cuda_compute_capabilities.cu.obj.d -x cu -c C:\\dev\\VDBmarcher\\build_neural\\detect_cuda_compute_capabilities.cu -o CMakeFiles\\cmTC_6dfd2.dir\\detect_cuda_compute_capabilities.cu.obj -Xcompiler=-FdCMakeFiles\\cmTC_6dfd2.dir\\,-FS
+        detect_cuda_compute_capabilities.cu
+        tmpxft_000011b0_00000000-10_detect_cuda_compute_capabilities.cudafe1.cpp
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\type_traits(132): error C2338: static_assert failed: 'Calling declval is ill-formed, see N4950 [declval]/2.'
+        NMAKE : fatal error U1077: 'C:\\PROGRA~1\\NVIDIA~2\\CUDA\\v12.6\\bin\\nvcc.exe -forward-unknown-to-host-compiler -ccbin=C:\\PROGRA~1\\MICROS~1\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1438~1.331\\bin\\Hostx64\\x64\\cl.exe   -D_WINDOWS -Xcompiler=" /EHsc"  -Xcompiler=" -Zi -Ob0 -Od /RTC1" -std=c++20 "--generate-code=arch=compute_52,code=[compute_52,sm_52]" -Xcompiler=-MDd -MD -MT CMakeFiles\\cmTC_6dfd2.dir\\detect_cuda_compute_capabilities.cu.obj -MF CMakeFiles\\cmTC_6dfd2.dir\\detect_cuda_compute_capabilities.cu.obj.d -x cu -c C:\\dev\\VDBmarcher\\build_neural\\detect_cuda_compute_capabilities.cu -o CMakeFiles\\cmTC_6dfd2.dir\\detect_cuda_compute_capabilities.cu.obj -Xcompiler=-FdCMakeFiles\\cmTC_6dfd2.dir\\,-FS' : return code '0x2'
+        Stop.
+        NMAKE : fatal error U1077: '"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\nmake.exe"  -f CMakeFiles\\cmTC_6dfd2.dir\\build.make /nologo -L                  CMakeFiles\\cmTC_6dfd2.dir\\build' : return code '0x2'
+        Stop.
+        
+      exitCode: 2
+    runResult:
+      variable: "run_result"
+      cached: true
 ...

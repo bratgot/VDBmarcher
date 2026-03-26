@@ -151,6 +151,19 @@ VDBRender\fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\VDBRender.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\VDBRender.dir\build
 .PHONY : VDBRender\fast
 
+#=============================================================================
+# Target rules for targets named nvdb_encode
+
+# Build rule for target.
+nvdb_encode: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 /nologo -$(MAKEFLAGS) nvdb_encode
+.PHONY : nvdb_encode
+
+# fast build rule for target.
+nvdb_encode\fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\nvdb_encode.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\nvdb_encode.dir\build
+.PHONY : nvdb_encode\fast
+
 VDBRenderIop.obj: VDBRenderIop.cpp.obj
 .PHONY : VDBRenderIop.obj
 
@@ -175,6 +188,30 @@ VDBRenderIop.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\VDBRender.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\VDBRender.dir\VDBRenderIop.cpp.s
 .PHONY : VDBRenderIop.cpp.s
 
+nvdb_encode.obj: nvdb_encode.cpp.obj
+.PHONY : nvdb_encode.obj
+
+# target to build an object file
+nvdb_encode.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\nvdb_encode.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\nvdb_encode.dir\nvdb_encode.cpp.obj
+.PHONY : nvdb_encode.cpp.obj
+
+nvdb_encode.i: nvdb_encode.cpp.i
+.PHONY : nvdb_encode.i
+
+# target to preprocess a source file
+nvdb_encode.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\nvdb_encode.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\nvdb_encode.dir\nvdb_encode.cpp.i
+.PHONY : nvdb_encode.cpp.i
+
+nvdb_encode.s: nvdb_encode.cpp.s
+.PHONY : nvdb_encode.s
+
+# target to generate assembly for a file
+nvdb_encode.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\nvdb_encode.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\nvdb_encode.dir\nvdb_encode.cpp.s
+.PHONY : nvdb_encode.cpp.s
+
 # Help Target
 help:
 	@echo The following are some of the valid targets for this Makefile:
@@ -187,9 +224,13 @@ help:
 	@echo ... list_install_components
 	@echo ... rebuild_cache
 	@echo ... VDBRender
+	@echo ... nvdb_encode
 	@echo ... VDBRenderIop.obj
 	@echo ... VDBRenderIop.i
 	@echo ... VDBRenderIop.s
+	@echo ... nvdb_encode.obj
+	@echo ... nvdb_encode.i
+	@echo ... nvdb_encode.s
 .PHONY : help
 
 

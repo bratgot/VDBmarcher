@@ -15,23 +15,29 @@
 ########################
 
 //Path to a file.
-BZIP2_INCLUDE_DIR:PATH=C:/vcpkg/installed/x64-windows/include
+BZIP2_INCLUDE_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/include
 
 //Path to a library.
-BZIP2_LIBRARY_DEBUG:FILEPATH=C:/vcpkg/installed/x64-windows/debug/lib/bz2d.lib
+BZIP2_LIBRARY_DEBUG:FILEPATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/debug/lib/bz2d.lib
 
 //Path to a library.
-BZIP2_LIBRARY_RELEASE:FILEPATH=C:/vcpkg/installed/x64-windows/lib/bz2.lib
+BZIP2_LIBRARY_RELEASE:FILEPATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/lib/bz2.lib
 
 //The directory containing a CMake configuration file for Boost.
-Boost_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost
+Boost_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost
 
 //Path to a file.
-Boost_INCLUDE_DIR:PATH=C:/vcpkg/installed/x64-windows/include
+Boost_INCLUDE_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/include
 
-Boost_IOSTREAMS_LIBRARY_DEBUG:STRING=C:/vcpkg/installed/x64-windows/debug/bin/boost_iostreams-vc143-mt-gd-x64-1_90.dll
+Boost_IOSTREAMS_LIBRARY_DEBUG:STRING=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/debug/bin/boost_iostreams-vc143-mt-gd-x64-1_90.dll
 
-Boost_IOSTREAMS_LIBRARY_RELEASE:STRING=C:/vcpkg/installed/x64-windows/bin/boost_iostreams-vc143-mt-x64-1_90.dll
+Boost_IOSTREAMS_LIBRARY_RELEASE:STRING=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/bin/boost_iostreams-vc143-mt-x64-1_90.dll
+
+//Path to a library.
+C10_CUDA_LIBRARY:FILEPATH=C:/libtorch/lib/c10_cuda.lib
+
+//Path to a library.
+CAFFE2_NVRTC_LIBRARY:FILEPATH=C:/libtorch/lib/caffe2_nvrtc.lib
 
 //Path to a program.
 CMAKE_AR:FILEPATH=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/llvm-lib.exe
@@ -43,11 +49,32 @@ CMAKE_BUILD_TYPE:STRING=Release
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
-//CUDA compiler
-CMAKE_CUDA_COMPILER:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/bin/nvcc.exe
+//CUDA architectures
+CMAKE_CUDA_ARCHITECTURES:STRING=52
 
-//No help, variable specified on the command line.
-CMAKE_CXX_COMPILER:UNINITIALIZED=clang-cl
+//CUDA compiler
+CMAKE_CUDA_COMPILER:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe
+
+//Flags used by the CUDA compiler during all build types.
+CMAKE_CUDA_FLAGS:STRING=-D_WINDOWS -Xcompiler=" /EHsc"
+
+//Flags used by the CUDA compiler during DEBUG builds.
+CMAKE_CUDA_FLAGS_DEBUG:STRING=-Xcompiler=" -Zi -Ob0 -Od /RTC1"
+
+//Flags used by the CUDA compiler during MINSIZEREL builds.
+CMAKE_CUDA_FLAGS_MINSIZEREL:STRING=-Xcompiler="-O1 -Ob1" -DNDEBUG
+
+//Flags used by the CUDA compiler during RELEASE builds.
+CMAKE_CUDA_FLAGS_RELEASE:STRING=-Xcompiler="-O2 -Ob2" -DNDEBUG
+
+//Flags used by the CUDA compiler during RELWITHDEBINFO builds.
+CMAKE_CUDA_FLAGS_RELWITHDEBINFO:STRING=-Xcompiler=" -Zi -O2 -Ob1" -DNDEBUG
+
+//Libraries linked by default with all CUDA applications.
+CMAKE_CUDA_STANDARD_LIBRARIES:STRING=kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+
+//CXX compiler
+CMAKE_CXX_COMPILER:STRING=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-cl.exe
 
 //LLVM archiver
 CMAKE_CXX_COMPILER_AR:FILEPATH=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/llvm-ar.exe
@@ -254,14 +281,20 @@ CMAKE_STATIC_LINKER_FLAGS_RELEASE:STRING=
 // during RELWITHDEBINFO builds.
 CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
-//No help, variable specified on the command line.
-CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+//The CMake toolchain file
+CMAKE_TOOLCHAIN_FILE:FILEPATH=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console
 // during the make.  This is useful for debugging only. With Visual
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
+
+//Path to a file.
+CUDAToolkit_CUPTI_INCLUDE_DIR:PATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/extras/CUPTI/include
+
+//Path to a file.
+CUDAToolkit_nvToolsExt_INCLUDE_DIR:PATH=CUDAToolkit_nvToolsExt_INCLUDE_DIR-NOTFOUND
 
 //Compile device code in 64 bit mode
 CUDA_64_BIT_DEVICE_CODE:BOOL=ON
@@ -276,11 +309,14 @@ CUDA_BUILD_CUBIN:BOOL=OFF
 //Build in Emulation mode
 CUDA_BUILD_EMULATION:BOOL=OFF
 
+//Path to a library.
+CUDA_CUDART:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cudart.lib
+
 //"cudart" library
-CUDA_CUDART_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cudart.lib
+CUDA_CUDART_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cudart.lib
 
 //"cuda" library (older versions only).
-CUDA_CUDA_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cuda.lib
+CUDA_CUDA_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cuda.lib
 
 //Directory to put all the output files.  If blank it will default
 // to the CMAKE_CURRENT_BINARY_DIR
@@ -290,10 +326,10 @@ CUDA_GENERATED_OUTPUT_DIR:PATH=
 CUDA_HOST_COMPILATION_CPP:BOOL=ON
 
 //Host side compiler used by NVCC
-CUDA_HOST_COMPILER:FILEPATH=clang-cl
+CUDA_HOST_COMPILER:FILEPATH=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64/cl.exe
 
 //Path to a program.
-CUDA_NVCC_EXECUTABLE:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/bin/nvcc.exe
+CUDA_NVCC_EXECUTABLE:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe
 
 //Semi-colon delimit multiple arguments. during all build types.
 CUDA_NVCC_FLAGS:STRING=
@@ -311,6 +347,11 @@ CUDA_NVCC_FLAGS_RELEASE:STRING=
 // builds.
 CUDA_NVCC_FLAGS_RELWITHDEBINFO:STRING=
 
+CUDA_NVRTC_LIB:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nvrtc.lib
+
+//Path to a library.
+CUDA_OpenCL_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/OpenCL.lib
+
 //Propagate C/CXX_FLAGS and friends to the host compiler via -Xcompile
 CUDA_PROPAGATE_HOST_FLAGS:BOOL=ON
 
@@ -325,10 +366,10 @@ CUDA_SDK_ROOT_DIR:PATH=CUDA_SDK_ROOT_DIR-NOTFOUND
 CUDA_SEPARABLE_COMPILATION:BOOL=OFF
 
 //Path to a file.
-CUDA_TOOLKIT_INCLUDE:PATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/include
+CUDA_TOOLKIT_INCLUDE:PATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/include
 
 //Toolkit location.
-CUDA_TOOLKIT_ROOT_DIR:PATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2
+CUDA_TOOLKIT_ROOT_DIR:PATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6
 
 //Use the static version of the CUDA runtime library if available
 CUDA_USE_STATIC_CUDA_RUNTIME:BOOL=ON
@@ -340,70 +381,163 @@ CUDA_USE_STATIC_CUDA_RUNTIME:BOOL=ON
 CUDA_VERBOSE_BUILD:BOOL=OFF
 
 //Version of CUDA as computed from nvcc.
-CUDA_VERSION:STRING=13.2
+CUDA_VERSION:STRING=12.6
+
+//Path to a library.
+CUDA_cuFile_LIBRARY:FILEPATH=CUDA_cuFile_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_cuFile_rdma_LIBRARY:FILEPATH=CUDA_cuFile_rdma_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_cuFile_rdma_static_LIBRARY:FILEPATH=CUDA_cuFile_rdma_static_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_cuFile_static_LIBRARY:FILEPATH=CUDA_cuFile_static_LIBRARY-NOTFOUND
 
 //"cublasLt" library
-CUDA_cublasLt_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cublasLt.lib
+CUDA_cublasLt_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cublasLt.lib
+
+//Path to a library.
+CUDA_cublasLt_static_LIBRARY:FILEPATH=CUDA_cublasLt_static_LIBRARY-NOTFOUND
 
 //"cublas" library
-CUDA_cublas_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cublas.lib
+CUDA_cublas_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cublas.lib
+
+//Path to a library.
+CUDA_cublas_static_LIBRARY:FILEPATH=CUDA_cublas_static_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_cuda_driver_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cuda.lib
 
 //"cudadevrt" library
-CUDA_cudadevrt_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cudadevrt.lib
+CUDA_cudadevrt_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cudadevrt.lib
+
+//Path to a library.
+CUDA_cudart_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cudart.lib
 
 //static CUDA runtime library
-CUDA_cudart_static_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cudart_static.lib
+CUDA_cudart_static_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cudart_static.lib
 
 //"cufft" library
-CUDA_cufft_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cufft.lib
+CUDA_cufft_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cufft.lib
+
+//Path to a library.
+CUDA_cufft_static_LIBRARY:FILEPATH=CUDA_cufft_static_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_cufft_static_nocallback_LIBRARY:FILEPATH=CUDA_cufft_static_nocallback_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_cufftw_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cufftw.lib
+
+//Path to a library.
+CUDA_cufftw_static_LIBRARY:FILEPATH=CUDA_cufftw_static_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_culibos_LIBRARY:FILEPATH=CUDA_culibos_LIBRARY-NOTFOUND
 
 //"cupti" library
-CUDA_cupti_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/extras/CUPTI/lib64/cupti.lib
+CUDA_cupti_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/extras/CUPTI/lib64/cupti.lib
+
+//Path to a library.
+CUDA_cupti_static_LIBRARY:FILEPATH=CUDA_cupti_static_LIBRARY-NOTFOUND
 
 //"curand" library
-CUDA_curand_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/curand.lib
+CUDA_curand_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/curand.lib
+
+//Path to a library.
+CUDA_curand_static_LIBRARY:FILEPATH=CUDA_curand_static_LIBRARY-NOTFOUND
 
 //"cusolver" library
-CUDA_cusolver_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cusolver.lib
+CUDA_cusolver_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cusolver.lib
+
+//Path to a library.
+CUDA_cusolver_lapack_static_LIBRARY:FILEPATH=CUDA_cusolver_lapack_static_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_cusolver_metis_static_LIBRARY:FILEPATH=CUDA_cusolver_metis_static_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_cusolver_static_LIBRARY:FILEPATH=CUDA_cusolver_static_LIBRARY-NOTFOUND
 
 //"cusparse" library
-CUDA_cusparse_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cusparse.lib
+CUDA_cusparse_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cusparse.lib
+
+//Path to a library.
+CUDA_cusparse_static_LIBRARY:FILEPATH=CUDA_cusparse_static_LIBRARY-NOTFOUND
 
 //"nppc" library
-CUDA_nppc_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppc.lib
+CUDA_nppc_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppc.lib
+
+//Path to a library.
+CUDA_nppc_static_LIBRARY:FILEPATH=CUDA_nppc_static_LIBRARY-NOTFOUND
 
 //"nppial" library
-CUDA_nppial_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppial.lib
+CUDA_nppial_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppial.lib
+
+//Path to a library.
+CUDA_nppial_static_LIBRARY:FILEPATH=CUDA_nppial_static_LIBRARY-NOTFOUND
 
 //"nppicc" library
-CUDA_nppicc_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppicc.lib
+CUDA_nppicc_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppicc.lib
+
+//Path to a library.
+CUDA_nppicc_static_LIBRARY:FILEPATH=CUDA_nppicc_static_LIBRARY-NOTFOUND
 
 //"nppicom" library
 CUDA_nppicom_LIBRARY:FILEPATH=CUDA_nppicom_LIBRARY-NOTFOUND
 
+//Path to a library.
+CUDA_nppicom_static_LIBRARY:FILEPATH=CUDA_nppicom_static_LIBRARY-NOTFOUND
+
 //"nppidei" library
-CUDA_nppidei_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppidei.lib
+CUDA_nppidei_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppidei.lib
+
+//Path to a library.
+CUDA_nppidei_static_LIBRARY:FILEPATH=CUDA_nppidei_static_LIBRARY-NOTFOUND
 
 //"nppif" library
-CUDA_nppif_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppif.lib
+CUDA_nppif_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppif.lib
+
+//Path to a library.
+CUDA_nppif_static_LIBRARY:FILEPATH=CUDA_nppif_static_LIBRARY-NOTFOUND
 
 //"nppig" library
-CUDA_nppig_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppig.lib
+CUDA_nppig_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppig.lib
+
+//Path to a library.
+CUDA_nppig_static_LIBRARY:FILEPATH=CUDA_nppig_static_LIBRARY-NOTFOUND
 
 //"nppim" library
-CUDA_nppim_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppim.lib
+CUDA_nppim_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppim.lib
+
+//Path to a library.
+CUDA_nppim_static_LIBRARY:FILEPATH=CUDA_nppim_static_LIBRARY-NOTFOUND
 
 //"nppist" library
-CUDA_nppist_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppist.lib
+CUDA_nppist_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppist.lib
+
+//Path to a library.
+CUDA_nppist_static_LIBRARY:FILEPATH=CUDA_nppist_static_LIBRARY-NOTFOUND
 
 //"nppisu" library
-CUDA_nppisu_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppisu.lib
+CUDA_nppisu_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppisu.lib
+
+//Path to a library.
+CUDA_nppisu_static_LIBRARY:FILEPATH=CUDA_nppisu_static_LIBRARY-NOTFOUND
 
 //"nppitc" library
-CUDA_nppitc_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/nppitc.lib
+CUDA_nppitc_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nppitc.lib
+
+//Path to a library.
+CUDA_nppitc_static_LIBRARY:FILEPATH=CUDA_nppitc_static_LIBRARY-NOTFOUND
 
 //"npps" library
-CUDA_npps_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/npps.lib
+CUDA_npps_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/npps.lib
+
+//Path to a library.
+CUDA_npps_static_LIBRARY:FILEPATH=CUDA_npps_static_LIBRARY-NOTFOUND
 
 //"nvcuvenc" library
 CUDA_nvcuvenc_LIBRARY:FILEPATH=CUDA_nvcuvenc_LIBRARY-NOTFOUND
@@ -411,20 +545,38 @@ CUDA_nvcuvenc_LIBRARY:FILEPATH=CUDA_nvcuvenc_LIBRARY-NOTFOUND
 //"nvcuvid" library
 CUDA_nvcuvid_LIBRARY:FILEPATH=CUDA_nvcuvid_LIBRARY-NOTFOUND
 
+//Path to a library.
+CUDA_nvgraph_LIBRARY:FILEPATH=CUDA_nvgraph_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_nvgraph_static_LIBRARY:FILEPATH=CUDA_nvgraph_static_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_nvjpeg_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nvjpeg.lib
+
+//Path to a library.
+CUDA_nvjpeg_static_LIBRARY:FILEPATH=CUDA_nvjpeg_static_LIBRARY-NOTFOUND
+
+//Path to a library.
+CUDA_nvml_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nvml.lib
+
+//Path to a library.
+CUDA_nvrtc_LIBRARY:FILEPATH=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/nvrtc.lib
+
 //The directory containing a CMake configuration file for Caffe2.
 Caffe2_DIR:PATH=C:/libtorch/share/cmake/Caffe2
 
 //The directory containing a CMake configuration file for Imath.
-Imath_DIR:PATH=C:/vcpkg/installed/x64-windows/share/imath
+Imath_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/imath
 
 //Path to a file.
-LIBLZMA_INCLUDE_DIR:PATH=C:/vcpkg/installed/x64-windows/include
+LIBLZMA_INCLUDE_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/include
 
 //Path to a library.
-LIBLZMA_LIBRARY_DEBUG:FILEPATH=C:/vcpkg/installed/x64-windows/debug/lib/lzma.lib
+LIBLZMA_LIBRARY_DEBUG:FILEPATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/debug/lib/lzma.lib
 
 //Path to a library.
-LIBLZMA_LIBRARY_RELEASE:FILEPATH=C:/vcpkg/installed/x64-windows/lib/lzma.lib
+LIBLZMA_LIBRARY_RELEASE:FILEPATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/lib/lzma.lib
 
 //Path to LibTorch C++ distribution
 LIBTORCH_PATH:PATH=C:/libtorch
@@ -439,19 +591,19 @@ MKL_DIR:PATH=MKL_DIR-NOTFOUND
 NUKE_ROOT:PATH=C:/Program Files/Nuke17.0v1
 
 //The OpenVDB core include directory
-OpenVDB_INCLUDE_DIR:PATH=C:/vcpkg/installed/x64-windows/include
+OpenVDB_INCLUDE_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/include
 
 //Path to a file.
-OpenVDB_openvdb_INCLUDE_DIR:PATH=C:/vcpkg/installed/x64-windows/include
+OpenVDB_openvdb_INCLUDE_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/include
 
 //Path to a library.
-OpenVDB_openvdb_LIBRARY:FILEPATH=C:/vcpkg/installed/x64-windows/lib/openvdb.lib
+OpenVDB_openvdb_LIBRARY:FILEPATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/lib/openvdb.lib
 
 //The directory containing a CMake configuration file for Snappy.
-Snappy_DIR:PATH=C:/vcpkg/installed/x64-windows/share/snappy
+Snappy_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/snappy
 
 //The directory containing a CMake configuration file for TBB.
-TBB_DIR:PATH=C:/vcpkg/installed/x64-windows/share/tbb
+TBB_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/tbb
 
 //Path to a library.
 TORCH_LIBRARY:FILEPATH=C:/libtorch/lib/torch.lib
@@ -463,15 +615,34 @@ Torch_DIR:PATH=C:/libtorch/share/cmake/Torch
 // executables.
 VCPKG_APPLOCAL_DEPS:BOOL=ON
 
+//Additional options to bootstrap vcpkg
+VCPKG_BOOTSTRAP_OPTIONS:STRING=
+
 //The directory which contains the installed libraries for each
 // triplet
-VCPKG_INSTALLED_DIR:PATH=C:/vcpkg/installed
+VCPKG_INSTALLED_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed
+
+//Additional install options to pass to vcpkg
+VCPKG_INSTALL_OPTIONS:STRING=
 
 //The path to the vcpkg manifest directory.
-VCPKG_MANIFEST_DIR:PATH=
+VCPKG_MANIFEST_DIR:PATH=C:/dev/VDBmarcher
+
+//Install the dependencies listed in your manifest:
+//\n    If this is off, you will have to manually install your dependencies.
+//\n    See https://github.com/microsoft/vcpkg/tree/master/docs/specifications/manifests.md
+// for more info.
+//\n
+VCPKG_MANIFEST_INSTALL:BOOL=ON
 
 //Use manifest mode, as opposed to classic mode.
-VCPKG_MANIFEST_MODE:BOOL=OFF
+VCPKG_MANIFEST_MODE:BOOL=ON
+
+//Overlay ports to use for vcpkg install in manifest mode
+VCPKG_OVERLAY_PORTS:STRING=
+
+//Overlay triplets to use for vcpkg install in manifest mode
+VCPKG_OVERLAY_TRIPLETS:STRING=
 
 //Appends the vcpkg paths to CMAKE_PREFIX_PATH, CMAKE_LIBRARY_PATH
 // and CMAKE_FIND_ROOT_PATH so that vcpkg libraries/packages are
@@ -511,13 +682,13 @@ X_VCPKG_APPLOCAL_DEPS_INSTALL:BOOL=OFF
 X_VCPKG_APPLOCAL_DEPS_SERIALIZED:BOOL=OFF
 
 //Path to a file.
-ZLIB_INCLUDE_DIR:PATH=C:/vcpkg/installed/x64-windows/include
+ZLIB_INCLUDE_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/include
 
 //Path to a library.
-ZLIB_LIBRARY_DEBUG:FILEPATH=C:/vcpkg/installed/x64-windows/debug/lib/zlibd.lib
+ZLIB_LIBRARY_DEBUG:FILEPATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/debug/lib/zlibd.lib
 
 //Path to a library.
-ZLIB_LIBRARY_RELEASE:FILEPATH=C:/vcpkg/installed/x64-windows/lib/zlib.lib
+ZLIB_LIBRARY_RELEASE:FILEPATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/lib/zlib.lib
 
 //Path to a program.
 Z_VCPKG_BUILTIN_POWERSHELL_PATH:FILEPATH=C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
@@ -530,127 +701,127 @@ Z_VCPKG_PWSH_PATH:FILEPATH=Z_VCPKG_PWSH_PATH-NOTFOUND
 
 //The directory which contains the installed libraries for each
 // triplet
-_VCPKG_INSTALLED_DIR:PATH=C:/vcpkg/installed
+_VCPKG_INSTALLED_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed
 
 //The directory containing a CMake configuration file for blosc.
-blosc_DIR:PATH=C:/vcpkg/installed/x64-windows/share/blosc
+blosc_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/blosc
 
 //The directory containing a CMake configuration file for boost_array.
-boost_array_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_array
+boost_array_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_array
 
 //The directory containing a CMake configuration file for boost_assert.
-boost_assert_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_assert
+boost_assert_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_assert
 
 //The directory containing a CMake configuration file for boost_bind.
-boost_bind_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_bind
+boost_bind_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_bind
 
 //The directory containing a CMake configuration file for boost_concept_check.
-boost_concept_check_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_concept_check
+boost_concept_check_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_concept_check
 
 //The directory containing a CMake configuration file for boost_config.
-boost_config_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_config
+boost_config_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_config
 
 //The directory containing a CMake configuration file for boost_container_hash.
-boost_container_hash_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_container_hash
+boost_container_hash_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_container_hash
 
 //The directory containing a CMake configuration file for boost_conversion.
-boost_conversion_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_conversion
+boost_conversion_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_conversion
 
 //The directory containing a CMake configuration file for boost_core.
-boost_core_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_core
+boost_core_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_core
 
 //The directory containing a CMake configuration file for boost_describe.
-boost_describe_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_describe
+boost_describe_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_describe
 
 //The directory containing a CMake configuration file for boost_detail.
-boost_detail_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_detail
+boost_detail_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_detail
 
 //The directory containing a CMake configuration file for boost_dynamic_bitset.
-boost_dynamic_bitset_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_dynamic_bitset
+boost_dynamic_bitset_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_dynamic_bitset
 
 //The directory containing a CMake configuration file for boost_function.
-boost_function_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_function
+boost_function_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_function
 
 //The directory containing a CMake configuration file for boost_function_types.
-boost_function_types_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_function_types
+boost_function_types_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_function_types
 
 //The directory containing a CMake configuration file for boost_functional.
-boost_functional_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_functional
+boost_functional_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_functional
 
 //The directory containing a CMake configuration file for boost_fusion.
-boost_fusion_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_fusion
+boost_fusion_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_fusion
 
 //The directory containing a CMake configuration file for boost_headers.
-boost_headers_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_headers
+boost_headers_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_headers
 
 //The directory containing a CMake configuration file for boost_integer.
-boost_integer_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_integer
+boost_integer_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_integer
 
 //The directory containing a CMake configuration file for boost_io.
-boost_io_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_io
+boost_io_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_io
 
 //The directory containing a CMake configuration file for boost_iostreams.
-boost_iostreams_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_iostreams
+boost_iostreams_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_iostreams
 
 //The directory containing a CMake configuration file for boost_iterator.
-boost_iterator_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_iterator
+boost_iterator_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_iterator
 
 //The directory containing a CMake configuration file for boost_mp11.
-boost_mp11_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_mp11
+boost_mp11_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_mp11
 
 //The directory containing a CMake configuration file for boost_mpl.
-boost_mpl_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_mpl
+boost_mpl_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_mpl
 
 //The directory containing a CMake configuration file for boost_numeric_conversion.
-boost_numeric_conversion_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_numeric_conversion
+boost_numeric_conversion_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_numeric_conversion
 
 //The directory containing a CMake configuration file for boost_optional.
-boost_optional_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_optional
+boost_optional_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_optional
 
 //The directory containing a CMake configuration file for boost_predef.
-boost_predef_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_predef
+boost_predef_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_predef
 
 //The directory containing a CMake configuration file for boost_preprocessor.
-boost_preprocessor_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_preprocessor
+boost_preprocessor_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_preprocessor
 
 //The directory containing a CMake configuration file for boost_random.
-boost_random_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_random
+boost_random_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_random
 
 //The directory containing a CMake configuration file for boost_range.
-boost_range_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_range
+boost_range_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_range
 
 //The directory containing a CMake configuration file for boost_regex.
-boost_regex_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_regex
+boost_regex_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_regex
 
 //The directory containing a CMake configuration file for boost_smart_ptr.
-boost_smart_ptr_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_smart_ptr
+boost_smart_ptr_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_smart_ptr
 
 //The directory containing a CMake configuration file for boost_static_assert.
-boost_static_assert_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_static_assert
+boost_static_assert_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_static_assert
 
 //The directory containing a CMake configuration file for boost_system.
-boost_system_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_system
+boost_system_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_system
 
 //The directory containing a CMake configuration file for boost_throw_exception.
-boost_throw_exception_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_throw_exception
+boost_throw_exception_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_throw_exception
 
 //The directory containing a CMake configuration file for boost_tuple.
-boost_tuple_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_tuple
+boost_tuple_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_tuple
 
 //The directory containing a CMake configuration file for boost_type_traits.
-boost_type_traits_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_type_traits
+boost_type_traits_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_type_traits
 
 //The directory containing a CMake configuration file for boost_typeof.
-boost_typeof_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_typeof
+boost_typeof_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_typeof
 
 //The directory containing a CMake configuration file for boost_utility.
-boost_utility_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_utility
+boost_utility_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_utility
 
 //The directory containing a CMake configuration file for boost_variant2.
-boost_variant2_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_variant2
+boost_variant2_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_variant2
 
 //The directory containing a CMake configuration file for boost_winapi.
-boost_winapi_DIR:PATH=C:/vcpkg/installed/x64-windows/share/boost_winapi
+boost_winapi_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost_winapi
 
 //Path to a library.
 c10_LIBRARY:FILEPATH=C:/libtorch/lib/c10.lib
@@ -659,10 +830,10 @@ c10_LIBRARY:FILEPATH=C:/libtorch/lib/c10.lib
 kineto_LIBRARY:FILEPATH=C:/libtorch/lib/kineto.lib
 
 //The directory containing a CMake configuration file for lz4.
-lz4_DIR:PATH=C:/vcpkg/installed/x64-windows/share/lz4
+lz4_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/lz4
 
 //The directory containing a CMake configuration file for zstd.
-zstd_DIR:PATH=C:/vcpkg/installed/x64-windows/share/zstd
+zstd_DIR:PATH=C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/zstd
 
 
 ########################
@@ -699,6 +870,18 @@ CMAKE_CPACK_COMMAND:INTERNAL=C:/Program Files/CMake/bin/cpack.exe
 CMAKE_CTEST_COMMAND:INTERNAL=C:/Program Files/CMake/bin/ctest.exe
 //ADVANCED property for variable: CMAKE_CUDA_COMPILER
 CMAKE_CUDA_COMPILER-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CMAKE_CUDA_FLAGS
+CMAKE_CUDA_FLAGS-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CMAKE_CUDA_FLAGS_DEBUG
+CMAKE_CUDA_FLAGS_DEBUG-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CMAKE_CUDA_FLAGS_MINSIZEREL
+CMAKE_CUDA_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CMAKE_CUDA_FLAGS_RELEASE
+CMAKE_CUDA_FLAGS_RELEASE-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CMAKE_CUDA_FLAGS_RELWITHDEBINFO
+CMAKE_CUDA_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CMAKE_CUDA_STANDARD_LIBRARIES
+CMAKE_CUDA_STANDARD_LIBRARIES-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_CXX_COMPILER
 CMAKE_CXX_COMPILER-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_CXX_COMPILER_AR
@@ -851,6 +1034,10 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 CMAKE_TOOLCHAIN_FILE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDAToolkit_CUPTI_INCLUDE_DIR
+CUDAToolkit_CUPTI_INCLUDE_DIR-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDAToolkit_nvToolsExt_INCLUDE_DIR
+CUDAToolkit_nvToolsExt_INCLUDE_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_64_BIT_DEVICE_CODE
 CUDA_64_BIT_DEVICE_CODE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE
@@ -859,12 +1046,16 @@ CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE-ADVANCED:INTERNAL=1
 CUDA_BUILD_CUBIN-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_BUILD_EMULATION
 CUDA_BUILD_EMULATION-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_CUDART
+CUDA_CUDART-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_CUDART_LIBRARY
 CUDA_CUDART_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_CUDA_LIBRARY
 CUDA_CUDA_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_GENERATED_OUTPUT_DIR
 CUDA_GENERATED_OUTPUT_DIR-ADVANCED:INTERNAL=1
+//Returned GPU architectures from detect_gpus tool
+CUDA_GPU_DETECT_OUTPUT:INTERNAL=
 //ADVANCED property for variable: CUDA_HOST_COMPILATION_CPP
 CUDA_HOST_COMPILATION_CPP-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_NVCC_FLAGS
@@ -877,6 +1068,8 @@ CUDA_NVCC_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
 CUDA_NVCC_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_NVCC_FLAGS_RELWITHDEBINFO
 CUDA_NVCC_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_OpenCL_LIBRARY
+CUDA_OpenCL_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_PROPAGATE_HOST_FLAGS
 CUDA_PROPAGATE_HOST_FLAGS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_PROPAGATE_HOST_FLAGS_BLACKLIST
@@ -890,78 +1083,156 @@ CUDA_SEPARABLE_COMPILATION-ADVANCED:INTERNAL=1
 CUDA_TOOLKIT_INCLUDE-ADVANCED:INTERNAL=1
 //This is the value of the last time CUDA_TOOLKIT_ROOT_DIR was
 // set successfully.
-CUDA_TOOLKIT_ROOT_DIR_INTERNAL:INTERNAL=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2
+CUDA_TOOLKIT_ROOT_DIR_INTERNAL:INTERNAL=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6
 //This is the value of the last time CUDA_TOOLKIT_TARGET_DIR was
 // set successfully.
-CUDA_TOOLKIT_TARGET_DIR_INTERNAL:INTERNAL=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2
+CUDA_TOOLKIT_TARGET_DIR_INTERNAL:INTERNAL=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6
 //ADVANCED property for variable: CUDA_VERBOSE_BUILD
 CUDA_VERBOSE_BUILD-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_VERSION
 CUDA_VERSION-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cuFile_LIBRARY
+CUDA_cuFile_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cuFile_rdma_LIBRARY
+CUDA_cuFile_rdma_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cuFile_rdma_static_LIBRARY
+CUDA_cuFile_rdma_static_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cuFile_static_LIBRARY
+CUDA_cuFile_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_cublasLt_LIBRARY
 CUDA_cublasLt_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cublasLt_static_LIBRARY
+CUDA_cublasLt_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_cublas_LIBRARY
 CUDA_cublas_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cublas_static_LIBRARY
+CUDA_cublas_static_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cuda_driver_LIBRARY
+CUDA_cuda_driver_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_cudadevrt_LIBRARY
 CUDA_cudadevrt_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cudart_LIBRARY
+CUDA_cudart_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_cudart_static_LIBRARY
 CUDA_cudart_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_cufft_LIBRARY
 CUDA_cufft_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cufft_static_LIBRARY
+CUDA_cufft_static_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cufft_static_nocallback_LIBRARY
+CUDA_cufft_static_nocallback_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cufftw_LIBRARY
+CUDA_cufftw_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cufftw_static_LIBRARY
+CUDA_cufftw_static_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_culibos_LIBRARY
+CUDA_culibos_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_cupti_LIBRARY
 CUDA_cupti_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cupti_static_LIBRARY
+CUDA_cupti_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_curand_LIBRARY
 CUDA_curand_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_curand_static_LIBRARY
+CUDA_curand_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_cusolver_LIBRARY
 CUDA_cusolver_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cusolver_lapack_static_LIBRARY
+CUDA_cusolver_lapack_static_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cusolver_metis_static_LIBRARY
+CUDA_cusolver_metis_static_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cusolver_static_LIBRARY
+CUDA_cusolver_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_cusparse_LIBRARY
 CUDA_cusparse_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_cusparse_static_LIBRARY
+CUDA_cusparse_static_LIBRARY-ADVANCED:INTERNAL=1
 //Location of make2cmake.cmake
 CUDA_make2cmake:INTERNAL=C:/libtorch/share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/make2cmake.cmake
 //ADVANCED property for variable: CUDA_nppc_LIBRARY
 CUDA_nppc_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppc_static_LIBRARY
+CUDA_nppc_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppial_LIBRARY
 CUDA_nppial_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppial_static_LIBRARY
+CUDA_nppial_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppicc_LIBRARY
 CUDA_nppicc_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppicc_static_LIBRARY
+CUDA_nppicc_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppicom_LIBRARY
 CUDA_nppicom_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppicom_static_LIBRARY
+CUDA_nppicom_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppidei_LIBRARY
 CUDA_nppidei_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppidei_static_LIBRARY
+CUDA_nppidei_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppif_LIBRARY
 CUDA_nppif_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppif_static_LIBRARY
+CUDA_nppif_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppig_LIBRARY
 CUDA_nppig_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppig_static_LIBRARY
+CUDA_nppig_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppim_LIBRARY
 CUDA_nppim_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppim_static_LIBRARY
+CUDA_nppim_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppist_LIBRARY
 CUDA_nppist_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppist_static_LIBRARY
+CUDA_nppist_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppisu_LIBRARY
 CUDA_nppisu_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppisu_static_LIBRARY
+CUDA_nppisu_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nppitc_LIBRARY
 CUDA_nppitc_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nppitc_static_LIBRARY
+CUDA_nppitc_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_npps_LIBRARY
 CUDA_npps_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_npps_static_LIBRARY
+CUDA_npps_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nvcuvenc_LIBRARY
 CUDA_nvcuvenc_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nvcuvid_LIBRARY
 CUDA_nvcuvid_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvgraph_LIBRARY
+CUDA_nvgraph_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvgraph_static_LIBRARY
+CUDA_nvgraph_static_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvjpeg_LIBRARY
+CUDA_nvjpeg_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvjpeg_static_LIBRARY
+CUDA_nvjpeg_static_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvml_LIBRARY
+CUDA_nvml_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvrtc_LIBRARY
+CUDA_nvrtc_LIBRARY-ADVANCED:INTERNAL=1
 //Location of parse_cubin.cmake
 CUDA_parse_cubin:INTERNAL=C:/libtorch/share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/parse_cubin.cmake
 //Location of run_nvcc.cmake
 CUDA_run_nvcc:INTERNAL=C:/libtorch/share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/run_nvcc.cmake
 //Details about finding Boost
-FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[C:/vcpkg/installed/x64-windows/share/boost/BoostConfig.cmake][cfound components: iostreams ][v1.90.0()]
+FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/share/boost/BoostConfig.cmake][cfound components: iostreams ][v1.90.0()]
 //Details about finding CUDA
-FIND_PACKAGE_MESSAGE_DETAILS_CUDA:INTERNAL=[C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2][C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/bin/nvcc.exe][C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/include][C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/lib/x64/cudart_static.lib][v13.2()]
+FIND_PACKAGE_MESSAGE_DETAILS_CUDA:INTERNAL=[C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6][C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe][C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/include][C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cudart_static.lib][v12.6()]
+//Details about finding CUDAToolkit
+FIND_PACKAGE_MESSAGE_DETAILS_CUDAToolkit:INTERNAL=[C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/include][12.6.20][C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64/cudart.lib][C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin][v12.6.20()]
 //Details about finding OpenVDB
-FIND_PACKAGE_MESSAGE_DETAILS_OpenVDB:INTERNAL=[C:/vcpkg/installed/x64-windows/include][C:/vcpkg/installed/x64-windows/lib/openvdb.lib][cfound components: openvdb ][v12.0.1()]
+FIND_PACKAGE_MESSAGE_DETAILS_OpenVDB:INTERNAL=[C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/include][C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/lib/openvdb.lib][cfound components: openvdb ][v12.0.1()]
+//Details about finding Python
+FIND_PACKAGE_MESSAGE_DETAILS_Python:INTERNAL=[C:/Users/marty/AppData/Local/Programs/Python/Python311/python.exe][cfound components: Interpreter ][v3.11.9()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //Details about finding Torch
 FIND_PACKAGE_MESSAGE_DETAILS_Torch:INTERNAL=[C:/libtorch/lib/torch.lib][C:/libtorch/include;C:/libtorch/include/torch/csrc/api/include][v()]
 //Details about finding ZLIB
-FIND_PACKAGE_MESSAGE_DETAILS_ZLIB:INTERNAL=[optimized;C:/vcpkg/installed/x64-windows/lib/zlib.lib;debug;C:/vcpkg/installed/x64-windows/debug/lib/zlibd.lib][C:/vcpkg/installed/x64-windows/include][c ][v1.3.1()]
+FIND_PACKAGE_MESSAGE_DETAILS_ZLIB:INTERNAL=[optimized;C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/lib/zlib.lib;debug;C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/debug/lib/zlibd.lib][C:/dev/VDBmarcher/build_neural/vcpkg_installed/x64-windows/include][c ][v1.3.1()]
 LIBLZMA_HAS_AUTO_DECODER:INTERNAL=1
 LIBLZMA_HAS_EASY_ENCODER:INTERNAL=1
 LIBLZMA_HAS_LZMA_PRESET:INTERNAL=1
@@ -971,14 +1242,6 @@ LIBLZMA_INCLUDE_DIR-ADVANCED:INTERNAL=1
 LIBLZMA_LIBRARY_DEBUG-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: LIBLZMA_LIBRARY_RELEASE
 LIBLZMA_LIBRARY_RELEASE-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: OpenVDB_INCLUDE_DIR
-OpenVDB_INCLUDE_DIR-ADVANCED:INTERNAL=1
-//Install the dependencies listed in your manifest:
-//\n    If this is off, you will have to manually install your dependencies.
-//\n    See https://github.com/microsoft/vcpkg/tree/master/docs/specifications/manifests.md
-// for more info.
-//\n
-VCPKG_MANIFEST_INSTALL:INTERNAL=OFF
 //ADVANCED property for variable: VCPKG_VERBOSE
 VCPKG_VERBOSE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: ZLIB_INCLUDE_DIR
@@ -988,11 +1251,26 @@ ZLIB_LIBRARY_DEBUG-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: ZLIB_LIBRARY_RELEASE
 ZLIB_LIBRARY_RELEASE-ADVANCED:INTERNAL=1
 //Making sure VCPKG_MANIFEST_MODE doesn't change
-Z_VCPKG_CHECK_MANIFEST_MODE:INTERNAL=OFF
+Z_VCPKG_CHECK_MANIFEST_MODE:INTERNAL=ON
 //The path to the PowerShell implementation to use.
 Z_VCPKG_POWERSHELL_PATH:INTERNAL=C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
 //Vcpkg root directory
 Z_VCPKG_ROOT_DIR:INTERNAL=C:/vcpkg
 //CMAKE_INSTALL_PREFIX during last run
 _GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=C:/Program Files (x86)/VDBRender
+//Compiler reason failure
+_Python_Compiler_REASON_FAILURE:INTERNAL=
+//Development reason failure
+_Python_Development_REASON_FAILURE:INTERNAL=
+//Path to a program.
+_Python_EXECUTABLE:INTERNAL=C:/Users/marty/AppData/Local/Programs/Python/Python311/python.exe
+//Python Properties
+_Python_INTERPRETER_PROPERTIES:INTERNAL=Python;3;11;9;64;32;;cp311-win_amd64;;C:\Users\marty\AppData\Local\Programs\Python\Python311\Lib;C:\Users\marty\AppData\Local\Programs\Python\Python311\Lib;C:\Users\marty\AppData\Local\Programs\Python\Python311\Lib\site-packages;C:\Users\marty\AppData\Local\Programs\Python\Python311\Lib\site-packages
+_Python_INTERPRETER_SIGNATURE:INTERNAL=bd52cec0454c7cd0052c4cdb960bc52d
+//NumPy reason failure
+_Python_NumPy_REASON_FAILURE:INTERNAL=
+//Result of TRY_COMPILE
+compile_result:INTERNAL=FALSE
+//Result of try_run()
+run_result:INTERNAL=0
 

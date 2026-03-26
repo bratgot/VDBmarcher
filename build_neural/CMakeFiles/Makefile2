@@ -53,6 +53,7 @@ CMAKE_BINARY_DIR = C:\dev\VDBmarcher\build_neural
 
 # The main recursive "all" target.
 all: CMakeFiles\VDBRender.dir\all
+all: CMakeFiles\nvdb_encode.dir\all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -61,6 +62,7 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles\VDBRender.dir\clean
+clean: CMakeFiles\nvdb_encode.dir\clean
 .PHONY : clean
 
 #=============================================================================
@@ -88,6 +90,32 @@ VDBRender: CMakeFiles\VDBRender.dir\rule
 CMakeFiles\VDBRender.dir\clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\VDBRender.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\VDBRender.dir\clean
 .PHONY : CMakeFiles\VDBRender.dir\clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/nvdb_encode.dir
+
+# All Build rule for target.
+CMakeFiles\nvdb_encode.dir\all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\nvdb_encode.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\nvdb_encode.dir\depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\nvdb_encode.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\nvdb_encode.dir\build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\dev\VDBmarcher\build_neural\CMakeFiles --progress-num=3,4 "Built target nvdb_encode"
+.PHONY : CMakeFiles\nvdb_encode.dir\all
+
+# Build rule for subdir invocation for target.
+CMakeFiles\nvdb_encode.dir\rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\dev\VDBmarcher\build_neural\CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 /nologo -$(MAKEFLAGS) CMakeFiles\nvdb_encode.dir\all
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\dev\VDBmarcher\build_neural\CMakeFiles 0
+.PHONY : CMakeFiles\nvdb_encode.dir\rule
+
+# Convenience name for target.
+nvdb_encode: CMakeFiles\nvdb_encode.dir\rule
+.PHONY : nvdb_encode
+
+# clean rule for target.
+CMakeFiles\nvdb_encode.dir\clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\nvdb_encode.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\nvdb_encode.dir\clean
+.PHONY : CMakeFiles\nvdb_encode.dir\clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

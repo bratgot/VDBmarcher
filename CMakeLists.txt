@@ -89,6 +89,35 @@ install(TARGETS VDBRender
     DESTINATION "${NUKE_ROOT}/plugins"
 )
 
+# ── [NEURAL] nvdb_encode command-line encoder ─────────────────────────────────
+# Standalone .exe that reads .vdb (vcpkg OpenVDB) and writes .nvdb (LibTorch)
+# No Nuke NDK dependency — just OpenVDB + LibTorch
+if(VDBRENDER_NEURAL)
+    add_executable(nvdb_encode nvdb_encode.cpp)
+
+    target_compile_definitions(nvdb_encode PRIVATE
+        _USE_MATH_DEFINES
+        NOMINMAX
+    )
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(nvdb_encode PRIVATE -mavx2 -mfma -ffast-math)
+    elseif(MSVC)
+        target_compile_options(nvdb_encode PRIVATE /arch:AVX2 /fp:fast)
+    endif()
+
+    target_link_libraries(nvdb_encode PRIVATE
+        OpenVDB::openvdb
+        ${TORCH_LIBRARIES}
+    )
+
+    set_property(TARGET nvdb_encode PROPERTY
+        MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+    )
+
+    message(STATUS "    Encoder:     nvdb_encode.exe")
+endif()
+
 # ── Status ─────────────────────────────────────────────────────────────────────
 message(STATUS "")
 message(STATUS "  VDBRender configuration:")

@@ -40,8 +40,9 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "C:/dev/VDBmarcher"
   "C:/libtorch/include"
   "C:/libtorch/include/torch/csrc/api/include"
-  "C:/vcpkg/installed/x64-windows/include"
-  "C:/vcpkg/installed/x64-windows/include/Imath"
+  "vcpkg_installed/x64-windows/include"
+  "vcpkg_installed/x64-windows/include/Imath"
+  "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/include"
   )
 
 # The set of dependency files which are needed:

@@ -191,29 +191,60 @@ public:
         _xform = _upperGrid->transformPtr();
         _bbox = _upperGrid->evalActiveVoxelBoundingBox();
 
-        // Topology model (section 0x02) → TorchScript
+        // Load parameters into reconstructed network
+        auto loadParams = [&](const std::vector<uint8_t>& data, torch::nn::Module& mod) -> bool {
+            if (data.empty()) return false;
+            try {
+                const char* ptr = (const char*)data.data();
+                int32_t count; std::memcpy(&count, ptr, 4); ptr += 4;
+                auto params = mod.parameters();
+                if ((int)params.size() != count) {
+                    std::cerr << "[NeuralVDB] param count mismatch: file=" << count
+                              << " model=" << params.size() << "\n";
+                    return false;
+                }
+                int pi = 0;
+                for (auto& p : params) {
+                    int32_t ndim; std::memcpy(&ndim, ptr, 4); ptr += 4;
+                    std::vector<int64_t> shape(ndim);
+                    for (int d = 0; d < ndim; d++) {
+                        std::memcpy(&shape[d], ptr, 8); ptr += 8;
+                    }
+                    int64_t nbytes; std::memcpy(&nbytes, ptr, 8); ptr += 8;
+                    auto t = torch::from_blob((void*)ptr, shape, torch::kFloat32).clone().to(_dev);
+                    p.set_data(t);
+                    ptr += nbytes;
+                    pi++;
+                }
+                return true;
+            } catch (const std::exception& e) {
+                std::cerr << "[NeuralVDB] param load: " << e.what() << "\n";
+                return false;
+            }
+        };
+
+        // Reconstruct networks from header config + load weights
+        int encDim = _encoder->dim();
+
+        // Topology model (section 0x02)
         auto topoData = readSect(0x02);
         if (!topoData.empty()) {
-            try {
-                std::istringstream ss(std::string(topoData.begin(), topoData.end()));
-                _topoModel = torch::jit::load(ss, _dev);
-                _topoModel.eval();
+            _topoLayers = std::make_shared<TopoClassifier>(encDim, _hdr.topoH, _hdr.topoL);
+            _topoLayers->to(_dev);
+            if (loadParams(topoData, *_topoLayers)) {
+                _topoLayers->eval();
                 _hasTopo = true;
-            } catch (const c10::Error& e) {
-                std::cerr << "[NeuralVDB] topo load: " << e.what() << "\n";
             }
         }
 
-        // Value model (section 0x03) → TorchScript
+        // Value model (section 0x03)
         auto valData = readSect(0x03);
         if (!valData.empty()) {
-            try {
-                std::istringstream ss(std::string(valData.begin(), valData.end()));
-                _valModel = torch::jit::load(ss, _dev);
-                _valModel.eval();
+            _valLayers = std::make_shared<ValRegressor>(encDim, _hdr.valH, _hdr.valL);
+            _valLayers->to(_dev);
+            if (loadParams(valData, *_valLayers)) {
+                _valLayers->eval();
                 _hasVal = true;
-            } catch (const c10::Error& e) {
-                std::cerr << "[NeuralVDB] val load: " << e.what() << "\n";
             }
         }
 
@@ -282,13 +313,13 @@ private:
         auto encoded = _encoder->encode(coords);
 
         // Topology check
-        if (_hasTopo) {
-            auto topo = _topoModel.forward({encoded}).toTensor().squeeze();
+        if (_hasTopo && _topoLayers) {
+            auto topo = _topoLayers->forward(encoded);
             if (topo.item<float>() < 0.5f) return 0.0f;
         }
 
-        // Value regression
-        auto val = _valModel.forward({encoded}).toTensor().squeeze();
+        if (!_valLayers) return 0.0f;
+        auto val = _valLayers->forward(encoded);
         return std::clamp(val.item<float>(), 0.0f, 1.0f);
     }
 
@@ -300,8 +331,34 @@ private:
     openvdb::math::Transform::Ptr _xform;
     openvdb::CoordBBox _bbox;
 
-   // mutable: forward() is non-const in TorchScript API
-    mutable torch::jit::script::Module _topoModel, _valModel;
+   // Network modules (reconstructed from header config, weights from file)
+    struct TopoClassifier : torch::nn::Module {
+        torch::nn::Sequential layers{nullptr};
+        TopoClassifier(int in, int h, int n) {
+            layers = torch::nn::Sequential();
+            layers->push_back(torch::nn::Linear(in, h));
+            layers->push_back(torch::nn::ReLU());
+            for (int i = 1; i < n - 1; i++) { layers->push_back(torch::nn::Linear(h, h)); layers->push_back(torch::nn::ReLU()); }
+            layers->push_back(torch::nn::Linear(h, 1));
+            layers->push_back(torch::nn::Sigmoid());
+            register_module("layers", layers);
+        }
+        torch::Tensor forward(torch::Tensor x) { return layers->forward(x).squeeze(-1); }
+    };
+    struct ValRegressor : torch::nn::Module {
+        torch::nn::Sequential layers{nullptr};
+        ValRegressor(int in, int h, int n) {
+            layers = torch::nn::Sequential();
+            layers->push_back(torch::nn::Linear(in, h));
+            layers->push_back(torch::nn::ReLU());
+            for (int i = 1; i < n - 1; i++) { layers->push_back(torch::nn::Linear(h, h)); layers->push_back(torch::nn::ReLU()); }
+            layers->push_back(torch::nn::Linear(h, 1));
+            register_module("layers", layers);
+        }
+        torch::Tensor forward(torch::Tensor x) { return layers->forward(x).squeeze(-1); }
+    };
+    mutable std::shared_ptr<TopoClassifier> _topoLayers;
+    mutable std::shared_ptr<ValRegressor> _valLayers;
     std::unique_ptr<PosEncoder> _encoder;
     mutable BlockCache _cache;
     float _ratio = 1.0f;
