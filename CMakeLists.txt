@@ -66,6 +66,7 @@ endif()
 
 target_link_libraries(VDBRender PRIVATE
     ${NDK_LIB}
+    "${NUKE_ROOT}/ndk.lib"      # <-- add this line
     OpenVDB::openvdb
     opengl32
 )
@@ -86,7 +87,7 @@ set_property(TARGET VDBRender PROPERTY
 
 # ── Install ────────────────────────────────────────────────────────────────────
 install(TARGETS VDBRender
-    DESTINATION "${NUKE_ROOT}/plugins"
+    DESTINATION "C:/Users/marty/.nuke/plugins/VDBRender/nuke17"
 )
 
 # ── [NEURAL] nvdb_encode command-line encoder ─────────────────────────────────

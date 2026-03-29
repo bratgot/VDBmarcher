@@ -2,6 +2,8 @@
 // VDBRender — OpenVDB Volume Ray Marcher for Nuke 17
 // Created by Marten Blumen
 // [NEURAL] NeuralVDB integration — neural compressed volume support
+// [V2] Dual-lobe HG · powder effect · jitter · gradient normals
+//      analytical multi-scatter (Wrenninge 2015) · chromatic extinction
 
 #include <openvdb/openvdb.h>
 #include <openvdb/io/File.h>
@@ -99,6 +101,41 @@ private:
     double _gradStart[3]      = {0,0,0};
     double _gradEnd[3]        = {1,0.8,0.2};
 
+    // ── [V2] Phase function — dual-lobe Henyey-Greenstein ──
+    // Replaces single-lobe 'anisotropy' for Lit and Explosion modes.
+    // g_forward: forward-scatter lobe (0 = isotropic, 1 = full forward)
+    // g_backward: backward-scatter lobe (0 = isotropic, -1 = full backward)
+    // lobe_mix: weight of forward lobe (1.0 = pure forward, 0.0 = pure backward)
+    double _gForward      = 0.65;
+    double _gBackward     = -0.25;
+    double _lobeMix       = 0.70;
+
+    // ── [V2] Scatter quality ──
+    // powder_strength: interior brightening (Schneider & Vos 2015, HZD clouds)
+    //   0 = off, 2 = natural, 4-6 = dense explosion fireball, 10 = maximum
+    // gradient_mix: blend density-gradient Lambertian term with HG phase
+    //   0 = off (HG only), 0.3 = clouds, 0 = smoke/fire (perf cost: 6 extra lookups/step)
+    // jitter: stochastic step offset — eliminates wood-grain banding
+    double _powderStrength = 2.0;
+    double _gradientMix    = 0.0;
+    bool   _jitter         = true;
+
+    // ── [V2] Analytical multiple scattering (Wrenninge 2015) ──
+    // Replaces brute-force N-bounce with a 2-param fit to the diffusion solution.
+    // Zero extra rays — same cost as single scatter.
+    // ms_tint: color of the multiple-scatter contribution (slightly warm/cool bias)
+    bool   _msApprox    = true;
+    double _msTint[3]   = {1.0, 0.97, 0.95};
+
+    // ── [V2] Chromatic extinction ──
+    // Per-channel σt (extinction coefficient). Real smoke/dust scatters blue
+    // wavelengths more (Rayleigh-like): set ext_r < ext_g < ext_b for realism.
+    // Shadow rays always use base _extinction (greyscale) for performance.
+    bool   _chromaticExt = false;
+    double _extR         = 5.0;   // mirrors _extinction on load
+    double _extG         = 5.0;
+    double _extB         = 5.0;
+
     // ── Lighting ──
     double _lightDir[3]       = {0.577, 0.577, -0.577};
     double _lightColor[3]     = {1,1,1};
@@ -132,7 +169,7 @@ private:
     int    _shadowSteps       = 8;
     double _shadowDensity     = 1.0;
     int    _deepSamples       = 32;
-    int    _multiBounces      = 0;
+    int    _multiBounces      = 0;   // kept for backward compat; msApprox supersedes
     int    _bounceRays        = 6;
     int    _scatterPreset     = 0;
     int    _qualityPreset     = 0;
@@ -219,20 +256,26 @@ private:
     std::string resolveFramePath(int frame) const;
     void discoverGrids();
 
+    // ── [V2] Phase function helpers ──
+    // hgRaw: HG phase function without the 1/(4π) factor (= phS in old code).
+    // Returns 1.0 for |g| < 0.001 (isotropic).
+    static double hgRaw(double cosT, double g) noexcept;
+
+    // jitterHash: deterministic per-pixel [0,1) offset for step jitter.
+    static double jitterHash(int x, int y) noexcept;
+
     // ══════════════════════════════════════════════════════════
     //  [NEURAL] NeuralVDB integration
     // ══════════════════════════════════════════════════════════
 
 #ifdef VDBRENDER_HAS_NEURAL
-    // Neural decoder — loads .nvdb files, provides sampleDensity()
     std::unique_ptr<neural::NeuralDecoder> _neural;
-    bool _neuralMode       = false;   // true when live neural (not decoded)
-    bool _neuralUseCuda    = false;   // knob: use CUDA for inference
-    bool _neuralDecodeToGrid = true;  // knob: decode to grid at load (recommended)
-    int  _neuralBatchSize  = 4096;    // knob: voxels per forward pass
+    bool _neuralMode         = false;
+    bool _neuralUseCuda      = false;
+    bool _neuralDecodeToGrid = true;
+    int  _neuralBatchSize    = 4096;
     float _neuralTopoThreshold = 0.5f;
 
-    // Info strings (read-only knobs)
     const char* _neuralInfoRatio = "";
     const char* _neuralInfoPSNR  = "";
     const char* _neuralInfoMode  = "";
@@ -243,39 +286,58 @@ private:
     //  Per-scanline march context
     // ══════════════════════════════════════════════════════════
 
-    // MarchCtx pools grid accessors per scanline for thread safety.
-    // [NEURAL] Adds sampling abstraction that dispatches to OpenVDB or neural.
     struct MarchCtx {
+        // ── Grid accessors (thread-safe shallow copies) ──
         openvdb::FloatGrid::ConstAccessor densAcc;
         openvdb::FloatGrid::ConstAccessor shAcc;
-        std::unique_ptr<openvdb::FloatGrid::ConstAccessor> tempAcc;
-        std::unique_ptr<openvdb::FloatGrid::ConstAccessor> flameAcc;
-        std::unique_ptr<openvdb::Vec3SGrid::ConstAccessor> velAcc;
-        std::unique_ptr<openvdb::Vec3SGrid::ConstAccessor> colorAcc;
+        std::unique_ptr<openvdb::FloatGrid::ConstAccessor>   tempAcc;
+        std::unique_ptr<openvdb::FloatGrid::ConstAccessor>   flameAcc;
+        std::unique_ptr<openvdb::Vec3SGrid::ConstAccessor>   velAcc;
+        std::unique_ptr<openvdb::Vec3SGrid::ConstAccessor>   colorAcc;
+
+        // ── Original march params ──
         double step, ext, scat, g, g2, hgN;
-        int nSh; double bDiag, shStep;
+        int    nSh;
+        double bDiag, shStep;
+
+        // ── [V2] Dual-lobe phase function ──
+        double gFwd   = 0.65;
+        double gBck   = -0.25;
+        double lobeMix = 0.70;
+
+        // ── [V2] Scatter quality ──
+        double powder  = 2.0;   // powder effect strength (0 = off)
+        double gradMix = 0.0;   // gradient-normal Lambertian blend (0 = off)
+
+        // ── [V2] Analytical multiple scattering ──
+        bool   msApprox  = true;
+        double msTintR   = 1.0;
+        double msTintG   = 0.97;
+        double msTintB   = 0.95;
+
+        // ── [V2] Chromatic extinction ──
+        bool   chromatic = false;
+        double extR = 5.0;   // per-channel σt (primary ray only; shadow stays greyscale)
+        double extG = 5.0;
+        double extB = 5.0;
+
+        // ── [V2] Jitter ──
+        bool   jitter    = true;
+        double jitterOff = 0.0;  // set per-pixel by engine() before marchRay()
 
 #ifdef VDBRENDER_HAS_NEURAL
-        // [NEURAL] Neural decode state — set by makeMarchCtx when _neuralMode
         const neural::NeuralDecoder* neuralDec = nullptr;
         bool neuralMode = false;
 
-        // [NEURAL] Unified density sample: BoxSampler or neural decode
-        // Call this everywhere instead of BoxSampler::sample(densAcc, iP)
         inline float sampleDensity(const openvdb::Vec3d& iP) const {
-            if (neuralMode && neuralDec)
-                return neuralDec->sampleDensity(iP);
+            if (neuralMode && neuralDec) return neuralDec->sampleDensity(iP);
             return openvdb::tools::BoxSampler::sample(densAcc, iP);
         }
-
-        // [NEURAL] Unified shadow sample
         inline float sampleShadow(const openvdb::Vec3d& iP) const {
-            if (neuralMode && neuralDec)
-                return neuralDec->sampleDensity(iP); // shadow uses same density
+            if (neuralMode && neuralDec) return neuralDec->sampleDensity(iP);
             return openvdb::tools::BoxSampler::sample(shAcc, iP);
         }
 #else
-        // Non-neural build: direct BoxSampler (zero overhead, inlined)
         inline float sampleDensity(const openvdb::Vec3d& iP) const {
             return openvdb::tools::BoxSampler::sample(densAcc, iP);
         }
@@ -284,16 +346,33 @@ private:
         }
 #endif
 
-        MarchCtx(const openvdb::FloatGrid::ConstAccessor&d,const openvdb::FloatGrid::ConstAccessor&s)
-            :densAcc(d),shAcc(s),step(0),ext(0),scat(0),g(0),g2(0),hgN(0),nSh(1),bDiag(0),shStep(0){}
-        MarchCtx(MarchCtx&&)=default;
-        MarchCtx&operator=(MarchCtx&&)=default;
+        MarchCtx(const openvdb::FloatGrid::ConstAccessor& d,
+                 const openvdb::FloatGrid::ConstAccessor& s)
+            : densAcc(d), shAcc(s),
+              step(0), ext(0), scat(0), g(0), g2(0), hgN(0),
+              nSh(1), bDiag(0), shStep(0) {}
+
+        MarchCtx(MarchCtx&&)            = default;
+        MarchCtx& operator=(MarchCtx&&) = default;
     };
+
     MarchCtx makeMarchCtx() const;
 
-    void marchRay(MarchCtx&ctx,const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A,float&emR,float&emG,float&emB) const;
-    void marchRayExplosion(MarchCtx&ctx,const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&R,float&G,float&B,float&A,float&emR,float&emG,float&emB) const;
-    void marchRayDensity(MarchCtx&ctx,const openvdb::Vec3d&o,const openvdb::Vec3d&d,float&den,float&alpha) const;
+    // marchRay: unified lit + explosion march.
+    // explosionMode=true: emission evaluated before density check (fire-first ordering),
+    // works without a density grid (fire-only volumes), uses emission as embedded light.
+    void marchRay(MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
+                  float& R, float& G, float& B, float& A,
+                  float& emR, float& emG, float& emB,
+                  bool explosionMode = false) const;
+
+    // marchRayExplosion: thin wrapper — calls marchRay(explosionMode=true).
+    void marchRayExplosion(MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
+                           float& R, float& G, float& B, float& A,
+                           float& emR, float& emG, float& emB) const;
+
+    void marchRayDensity(MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
+                         float& den, float& alpha) const;
 
     DD::Image::Lock _loadLock;
     std::string _loadedPath, _loadedGrid;
