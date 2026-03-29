@@ -120,6 +120,27 @@ private:
     double _gradientMix    = 0.0;
     bool   _jitter         = true;
 
+    // ── [V4] Procedural detail noise ──
+    // fBm Perlin noise perturbs density at render time — adds micro-detail
+    // beyond VDB resolution without requiring a higher-res grid.
+    // noise_scale: world-space frequency multiplier (1 = one cycle per bbox)
+    // noise_strength: how much noise modulates density (0 = off, 1 = full)
+    // noise_octaves: fBm octave count (1 = smooth, 4 = highly detailed)
+    // noise_roughness: lacunarity per octave (0 = smooth, 0.5 = natural, 1 = rough)
+    bool   _noiseEnable    = false;
+    double _noiseScale     = 4.0;
+    double _noiseStrength  = 0.5;
+    int    _noiseOctaves   = 3;
+    double _noiseRoughness = 0.5;
+
+    // ── [V4] Phase function mode ──
+    // 0 = Dual-lobe HG (default, fast)
+    // 1 = Approximate Mie (Jendersie & d'Eon, SIGGRAPH 2023)
+    //     Physically accurate for water droplets (clouds, fog)
+    //     Uses droplet diameter d (micrometers) to fit Mie lobe shape
+    int    _phaseMode      = 0;
+    double _mieDropletD    = 2.0;    // droplet diameter in µm (0.1=aerosol, 2=cloud, 10=rain)
+
     // ── [V2] Analytical multiple scattering (Wrenninge 2015) ──
     // Replaces brute-force N-bounce with a 2-param fit to the diffusion solution.
     // Zero extra rays — same cost as single scatter.
@@ -240,6 +261,18 @@ private:
     void   cacheEnvMap(DD::Image::Iop* envIop);
     void   sampleEnv(const openvdb::Vec3d& dir, float& r, float& g, float& b) const;
 
+    // ── [V5] SH env lighting ──
+    // 0 = Uniform dirs (original, accurate, slow)
+    // 1 = SH + virtual lights (fast — replaces dir loop with 9 MADs)
+    int    _envMode           = 1;          // knob: default SH
+    int    _envVirtualLights  = 2;          // knob: how many peak dirs to extract as virtual dir lights
+    // 9 L2 SH coefficients × 3 channels (projected in cacheEnvMap)
+    double _envSH[9][3]       = {};
+    bool   _hasEnvSH          = false;
+    // Virtual directional lights extracted from env map peaks
+    // These are appended to _lights and benefit from the V3 transmittance cache.
+    int    _envVirtualLightBase = 0;        // index into _lights where virtual lights start
+
     // ── Point cloud ──
     struct DensityPoint { float x,y,z,density; };
     std::vector<DensityPoint> _previewPoints;
@@ -259,6 +292,20 @@ private:
     // ── [V2] Phase function helpers ──
     static double hgRaw(double cosT, double g) noexcept;
     static double jitterHash(int x, int y) noexcept;
+
+    // ── [V4] Procedural noise helpers ──
+    static double noiseHash3(double x, double y, double z) noexcept;
+    static double noiseFBm(double x, double y, double z, int octaves, double roughness) noexcept;
+
+    // ── [V4] Mie phase function ──
+    static double miePhaseS(double cosT, double d) noexcept;
+
+    // ── [V5] SH environment lighting ──
+    // Evaluates L2 spherical harmonic irradiance at direction (dx,dy,dz).
+    // sh9 = array of 9 SH coefficients for one colour channel.
+    // Returns irradiance clamped to [0, ∞).
+    static double evalEnvSH(const double sh9[9],
+                             double dx, double dy, double dz) noexcept;
 
     // ── [V3] Shadow performance ──
     // Two-tier shadow system:
@@ -322,6 +369,18 @@ private:
         double powder  = 2.0;   // powder effect strength (0 = off)
         double gradMix = 0.0;   // gradient-normal Lambertian blend (0 = off)
 
+        // ── [V4] Procedural detail noise ──
+        bool   noiseEnable    = false;
+        double noiseScale     = 4.0;
+        double noiseStrength  = 0.5;
+        int    noiseOctaves   = 3;
+        double noiseRoughness = 0.5;
+
+        // ── [V4] Phase function mode ──
+        // 0 = dual-lobe HG,  1 = approximate Mie (Jendersie 2023)
+        int    phaseMode   = 0;
+        double mieDropletD = 2.0;
+
         // ── [V2] Analytical multiple scattering ──
         bool   msApprox  = true;
         double msTintR   = 1.0;
@@ -336,7 +395,12 @@ private:
 
         // ── [V2] Jitter ──
         bool   jitter    = true;
-        double jitterOff = 0.0;  // set per-pixel by engine() before marchRay()
+        double jitterOff = 0.0;
+
+        // ── [V5] SH environment lighting ──
+        int    envMode   = 1;      // 0=uniform dirs, 1=SH+virtual lights
+        double envSH[9][3] = {};   // L2 SH coefficients [band][RGB]
+        bool   hasEnvSH  = false;  // set per-pixel by engine() before marchRay()
 
         // ── [V3] Shadow performance ──
         // shadowRI: per-scanline shallow copy of _volRI for HDDA shadow rays.

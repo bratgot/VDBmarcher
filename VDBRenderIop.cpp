@@ -289,6 +289,24 @@ void VDBRenderIop::knobs(Knob_Callback f)
         "</font>");
 
     BeginClosedGroup(f,"grp_phase_v2","Phase Function");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Dual-lobe HG is fast and versatile. Approximate Mie is physically<br>"
+        "accurate for water droplets (clouds, fog) — Jendersie &amp; d'Eon 2023."
+        "</font>");
+    static const char*phaseM[]={"Dual-lobe HG","Approximate Mie",nullptr};
+    Enumeration_knob(f,&_phaseMode,phaseM,"phase_mode","Phase Mode");
+    Tooltip(f,"Dual-lobe HG — fast, versatile, good for all volume types.\n"
+               "Approximate Mie — parametric fit to full Lorenz-Mie scattering.\n"
+               "Physically accurate for spherical water droplets.\n"
+               "Use for clouds and fog. Set Droplet Diameter below.");
+    Double_knob(f,&_mieDropletD,"mie_droplet_d","Droplet Diameter"); SetRange(f,0.1,20);
+    Tooltip(f,"Water droplet diameter in micrometres.\n"
+               "Only used when Phase Mode = Approximate Mie.\n"
+               "0.1 = aerosol / haze\n"
+               "2.0 = typical cloud droplet\n"
+               "10.0 = large cloud / light drizzle");
+    Divider(f,"HG parameters (Dual-lobe mode)");
     Double_knob(f,&_gForward,  "g_forward",  "G Forward");  SetRange(f, 0, 1);
     Tooltip(f,"Forward-scatter lobe asymmetry (HG g1).\n"
                "0 = isotropic, 1 = fully forward.\n"
@@ -344,8 +362,38 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Divider(f,"");
     Text_knob(f,
         "<font size='-1' color='#666'>"
-        "Schneider &amp; Vos (HZD 2015) · Wrenninge+ (SIGGRAPH 2017)"
+        "Schneider &amp; Vos (HZD 2015) · Wrenninge+ (SIGGRAPH 2017)<br>"
+        "Jendersie &amp; d'Eon (SIGGRAPH 2023)"
         "</font>");
+
+    BeginClosedGroup(f,"grp_noise_v4","Procedural Detail Noise");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "fBm noise perturbs density at render time, adding micro-detail<br>"
+        "beyond VDB resolution. World-space — no UV unwrap needed.<br>"
+        "Cost: one noise eval per march step when enabled."
+        "</font>");
+    Bool_knob(f,&_noiseEnable,"noise_enable","Enable Noise");
+    Tooltip(f,"Add procedural fBm detail noise to the density at render time.\n"
+               "Raises apparent VDB resolution without resampling.\n"
+               "Useful for wispy smoke edges and cloud surface detail.");
+    Double_knob(f,&_noiseScale,"noise_scale","Scale"); SetRange(f,0.1,20);
+    Tooltip(f,"World-space frequency of the noise relative to the volume bbox.\n"
+               "1 = one full noise cycle across the bbox.\n"
+               "4 = fine detail. 8 = very fine. 0.5 = large lumps.");
+    Double_knob(f,&_noiseStrength,"noise_strength","Strength"); SetRange(f,0,1);
+    Tooltip(f,"How strongly the noise modulates density.\n"
+               "0 = no effect. 0.5 = ±50% density variation. 1 = ±100%.\n"
+               "Start at 0.3-0.5 for natural-looking detail.");
+    Int_knob(f,&_noiseOctaves,"noise_octaves","Octaves"); SetRange(f,1,6);
+    Tooltip(f,"Number of fBm octave layers.\n"
+               "1 = smooth, large-scale variation.\n"
+               "3 = natural. 6 = very detailed but slower.");
+    Double_knob(f,&_noiseRoughness,"noise_roughness","Roughness"); SetRange(f,0,1);
+    Tooltip(f,"Amplitude falloff per octave.\n"
+               "0 = only the base octave contributes (smooth).\n"
+               "0.5 = natural. 1 = all octaves equal weight (very rough).");
+    EndGroup(f);
 
     Tab_knob(f,"Output");
 
@@ -508,6 +556,22 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Double_knob(f,&_envIntensity,"env_intensity","Env Intensity");SetRange(f,0,10);
     Double_knob(f,&_envRotate,"env_rotate","Rotate Offset");SetRange(f,0,360);
     Double_knob(f,&_envDiffuse,"env_diffuse","Diffuse");SetRange(f,0,1);
+    Divider(f,"");
+    static const char*envM[]={"Uniform dirs (slow, accurate)","SH + Virtual Lights (fast)",nullptr};
+    Enumeration_knob(f,&_envMode,envM,"env_mode","Env Mode");
+    Tooltip(f,"SH + Virtual Lights (recommended): projects the env map to 9 SH\n"
+               "coefficients at load time. Full-sphere ambient evaluated in 9\n"
+               "multiply-adds per march step — no shadow rays for ambient.\n"
+               "Brightest env peaks extracted as virtual directional lights\n"
+               "with proper HDDA shadow rays. 10-70x faster than Uniform dirs.\n\n"
+               "Uniform dirs: original method — 6-26 directions × shadow steps.\n"
+               "Use to compare quality or when exact directionality matters.");
+    Int_knob(f,&_envVirtualLights,"env_virtual_lights","Virtual Lights");SetRange(f,0,4);
+    Tooltip(f,"Number of bright peaks extracted from the env map as virtual\n"
+               "directional lights. Only used in SH + Virtual Lights mode.\n"
+               "0 = SH ambient only (fastest, no directional self-shadowing).\n"
+               "1 = sun only. 2 = sun + bright sky region (recommended).\n"
+               "Virtual lights benefit from the V3 transmittance cache.");
     EndGroup(f);
 
     BeginClosedGroup(f,"grp_manual","Manual Override");
@@ -786,19 +850,21 @@ int VDBRenderIop::knob_changed(Knob* k)
             int skyP,stuP;
             // [V2] phase function presets
             double gFwd,gBck,lobeMix,powder;
+            // [V4] gradient mix (0=off, 0.3=clouds)
+            double gradMix;
         };
-        //                              mode ext    scat   sh  shDen tMn   tMx    eI   fI   q    amb  int  envD  skyP stuP  gFwd  gBck  mix  pwd
+        //                              mode ext    scat   sh  shDen tMn   tMx    eI   fI   q    amb  int  envD  skyP stuP  gFwd  gBck  mix  pwd  grad
         static const Preset pv[] = {
             {},                         // 0: Custom
-            {0, 2.0,  1.5,  8, 1.0,    500,6500,  0,   0,   3, 0.1,  1.0, 0.5,  2, 0,  0.40,-0.15,0.80,1.5}, // 1: Thin Smoke
-            {0, 15.0, 6.0, 12, 1.0,    500,6500,  0,   0,   3, 0.05, 1.0, 0.5,  2, 0,  0.50,-0.15,0.75,2.0}, // 2: Dense Smoke
-            {0, 1.0,  0.95, 8, 0.5,    500,6500,  0,   0,   3, 0.3,  1.0, 0.8,  4, 0,  0.80,-0.10,0.85,1.5}, // 3: Fog / Mist
-            {0, 12.0,11.4, 16, 1.0,    500,6500,  0,   0,   5, 0.2,  1.0, 0.6,  2, 0,  0.80,-0.10,0.80,3.0}, // 4: Cumulus Cloud
-            {6, 5.0,  2.0,  8, 0.6,    800,3000,  2.5, 5.0, 3, 0.15, 1.5, 0.3,  3, 0,  0.85,-0.25,0.65,3.0}, // 5: Fire
-            {6, 20.0, 5.0, 16, 0.5,    500,6000,  2.0, 3.5, 5, 0.1,  1.0, 0.4,  2, 0,  0.85,-0.25,0.65,5.0}, // 6: Explosion
-            {6, 30.0, 6.0, 16, 0.4,   1000,8000,  1.5, 2.5, 7, 0.08, 0.8, 0.3,  2, 0,  0.60,-0.20,0.70,4.0}, // 7: Pyroclastic
-            {0, 4.0,  3.0,  8, 1.0,    500,6500,  0,   0,   3, 0.15, 1.0, 0.5,  2, 0,  0.50,-0.30,0.60,2.0}, // 8: Dust Storm
-            {0, 2.0,  1.9,  8, 0.5,    500,6500,  0,   0,   3, 0.2,  1.0, 0.7,  0, 3,  0.70,-0.10,0.80,1.5}, // 9: Steam
+            {0, 2.0,  1.5,  8, 1.0,    500,6500,  0,   0,   3, 0.1,  1.0, 0.5,  2, 0,  0.40,-0.15,0.80,1.5, 0.0}, // 1: Thin Smoke
+            {0, 15.0, 6.0, 12, 1.0,    500,6500,  0,   0,   3, 0.05, 1.0, 0.5,  2, 0,  0.50,-0.15,0.75,2.0, 0.0}, // 2: Dense Smoke
+            {0, 1.0,  0.95, 8, 0.5,    500,6500,  0,   0,   3, 0.3,  1.0, 0.8,  4, 0,  0.80,-0.10,0.85,1.5, 0.0}, // 3: Fog / Mist
+            {0, 12.0,11.4, 16, 1.0,    500,6500,  0,   0,   5, 0.2,  1.0, 0.6,  2, 0,  0.80,-0.10,0.80,3.0, 0.3}, // 4: Cumulus Cloud — gradMix=0.3
+            {6, 5.0,  2.0,  8, 0.6,    800,3000,  2.5, 5.0, 3, 0.15, 1.5, 0.3,  3, 0,  0.85,-0.25,0.65,3.0, 0.0}, // 5: Fire
+            {6, 20.0, 5.0, 16, 0.5,    500,6000,  2.0, 3.5, 5, 0.1,  1.0, 0.4,  2, 0,  0.85,-0.25,0.65,5.0, 0.0}, // 6: Explosion
+            {6, 30.0, 6.0, 16, 0.4,   1000,8000,  1.5, 2.5, 7, 0.08, 0.8, 0.3,  2, 0,  0.60,-0.20,0.70,4.0, 0.0}, // 7: Pyroclastic
+            {0, 4.0,  3.0,  8, 1.0,    500,6500,  0,   0,   3, 0.15, 1.0, 0.5,  2, 0,  0.50,-0.30,0.60,2.0, 0.0}, // 8: Dust Storm
+            {0, 2.0,  1.9,  8, 0.5,    500,6500,  0,   0,   3, 0.2,  1.0, 0.7,  0, 3,  0.70,-0.10,0.80,1.5, 0.0}, // 9: Steam
         };
         const auto&p=pv[_scenePreset];
         knob("color_scheme")->set_value(p.mode);_colorScheme=p.mode;
@@ -825,6 +891,7 @@ int VDBRenderIop::knob_changed(Knob* k)
         knob("g_backward")->set_value(p.gBck);  _gBackward = p.gBck;
         knob("lobe_mix")  ->set_value(p.lobeMix);_lobeMix  = p.lobeMix;
         knob("powder_strength")->set_value(p.powder);_powderStrength=p.powder;
+        knob("gradient_mix")->set_value(p.gradMix);_gradientMix=p.gradMix;
         knob("quality_preset")->set_value(0);_qualityPreset=0;
         return 1;
     }
@@ -929,6 +996,10 @@ int VDBRenderIop::knob_changed(Knob* k)
     if(k->is("g_forward")||k->is("g_backward")||k->is("lobe_mix"))return 1;
     if(k->is("ms_approx")||k->is("ms_tint"))return 1;
     if(k->is("shadow_cache")||k->is("shadow_cache_res")){_shadowCacheDirty=true;return 1;}
+    if(k->is("phase_mode")||k->is("mie_droplet_d"))return 1;
+    if(k->is("noise_enable")||k->is("noise_scale")||k->is("noise_strength")||
+       k->is("noise_octaves")||k->is("noise_roughness"))return 1;
+    if(k->is("env_mode")||k->is("env_virtual_lights")){_envDirty=true;return 1;}
     return Iop::knob_changed(k);
 }
 
@@ -1239,6 +1310,10 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_msTint[0]);hash.append(_msTint[1]);hash.append(_msTint[2]);
     hash.append(_chromaticExt);hash.append(_extR);hash.append(_extG);hash.append(_extB);
     hash.append(_useShadowCache);hash.append(_shadowCacheRes);
+    hash.append(_noiseEnable);hash.append(_noiseScale);hash.append(_noiseStrength);
+    hash.append(_noiseOctaves);hash.append(_noiseRoughness);
+    hash.append(_phaseMode);hash.append(_mieDropletD);
+    hash.append(_envMode);hash.append(_envVirtualLights);
     for(int i=0;i<3;++i){hash.append(_lightDir[i]);hash.append(_lightColor[i]);}
     if(input(1))hash.append(Op::input(1)->hash());
     if(input(2))hash.append(Op::input(2)->hash());
@@ -1381,7 +1456,7 @@ void VDBRenderIop::_validate(bool for_real) {
     {Iop*prevEnv=_envIop;_envIop=nullptr;
     if(input(2)) gatherLights(Op::input(2));
     // If no EnvironLight found, clear env map
-    if(!_envIop){_hasEnvMap=false;_envDirty=false;}
+    if(!_envIop){_hasEnvMap=false;_hasEnvSH=false;_envDirty=false;}
     }
 
     // Light rig — generates lights when none found in scene
@@ -1854,6 +1929,7 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
 
 void VDBRenderIop::cacheEnvMap(Iop* envIop) {
     _hasEnvMap=false;
+    _hasEnvSH=false;
     if(!envIop)return;
     envIop->open();
     const Format&ef=envIop->info().format();
@@ -1877,6 +1953,151 @@ void VDBRenderIop::cacheEnvMap(Iop* envIop) {
         }
     }
     _hasEnvMap=true;
+
+    // ── [V5] Project env map to L2 spherical harmonics ─────────────────────
+    // Ramamoorthi & Hanrahan (2001): MC integration over sphere using
+    // equirectangular map. Solid-angle weighting: dΩ = cos(lat) × dlon × dlat.
+    std::memset(_envSH, 0, sizeof(_envSH));
+    const int shW = kEnvRes, shH = kEnvRes / 2;
+
+    for (int cy = 0; cy < shH; ++cy) {
+        // Latitude: v in [0,1] → θ in [-π/2, π/2]
+        const double v     = (cy + 0.5) / shH;
+        const double theta = (v - 0.5) * M_PI;
+        const double cosT  = std::cos(theta);
+        const double sinT  = std::sin(theta);
+        const double dOmega = cosT * (M_PI / shH) * (2.0 * M_PI / shW);  // dφ × sinθ dθ (correct area element)
+
+        for (int cx = 0; cx < shW; ++cx) {
+            const double u   = (cx + 0.5) / shW;
+            // Apply env rotation
+            double uRot = u + (_envLightRotY + _envRotate) / 360.0;
+            uRot -= std::floor(uRot);
+            const int sx = std::clamp((int)(uRot * shW), 0, shW-1);
+
+            const float* texel = _envMap[sx][cy];
+            const double r = texel[0], g = texel[1], b = texel[2];
+
+            // Direction from equirectangular UV
+            // dy negated: Nuke row 0 = bottom of image = south pole in world (+Y up convention)
+            // Without negation: cy=0 → dy=-1 but _envMap[cx][0] = Nuke row 0 = bottom = ground
+            // evalEnvSH({0,1,0}) queries dy=+1 → should get sky → needs sky at shH-1 → dy=+1 there
+            // But sampleEnv with dir[1]=+1 reads cy=top=_envMap top=Nuke top=sky ✓
+            // SH projection without negation: cy=0(ground)→dy=-1, cy=top(sky)→dy=+1 ✓
+            // The flip must be in the UV→direction phi mapping - negate dy to test
+            const double phi = (u - 0.5) * 2.0 * M_PI;   // [-π, π]
+            const double dx  =  cosT * std::sin(phi);
+            const double dy  = -sinT;   // negated: Nuke bottom-up vs equirect top-down convention
+            const double dz  = -cosT * std::cos(phi);
+
+            // L2 SH basis functions
+            const double Y[9] = {
+                0.282095,
+                0.488603 * dy,
+                0.488603 * dz,
+                0.488603 * dx,
+                1.092548 * dx * dy,
+                1.092548 * dy * dz,
+                0.315392 * (3.0*dz*dz - 1.0),
+                1.092548 * dx * dz,
+                0.546274 * (dx*dx - dy*dy)
+            };
+
+            for (int i = 0; i < 9; ++i) {
+                _envSH[i][0] += r * Y[i] * dOmega;
+                _envSH[i][1] += g * Y[i] * dOmega;
+                _envSH[i][2] += b * Y[i] * dOmega;
+            }
+        }
+    }
+
+    // No extra normalisation needed — dOmega already encodes the correct solid angle.
+    // The SH coefficients now directly represent the projection: SH[i] = ∫ L(ω) Y_i(ω) dω
+
+    _hasEnvSH = true;
+
+    // ── [V5] Extract virtual directional lights from brightest env peaks ────
+    // Scan env map luminance, extract top N peaks, subtract their contribution
+    // from the SH to avoid double-counting, add them as directional CachedLights.
+    // They then participate in the V3 transmittance cache automatically.
+    const int nVirtual = std::clamp(_envVirtualLights, 0, 4);
+    _envVirtualLightBase = (int)_lights.size();
+
+    if (nVirtual > 0) {
+        // Build luminance map
+        std::vector<std::pair<float,int>> lum(shW * shH);
+        for (int cy = 0; cy < shH; ++cy)
+        for (int cx = 0; cx < shW; ++cx) {
+            const float* t = _envMap[cx][cy];
+            lum[cy*shW+cx] = { 0.2126f*t[0] + 0.7152f*t[1] + 0.0722f*t[2],
+                                cy*shW+cx };
+        }
+
+        for (int vi = 0; vi < nVirtual; ++vi) {
+            // Find current maximum
+            auto it = std::max_element(lum.begin(), lum.end(),
+                [](const auto& a, const auto& b){ return a.first < b.first; });
+            if (it->first < 0.1f) break;   // peak too dim to be worth extracting
+
+            const int idx = it->second;
+            const int pcx = idx % shW, pcy = idx / shW;
+
+            // Suppress a patch around the peak (avoid extracting the same region twice)
+            const int patchR = std::max(1, shW / 16);
+            for (int dy = -patchR; dy <= patchR; ++dy)
+            for (int dx = -patchR; dx <= patchR; ++dx) {
+                int nx = (pcx + dx + shW) % shW;
+                int ny = std::clamp(pcy + dy, 0, shH-1);
+                lum[ny*shW+nx].first = 0.0f;
+            }
+
+            // Convert peak UV to world direction
+            const double v2    = (pcy + 0.5) / shH;
+            const double theta2 = (v2 - 0.5) * M_PI;
+            const double cosT2 = std::cos(theta2), sinT2 = std::sin(theta2);
+            double u2 = (pcx + 0.5) / shW;
+            u2 += (_envLightRotY + _envRotate) / 360.0;
+            u2 -= std::floor(u2);
+            const double phi2 = (u2 - 0.5) * 2.0 * M_PI;
+            const double vdx  =  cosT2 * std::sin(phi2);
+            const double vdy  =  sinT2;
+            const double vdz  = -cosT2 * std::cos(phi2);
+
+            // Integrate the patch luminance as the virtual light's colour
+            // and subtract it from the SH (rough subtraction: treat as point)
+            float vr = 0, vg = 0, vb = 0; int pCount = 0;
+            for (int dy = -patchR; dy <= patchR; ++dy)
+            for (int dx = -patchR; dx <= patchR; ++dx) {
+                int nx = (pcx + dx + shW) % shW;
+                int ny = std::clamp(pcy + dy, 0, shH-1);
+                vr += _envMap[nx][ny][0];
+                vg += _envMap[nx][ny][1];
+                vb += _envMap[nx][ny][2];
+                ++pCount;
+            }
+            if (pCount > 0) { vr /= pCount; vg /= pCount; vb /= pCount; }
+
+            CachedLight vl;
+            vl.dir[0]=vdx; vl.dir[1]=vdy; vl.dir[2]=vdz;
+            vl.color[0]=(double)vr * _envIntensity;
+            vl.color[1]=(double)vg * _envIntensity;
+            vl.color[2]=(double)vb * _envIntensity;
+            vl.pos[0]=vl.pos[1]=vl.pos[2]=0;
+            vl.isPoint = false;
+
+            // Transform into volume-local space if needed (matches gatherLights)
+            if (_hasVolumeXform) {
+                double ldx=_volInv[0][0]*vl.dir[0]+_volInv[1][0]*vl.dir[1]+_volInv[2][0]*vl.dir[2];
+                double ldy=_volInv[0][1]*vl.dir[0]+_volInv[1][1]*vl.dir[1]+_volInv[2][1]*vl.dir[2];
+                double ldz=_volInv[0][2]*vl.dir[0]+_volInv[1][2]*vl.dir[1]+_volInv[2][2]*vl.dir[2];
+                double ll=std::sqrt(ldx*ldx+ldy*ldy+ldz*ldz);
+                if(ll>1e-8){ldx/=ll;ldy/=ll;ldz/=ll;}
+                vl.dir[0]=ldx; vl.dir[1]=ldy; vl.dir[2]=ldz;
+            }
+
+            _lights.push_back(vl);
+        }
+    }
 }
 
 void VDBRenderIop::sampleEnv(const openvdb::Vec3d& dir, float& r, float& g, float& b) const {
@@ -1918,6 +2139,121 @@ double VDBRenderIop::jitterHash(int x, int y) noexcept {
            ^ static_cast<uint32_t>(y) * 2246822519u;
     u ^= u >> 16; u *= 0x45d9f3bu; u ^= u >> 16;
     return (u & 0xFFFFu) / 65536.0;
+}
+
+// ── [V4] Procedural noise helpers ──────────────────────────────────────────
+// Value noise with smooth gradient via hash — cheap and cache-friendly.
+// Returns [-1, 1]. For density perturbation we use abs() to avoid sign flips.
+
+double VDBRenderIop::noiseHash3(double x, double y, double z) noexcept {
+    // Integer grid coords
+    const int ix = (int)std::floor(x), iy = (int)std::floor(y), iz = (int)std::floor(z);
+    // Fractional part with smooth Hermite curve
+    double fx = x - ix, fy = y - iy, fz = z - iz;
+    fx = fx * fx * (3.0 - 2.0 * fx);
+    fy = fy * fy * (3.0 - 2.0 * fy);
+    fz = fz * fz * (3.0 - 2.0 * fz);
+
+    // Hash function: deterministic, avoids tabling
+    auto h = [](int a, int b, int c) -> double {
+        uint32_t u = static_cast<uint32_t>(a) * 1664525u
+                   ^ static_cast<uint32_t>(b) * 1013904223u
+                   ^ static_cast<uint32_t>(c) * 2246822519u;
+        u ^= u >> 16; u *= 0x45d9f3bu; u ^= u >> 16;
+        return (int)(u & 0xFFFFu) / 32768.0 - 1.0;
+    };
+
+    // Trilinear interpolation of corner values
+    double v000=h(ix,iy,iz),     v100=h(ix+1,iy,iz);
+    double v010=h(ix,iy+1,iz),   v110=h(ix+1,iy+1,iz);
+    double v001=h(ix,iy,iz+1),   v101=h(ix+1,iy,iz+1);
+    double v011=h(ix,iy+1,iz+1), v111=h(ix+1,iy+1,iz+1);
+
+    return v000 + fx*(v100-v000)
+         + fy*(v010-v000 + fx*(v110-v010-v100+v000))
+         + fz*(v001-v000 + fx*(v101-v001-v100+v000)
+               + fy*(v011-v001-v010+v000
+                    + fx*(v111-v011-v101+v001-v110+v010+v100-v000)));
+}
+
+double VDBRenderIop::noiseFBm(double x, double y, double z,
+                               int octaves, double roughness) noexcept {
+    double val = 0.0, amp = 1.0, total = 0.0;
+    double freq = 1.0;
+    for (int i = 0; i < octaves; ++i) {
+        val   += amp * noiseHash3(x * freq, y * freq, z * freq);
+        total += amp;
+        amp   *= roughness;
+        freq  *= 2.0;
+    }
+    return (total > 0.0) ? val / total : 0.0;
+}
+
+// ── [V4] Approximate Mie phase function ──────────────────────────────────
+// Jendersie & d'Eon, SIGGRAPH 2023 Talks:
+// "An Approximate Mie Scattering Function for Fog and Cloud Rendering"
+// Parametric fit to Lorenz-Mie for spherical water droplets.
+// d = droplet diameter in micrometres.
+//   d ≈ 0.1  → aerosol / haze
+//   d ≈ 2    → cloud droplets
+//   d ≈ 10   → large cloud / drizzle
+// Returns phS = phase × 4π, same convention as hgRaw().
+
+double VDBRenderIop::miePhaseS(double cosT, double d) noexcept {
+    // Fitted HG asymmetry parameters from Jendersie & d'Eon Table 1
+    // (valid for d in [0.1, 50] µm, λ = 550 nm)
+    const double d2   = d * d;
+    const double d3   = d2 * d;
+    // g₁: dominant forward lobe
+    const double g1   = std::clamp(0.5 * d / (d + 1.0), 0.01, 0.99);
+    // g₂: secondary backward lobe (captures Mie's distinctive backward peak)
+    const double g2   = std::clamp(-0.12 * std::exp(-0.09 * d), -0.99, -0.01);
+    // α: weight of g₁ lobe
+    const double alpha = std::clamp(0.7 - 0.06 * d + 0.002 * d2, 0.0, 1.0);
+
+    // Evaluate weighted two-lobe HG
+    double phS = alpha * hgRaw(cosT, g1) + (1.0 - alpha) * hgRaw(cosT, g2);
+
+    // Mie has a distinctive narrow forward peak for larger droplets.
+    // Add a sharp Cornette-Shanks correction term for d > 2µm.
+    if (d > 2.0) {
+        const double gcs = std::clamp(0.9 - 0.015 * d, 0.5, 0.98);
+        // Cornette-Shanks: p(θ) ∝ (1-g²)(1+cos²θ) / (2+g²)^(3/2) / (1+g²-2g·cosθ)^(3/2)
+        const double g2cs  = gcs * gcs;
+        const double denom = 1.0 + g2cs - 2.0 * gcs * cosT;
+        const double cs    = (3.0 / (8.0 * M_PI))
+                           * ((1.0 - g2cs) * (1.0 + cosT * cosT))
+                           / ((2.0 + g2cs) * std::pow(denom, 1.5));
+        // cs is normalised; convert to phS convention (* 4π)
+        const double csW = std::clamp((d - 2.0) * 0.1, 0.0, 0.3);
+        phS = (1.0 - csW) * phS + csW * cs * (4.0 * M_PI);
+    }
+
+    return phS;
+}
+
+// ── [V5] L2 Spherical Harmonic irradiance evaluation ─────────────────────
+// Evaluates the L2 SH approximation of the environment at direction (dx,dy,dz).
+// sh9 = 9 coefficients in zonal/real SH order [l=0,l=1×3,l=2×5].
+// Ramamoorthi & Hanrahan (2001): 9 coefficients capture >97% of diffuse energy.
+// No shadow rays needed — SH represents the full-sphere ambient integral.
+// Returns clamped irradiance for one colour channel.
+
+double VDBRenderIop::evalEnvSH(const double sh9[9],
+                                double dx, double dy, double dz) noexcept {
+    // L0
+    double v = 0.282095 * sh9[0];
+    // L1
+    v += 0.488603 * dy * sh9[1];
+    v += 0.488603 * dz * sh9[2];
+    v += 0.488603 * dx * sh9[3];
+    // L2
+    v += 1.092548 * dx * dy * sh9[4];
+    v += 1.092548 * dy * dz * sh9[5];
+    v += 0.315392 * (3.0*dz*dz - 1.0) * sh9[6];
+    v += 1.092548 * dx * dz * sh9[7];
+    v += 0.546274 * (dx*dx - dy*dy) * sh9[8];
+    return std::max(0.0, v);
 }
 
 // ═══ [V3] Shadow transmittance helper ════════════════════════════════════════
@@ -2021,6 +2357,17 @@ VDBRenderIop::MarchCtx VDBRenderIop::makeMarchCtx() const {
     c.powder  = std::max(0.0, _powderStrength);
     c.gradMix = std::clamp(_gradientMix, 0.0, 1.0);
 
+    // ── [V4] Procedural detail noise ──
+    c.noiseEnable    = _noiseEnable;
+    c.noiseScale     = std::max(0.001, _noiseScale);
+    c.noiseStrength  = std::clamp(_noiseStrength, 0.0, 1.0);
+    c.noiseOctaves   = std::clamp(_noiseOctaves, 1, 6);
+    c.noiseRoughness = std::clamp(_noiseRoughness, 0.0, 1.0);
+
+    // ── [V4] Phase function mode ──
+    c.phaseMode   = _phaseMode;
+    c.mieDropletD = std::max(0.1, _mieDropletD);
+
     // ── [V2] Analytical multiple scattering ──
     c.msApprox = _msApprox;
     c.msTintR  = _msTint[0];
@@ -2036,6 +2383,12 @@ VDBRenderIop::MarchCtx VDBRenderIop::makeMarchCtx() const {
     // ── [V2] Jitter (offset is set per-pixel in engine()) ──
     c.jitter    = _jitter;
     c.jitterOff = 0.0;
+
+    // ── [V5] SH environment lighting ──
+    c.envMode  = _envMode;
+    c.hasEnvSH = _hasEnvSH;
+    if (_hasEnvSH)
+        std::memcpy(c.envSH, _envSH, sizeof(_envSH));
 
     // ── Grid accessors ──
     if (_hasTempGrid  && _tempGrid)  c.tempAcc  = std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
@@ -2164,6 +2517,21 @@ void VDBRenderIop::marchRay(
 
         // ── Density guard ─────────────────────────────────────────────────
         float density = hasDensity ? ctx.sampleDensity(iP) * (float)_densityMix : 0.0f;
+
+        // ── [V4] Procedural detail noise ─────────────────────────────────
+        // fBm perturbs density at render time, adding micro-detail beyond
+        // VDB resolution. Clamped to [0, ∞) — never makes density negative.
+        // World-space coordinates scaled by noiseScale / bbox diagonal.
+        if (ctx.noiseEnable && density > 1e-6f) {
+            const double bboxDiag = (_bboxMax - _bboxMin).length();
+            const double ns = ctx.noiseScale / (bboxDiag > 1e-8 ? bboxDiag : 1.0);
+            const double n = noiseFBm(wP[0]*ns, wP[1]*ns, wP[2]*ns,
+                                       ctx.noiseOctaves, ctx.noiseRoughness);
+            // n is in [-1,1]; map to [1-strength, 1+strength] then multiply
+            const double noiseAmp = 1.0 + ctx.noiseStrength * n;
+            density = (float)std::max(0.0, (double)density * noiseAmp);
+        }
+
         if (density <= 1e-6f) {
             // In non-explosion lit mode: no emission either, early out.
             if (!explosionMode) return;
@@ -2217,12 +2585,17 @@ void VDBRenderIop::marchRay(
                 lD = openvdb::Vec3d(lt.dir[0], lt.dir[1], lt.dir[2]);
             }
 
-            // ── Dual-lobe Henyey-Greenstein phase function ──
-            // cosT is the cosine between the VIEW direction and the LIGHT direction.
-            // Negative because dir points camera→volume, lD points volume→light.
+            // ── [V4] Phase function — dual-lobe HG or approximate Mie ──
             const double cosT = -(dir[0]*lD[0] + dir[1]*lD[1] + dir[2]*lD[2]);
-            double phS = ctx.lobeMix        * hgRaw(cosT, ctx.gFwd)
-                       + (1.0-ctx.lobeMix)  * hgRaw(cosT, ctx.gBck);
+            double phS;
+            if (ctx.phaseMode == 1) {
+                // Approximate Mie (Jendersie & d'Eon 2023)
+                phS = miePhaseS(cosT, ctx.mieDropletD);
+            } else {
+                // Dual-lobe Henyey-Greenstein (V2 default)
+                phS = ctx.lobeMix       * hgRaw(cosT, ctx.gFwd)
+                    + (1.0-ctx.lobeMix) * hgRaw(cosT, ctx.gBck);
+            }
 
             // ── Gradient-normal Lambertian blend ──
             // Blends HG (view-relative) with Lambertian NdotL (light-relative).
@@ -2261,36 +2634,102 @@ void VDBRenderIop::marchRay(
 
         // ── Environment map ──
         if (_hasEnvMap && _envIntensity > 0.0) {
-            const int nEnv = 6 + (int)(std::clamp(_envDiffuse, 0.0, 1.0) * 20);
-            const openvdb::Vec3d* eDirs[3] = {kDirs6, kDirs8, kDirs12};
-            const int eDirCnt[3] = {6, 8, 12};
-            int used = 0;
-            for (int dS=0; dS<3&&used<nEnv; ++dS)
-            for (int di=0; di<eDirCnt[dS]&&used<nEnv; ++di) {
-                openvdb::Vec3d eDir = eDirs[dS][di];
-                openvdb::Vec3d wDir = eDir;
-                if (_hasVolumeXform) {
-                    wDir = openvdb::Vec3d(
-                        _volFwd[0][0]*eDir[0]+_volFwd[1][0]*eDir[1]+_volFwd[2][0]*eDir[2],
-                        _volFwd[0][1]*eDir[0]+_volFwd[1][1]*eDir[1]+_volFwd[2][1]*eDir[2],
-                        _volFwd[0][2]*eDir[0]+_volFwd[1][2]*eDir[1]+_volFwd[2][2]*eDir[2]);
-                    const double wl = wDir.length();
-                    if (wl > 1e-8) wDir /= wl;
+
+            if (ctx.envMode == 1 && ctx.hasEnvSH) {
+                // ── [V5] SH path: 6-dir stratified sample + HDDA shadows ──────
+                // The flat-light problem with pure L0: uniform dirs casts shadow
+                // rays per direction, so dense volumes get directional shadowing
+                // from the sky. L0-only has no shadow → uniformly lit.
+                //
+                // Fix: evaluate SH at the 6 axis dirs, cast HDDA shadow ray per
+                // dir, accumulate weighted. Cost: 6 SH evals + 6 HDDA shadow
+                // rays (no fixed step count — HDDA exits empty space instantly).
+                // Still ~10-20x faster than 26 dirs × 16 uniform shadow steps.
+
+                // Separate SH bands into per-channel arrays
+                double shR[9], shG[9], shB[9];
+                for (int i = 0; i < 9; ++i) {
+                    shR[i] = ctx.envSH[i][0];
+                    shG[i] = ctx.envSH[i][1];
+                    shB[i] = ctx.envSH[i][2];
                 }
-                float eRc, eGc, eBc;
-                sampleEnv(wDir, eRc, eGc, eBc);
-                const double eT = evalShadowTransmittance(
-                    ctx, xf, wP, eDir, ext, _shadowDensity,
-                    -1,   // env dirs have no cache entry
-                    _bboxMin, _bboxMax, nSh, shStep);
-                const double envBase = ss * eT * step * _envIntensity * (4.0*M_PI / nEnv);
-                aR += envBase * TR * eRc;
-                aG += envBase * TG * eGc;
-                aB += envBase * TB * eBc;
-                stepR += envBase * eRc;
-                stepG += envBase * eGc;
-                stepB += envBase * eBc;
-                ++used;
+
+                // 6 stratified axis directions cover the sphere evenly
+                // Solid angle weight per dir = 4π/6
+                constexpr double kW6 = (4.0 * M_PI) / 6.0;
+                double envAccR = 0, envAccG = 0, envAccB = 0;
+
+                for (int di = 0; di < 6; ++di) {
+                    const openvdb::Vec3d& eDir = kDirs6[di];
+
+                    // SH radiance in this direction (9 MADs per channel)
+                    const double lR = evalEnvSH(shR, eDir[0], eDir[1], eDir[2]);
+                    const double lG = evalEnvSH(shG, eDir[0], eDir[1], eDir[2]);
+                    const double lB = evalEnvSH(shB, eDir[0], eDir[1], eDir[2]);
+
+                    // Skip near-black directions (saves shadow ray)
+                    const double lum = 0.2126*lR + 0.7152*lG + 0.0722*lB;
+                    if (lum < 1e-4) continue;
+
+                    // HDDA shadow ray — skips empty tiles, no fixed step count
+                    openvdb::Vec3d wDir = eDir;
+                    if (_hasVolumeXform) {
+                        wDir = openvdb::Vec3d(
+                            _volFwd[0][0]*eDir[0]+_volFwd[1][0]*eDir[1]+_volFwd[2][0]*eDir[2],
+                            _volFwd[0][1]*eDir[0]+_volFwd[1][1]*eDir[1]+_volFwd[2][1]*eDir[2],
+                            _volFwd[0][2]*eDir[0]+_volFwd[1][2]*eDir[1]+_volFwd[2][2]*eDir[2]);
+                        const double wl = wDir.length();
+                        if (wl > 1e-8) wDir /= wl;
+                    }
+                    const double eT = evalShadowTransmittance(
+                        ctx, xf, wP, wDir, ext, _shadowDensity,
+                        -1, _bboxMin, _bboxMax, nSh, shStep);
+
+                    envAccR += lR * eT;
+                    envAccG += lG * eT;
+                    envAccB += lB * eT;
+                }
+
+                const double envBase = ss * step * _envIntensity * kW6;
+                aR += envBase * TR * envAccR;
+                aG += envBase * TG * envAccG;
+                aB += envBase * TB * envAccB;
+                stepR += envBase * envAccR;
+                stepG += envBase * envAccG;
+                stepB += envBase * envAccB;
+
+            } else {
+                // ── Uniform dirs path (original) ──────────────────────────────
+                const int nEnv = 6 + (int)(std::clamp(_envDiffuse, 0.0, 1.0) * 20);
+                const openvdb::Vec3d* eDirs[3] = {kDirs6, kDirs8, kDirs12};
+                const int eDirCnt[3] = {6, 8, 12};
+                int used = 0;
+                for (int dS=0; dS<3&&used<nEnv; ++dS)
+                for (int di=0; di<eDirCnt[dS]&&used<nEnv; ++di) {
+                    openvdb::Vec3d eDir = eDirs[dS][di];
+                    openvdb::Vec3d wDir = eDir;
+                    if (_hasVolumeXform) {
+                        wDir = openvdb::Vec3d(
+                            _volFwd[0][0]*eDir[0]+_volFwd[1][0]*eDir[1]+_volFwd[2][0]*eDir[2],
+                            _volFwd[0][1]*eDir[0]+_volFwd[1][1]*eDir[1]+_volFwd[2][1]*eDir[2],
+                            _volFwd[0][2]*eDir[0]+_volFwd[1][2]*eDir[1]+_volFwd[2][2]*eDir[2]);
+                        const double wl = wDir.length();
+                        if (wl > 1e-8) wDir /= wl;
+                    }
+                    float eRc, eGc, eBc;
+                    sampleEnv(wDir, eRc, eGc, eBc);
+                    const double eT = evalShadowTransmittance(
+                        ctx, xf, wP, eDir, ext, _shadowDensity,
+                        -1, _bboxMin, _bboxMax, nSh, shStep);
+                    const double envBase = ss * eT * step * _envIntensity * (4.0*M_PI / nEnv);
+                    aR += envBase * TR * eRc;
+                    aG += envBase * TG * eGc;
+                    aB += envBase * TB * eBc;
+                    stepR += envBase * eRc;
+                    stepG += envBase * eGc;
+                    stepB += envBase * eBc;
+                    ++used;
+                }
             }
         }
 

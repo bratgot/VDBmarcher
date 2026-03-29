@@ -65,8 +65,8 @@ elseif(MSVC)
 endif()
 
 target_link_libraries(VDBRender PRIVATE
-    ${NDK_LIB}
-    "${NUKE_ROOT}/ndk.lib"      # <-- add this line
+    "${NDK_LIB}"
+    "${NUKE_ROOT}/ndk.lib"
     OpenVDB::openvdb
     opengl32
 )
@@ -85,9 +85,128 @@ set_property(TARGET VDBRender PROPERTY
     MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
 )
 
-# ── Install ────────────────────────────────────────────────────────────────────
+# ── Install (to Nuke plugins dir) ─────────────────────────────────────────────
 install(TARGETS VDBRender
-    DESTINATION "C:/Users/marty/.nuke/plugins/VDBRender/nuke17"
+    DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17"
+)
+install(FILES "${CMAKE_SOURCE_DIR}/VDBRender_menu.py"
+    DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender"
+)
+
+# ── Distribution folder ────────────────────────────────────────────────────────
+# Builds a self-contained dist/ folder ready to zip and share.
+# Contents:
+#   dist/VDBRender/
+#     VDBRender.dll          — plugin
+#     VDBRender_menu.py      — Nuke menu loader
+#     openvdb.dll            — runtime dependencies
+#     Imath-3_2.dll
+#     tbb12.dll
+#     blosc.dll
+#     zlib1.dll
+#     zstd.dll
+#     lz4.dll
+#     INSTALL.txt            — one-page setup instructions
+
+set(DIST_DIR "${CMAKE_BINARY_DIR}/dist/VDBRender")
+
+set(VCPKG_BIN "$ENV{VCPKG_ROOT}/installed/x64-windows/bin")
+if(NOT EXISTS "${VCPKG_BIN}")
+    set(VCPKG_BIN "C:/vcpkg/installed/x64-windows/bin")
+endif()
+
+set(DIST_RUNTIME_DLLS
+    "${VCPKG_BIN}/openvdb.dll"
+    "${VCPKG_BIN}/Imath-3_2.dll"
+    "${VCPKG_BIN}/tbb12.dll"
+    "${VCPKG_BIN}/blosc.dll"
+    "${VCPKG_BIN}/zlib1.dll"
+    "${VCPKG_BIN}/zstd.dll"
+    "${VCPKG_BIN}/lz4.dll"
+)
+
+# INSTALL.txt content
+set(INSTALL_TXT
+"VDBRender — OpenVDB Volume Ray Marcher for Nuke 17
+Created by Marten Blumen
+https://github.com/bratgot/VDBmarcher
+
+INSTALLATION
+============
+1. Copy the entire VDBRender/ folder to:
+     %USERPROFILE%\\.nuke\\plugins\\
+
+2. Add this line to %USERPROFILE%\\.nuke\\menu.py:
+     import VDBRender.VDBRender_menu
+
+3. Restart Nuke. VDBRender appears in the VDB menu.
+
+REQUIREMENTS
+============
+- Nuke 17.0v1 or later
+- Windows x64
+
+The DLLs in this folder (openvdb.dll, tbb12.dll, etc.)
+must remain alongside VDBRender.dll.
+
+USAGE
+=====
+1. Create a VDBRender node from the VDB menu
+2. Connect Camera to input 1, Scene (with lights) to input 2
+3. Set the VDB File path and click Discover Grids
+4. Choose a Scene Preset and render
+
+For clouds: enable Shadow Cache (Quality tab) and set
+Env Mode to 'SH + Virtual Lights' (Lighting tab) for
+best performance.
+")
+
+add_custom_target(dist
+    DEPENDS VDBRender
+    COMMENT "Building distribution package in dist/VDBRender/"
+
+    # Create dist dir
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${DIST_DIR}"
+
+    # Copy DLL
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "$<TARGET_FILE:VDBRender>"
+        "${DIST_DIR}/VDBRender.dll"
+
+    # Copy menu script
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/VDBRender_menu.py"
+        "${DIST_DIR}/VDBRender_menu.py"
+
+    # Copy runtime DLLs (warn but don't fail if a DLL is missing)
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime DLLs from ${VCPKG_BIN}..."
+)
+
+# Copy each runtime DLL individually
+foreach(DLL_PATH ${DIST_RUNTIME_DLLS})
+    get_filename_component(DLL_NAME "${DLL_PATH}" NAME)
+    add_custom_command(TARGET dist POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${DLL_PATH}"
+            "${DIST_DIR}/${DLL_NAME}"
+        COMMENT "  ${DLL_NAME}"
+    )
+endforeach()
+
+# Write INSTALL.txt
+file(WRITE "${CMAKE_BINARY_DIR}/INSTALL.txt.in" "${INSTALL_TXT}")
+add_custom_command(TARGET dist POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/INSTALL.txt.in"
+        "${DIST_DIR}/INSTALL.txt"
+    COMMENT "  INSTALL.txt"
+)
+
+# Summary
+add_custom_command(TARGET dist POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Distribution ready: ${DIST_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E echo "Zip the VDBRender/ folder and share."
 )
 
 # ── [NEURAL] nvdb_encode command-line encoder ─────────────────────────────────
