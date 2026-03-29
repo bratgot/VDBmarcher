@@ -1,148 +1,170 @@
-# NeuralVDB Integration for VDBRender
+# VDBRender
 
-Neural compressed volume support for VDBRender. Adds `.nvdb` file loading alongside standard `.vdb` — same node, same lighting, same deep output, same everything. Neural volumes are 10-100x smaller with minimal quality loss.
+OpenVDB volume ray marcher for Nuke 17. Physically-based single and multiple scatter rendering with deep output, environment lighting, and NeuralVDB support.
 
-## How It Works
+Created by Marten Blumen
 
-NeuralVDB replaces the lower leaf nodes of the VDB tree with compact neural networks (two small MLPs: one for topology classification, one for value regression). The upper tree is kept intact, so **HDDA empty-space skipping still works**. At render time, `MarchCtx::sampleDensity()` dispatches to either `BoxSampler::sample()` (standard `.vdb`) or the neural decoder (`.nvdb`) — everything above the sampling layer is identical.
+---
 
-## Files
+## Features
 
-| File | What it does |
-|------|-------------|
-| `NeuralDecoder.h` | Self-contained neural decoder — header-only, `#ifdef`-guarded |
-| `VDBRenderIop.h` | Your header with neural additions (replaces existing) |
-| `CMakeLists.txt` | Updated build with optional LibTorch dependency |
-| `INTEGRATION.md` | Exact find→replace changes needed in VDBRenderIop.cpp |
-| `build_neural.bat` | Build script with auto-detect |
-| `nvdb_encoder.py` | Python training script: `.vdb` → `.nvdb` |
-| `nvdb_validate.py` | Quality validation (PSNR, error distribution) |
-| `test_synthetic.py` | End-to-end test without real VDB data |
+- **Ray marching** — HDDA empty-space skipping via OpenVDB `VolumeRayIntersector`, adaptive step size, Beer-Lambert transmittance
+- **Shading V2** — Dual-lobe Henyey-Greenstein, powder effect, analytical multiple scattering, chromatic extinction, ray jitter
+- **Lighting** — Directional and point lights via Nuke scene input, environment map (HDRI), procedural sky rig (Preetham), studio 3-point rig
+- **Emission** — Blackbody temperature grid, flame grid, fire self-absorption
+- **Deep output** — Depth-sorted RGBA slabs for compositing over CG
+- **AOV passes** — Density, emission, shadow, depth
+- **Motion blur** — Velocity grid ray-origin offset across shutter interval
+- **Vec3 colour grid** — Per-voxel colour (Cd) override
+- **NeuralVDB** — Optional neural compressed volume support via LibTorch (10–100× smaller .nvdb files)
+- **Viewport** — Live point cloud and bounding box preview in Nuke's 3D viewer
 
-## Integration Steps
+---
 
-### 1. Copy files into your project
+## Shading V2
 
-All code changes are pre-applied. Extract and copy:
+The **Shading V2** tab adds production-grade shading techniques with zero render cost overhead on most features.
 
-```
-C:\dev\VDBmarcher\
-    VDBRenderIop.h       ← replace (neural MarchCtx abstraction)
-    VDBRenderIop.cpp     ← replace (all BoxSampler calls updated)
-    NeuralDecoder.h      ← new file, place alongside .h/.cpp
-    CMakeLists.txt       ← replace (optional LibTorch support)
-```
+### Dual-lobe Henyey-Greenstein
 
-Or run `setup_neural_branch.bat` to create a git branch and copy everything automatically.
+Replaces the single-lobe phase function with a weighted blend of two lobes — forward scatter and backward scatter. Gives backlit smoke its silver-lining rim and explosion fireballs their characteristic backlit corona.
 
-### 2. Build without neural (verify no regressions)
+| Knob | Description | Typical values |
+|---|---|---|
+| `G Forward` | Forward-scatter lobe asymmetry | Smoke: 0.4 · Cloud: 0.8 · Explosion: 0.85 |
+| `G Backward` | Backward-scatter lobe asymmetry | Smoke: −0.15 · Cloud: −0.1 · Explosion: −0.25 |
+| `Lobe Mix` | Blend weight (1.0 = pure forward) | 0.65–0.85 for most volumes |
+
+### Powder Effect
+
+Interior brightening from multiple forward-scattering (Schneider & Vos, Horizon Zero Dawn, SIGGRAPH 2015). Transforms flat explosion renders into glowing fireballs with a lit interior. Zero extra rays.
+
+| Value | Result |
+|---|---|
+| 0 | Off |
+| 2 | Natural smoke |
+| 4–6 | Dense explosion fireball |
+| 10 | Maximum |
+
+### Analytical Multiple Scattering
+
+Two-parameter approximation to the infinite-bounce diffusion solution (Wrenninge et al., SIGGRAPH 2017). Replaces the brute-force bounce rays at ~100× lower cost with equivalent quality for dense media. **Scatter Tint** adds a subtle warm or cool bias to the bounced light contribution.
+
+### Chromatic Extinction
+
+Per-channel extinction coefficient (σt per wavelength). Real smoke scatters blue wavelengths more than red — set `Extinction B > Extinction R` for a Rayleigh-like depth colour shift. Shadow rays remain greyscale for performance.
+
+### Ray Jitter
+
+Per-pixel deterministic hash offset on the march start position. Eliminates the concentric banding (wood-grain artifact) that appears at low quality settings. Zero render cost.
+
+### Gradient Mix
+
+Blends the HG phase function with a density-gradient Lambertian term. Gives clouds sculpted, three-dimensional billowing edges. Off by default — adds 6 grid lookups per march step when enabled. Recommended for clouds only.
+
+---
+
+## Inputs
+
+| Input | Label | Description |
+|---|---|---|
+| 0 | `bg` | Background plate — sets output resolution |
+| 1 | `cam` | Camera |
+| 2 | `scn` | Scene — pipe lights, an Axis, and optionally an EnvironLight into a Scene node |
+
+---
+
+## Quick start
+
+1. Create a **VDBRender** node from the VDB menu
+2. Connect a **Camera** to input 1
+3. Connect a **Scene** node (with lights) to input 2
+4. Set the **VDB File** path to your `.vdb` file
+5. Click **Discover Grids** to auto-detect density, temperature, flame, and velocity grids
+6. Choose a **Scene Preset** — Explosion or Cumulus Cloud are good starting points
+7. Adjust the **Shading V2** tab for look development
+
+---
+
+## Build — Windows
+
+**Requirements**
+- Visual Studio 2022 (x64)
+- CMake 3.20+
+- Nuke 17.0v1
+- OpenVDB via vcpkg: `vcpkg install openvdb:x64-windows`
+
+**Configure and build**
+
+Open *x64 Native Tools Command Prompt for VS 2022*, then:
 
 ```bat
-:: Standard build — identical to v2.1, zero neural code compiled
-cmake .. -G "NMake Makefiles" ^
-    -DCMAKE_BUILD_TYPE=Release ^
-    -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ^
-    -DNUKE_ROOT="C:/Program Files/Nuke17.0v1"
-nmake
+cmake -B build -G "Visual Studio 17 2022" -A x64 ^
+    -DCMAKE_TOOLCHAIN_FILE="C:\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
+    -DCMAKE_PREFIX_PATH="C:\vcpkg\installed\x64-windows" ^
+    -DNUKE_ROOT="C:\Program Files\Nuke17.0v1"
+
+cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
+cmake --install build --config Release
 ```
 
-### 3. Download LibTorch (when ready for neural)
+Output installs to `%USERPROFILE%\.nuke\plugins\VDBRender\nuke17\VDBRender.dll`.
 
-From https://pytorch.org → Get Started → C++ → cxx11 ABI → extract to `C:\libtorch`
-
-### 4. Build with neural
+**NeuralVDB build** (optional — requires LibTorch)
 
 ```bat
-build_neural.bat
+cmake -B build ... -DVDBRENDER_NEURAL=ON -DLIBTORCH_PATH="C:\libtorch"
+cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
 ```
 
-## Encoding Workflow
+---
+
+## Installation
+
+1. Copy `VDBRender_menu.py` contents into `~/.nuke/menu.py` (or import it)
+2. Copy the required runtime DLLs alongside `VDBRender.dll`:
+
+```
+openvdb.dll    Imath-3_2.dll    tbb12.dll
+blosc.dll      zlib1.dll        zstd.dll    lz4.dll
+```
+
+These are found in `C:\vcpkg\installed\x64-windows\bin\`.
+
+---
+
+## NeuralVDB
+
+Neural compressed volumes reduce `.vdb` file sizes by 10–100× using two small MLPs (topology classifier + value regressor with Fourier positional encoding).
+
+**Encode a VDB file:**
 
 ```bash
-# Single frame
-python nvdb_encoder.py --input explosion.vdb --output explosion.nvdb
-
-# Animated sequence with warm-starting
-python nvdb_encoder.py \
-    --input sim/smoke.%04d.vdb \
-    --output compressed/smoke.%04d.nvdb \
-    --frame-range 1 100 --warm-start
-
-# Higher quality (bigger networks)
-python nvdb_encoder.py \
-    --input cloud.vdb --output cloud.nvdb \
-    --value-hidden 256 --value-layers 6 --value-epochs 500
+pip install -r requirements.txt
+python nvdb_encoder.py --input smoke.vdb --output smoke.nvdb
 ```
 
-Then in Nuke: load the `.nvdb` file in VDBRender's File knob. Everything else works automatically.
+**Validate compression quality:**
 
-## Architecture
-
-```
-.nvdb file
-   │
-   ├── Upper VDB tree (coarse topology, HDDA-compatible)
-   ├── Topology MLP (TorchScript, ~10KB)
-   └── Value MLP (TorchScript, ~50KB)
-         │
-         ▼
-   NeuralDecoder::sampleDensity(indexPos)
-         │
-         ▼  (replaces BoxSampler::sample at leaf level)
-         │
-   MarchCtx::sampleDensity(iP)  ← dispatches VDB or neural
-         │
-         ▼  (everything below is unchanged)
-         │
-   VDBRender march functions
-   ├── Lit mode (Beer-Lambert + HG phase)
-   ├── Explosion mode (emission + in-scatter)
-   ├── Ramp modes (greyscale/heat/cool/blackbody)
-   ├── Shadow rays → ctx.sampleShadow()
-   ├── Multi-scatter bounces
-   ├── Environment map
-   ├── Deep output
-   └── AOV passes
+```bash
+python nvdb_validate.py --original smoke.vdb --compressed smoke.nvdb
 ```
 
-## What Neural Mode Preserves
+Load the resulting `.nvdb` file in VDBRender exactly like a standard `.vdb`. All lighting, shading, and deep output work identically.
 
-Everything. The neural decoder only replaces the **density sampling** at the leaf level. All of these work identically in neural mode:
+---
 
-- All 7 render modes (Lit, Greyscale, Heat, Cool, Blackbody, Custom Gradient, Explosion)
-- All 9 scene presets
-- Sun/sky (Preetham) + studio lighting + mix controls
-- Henyey-Greenstein phase function
-- Shadow rays and self-shadowing
-- Multiple scattering (1-4 bounces)
-- Environment map (HDRI)
-- Deep output (DeepOutputPlane)
-- AOV passes (density, emission, shadow, depth)
-- HDDA empty-space skipping (VolumeRayIntersector)
-- Adaptive step size
-- Proxy rendering
-- 3D viewport (bounding box + point cloud)
-- Motion blur (velocity grid — standard VDB, not neurally compressed)
-- Axis transforms from scene input
+## References
 
-## What's Not Neurally Compressed (v1)
+- Museth (2013) — OpenVDB / HDDA empty-space skipping
+- Henyey & Greenstein (1941) — Phase function for volume scattering
+- Schneider & Vos — *The Real-Time Volumetric Cloudscapes of Horizon Zero Dawn*, SIGGRAPH 2015 — powder effect, dual-lobe HG
+- Wrenninge, Fong, Kulla, Habel — *Production Volume Rendering*, SIGGRAPH 2017 — analytical multiple scattering, RTE derivation
+- Hillaire — *Physically-Based & Unified Volumetric Rendering in Frostbite*, SIGGRAPH 2015 — chromatic extinction, transmittance volumes
+- Novák et al. (2018) — Null-scattering / residual ratio tracking
 
-- Temperature grids — still loaded from standard VDB accessors
-- Flame grids — same
-- Velocity grids — same
-- Colour grids — same
+---
 
-These can be added to the `.nvdb` format in v2 by extending the encoder to train separate networks per grid type.
+## License
 
-## Performance
-
-- **Without neural** (`VDBRENDER_NEURAL=OFF`): Zero overhead. `sampleDensity()` inlines to `BoxSampler::sample()`.
-- **With neural, loading .vdb**: Same as before — neural code path not triggered.
-- **With neural, loading .nvdb**: Per-sample neural inference. Slower per-sample than BoxSampler, but the volumes are 10-100x smaller so they fit in memory where standard VDB might not.
-- **CUDA inference**: Significant speedup on GPU. Set the CUDA Inference checkbox in the Neural tab.
-
-## Python Requirements
-
-```
-pip install torch numpy tqdm pyopenvdb
-```
+See `THIRD_PARTY_LICENSES.txt` for OpenVDB, LibTorch, and other dependencies.
