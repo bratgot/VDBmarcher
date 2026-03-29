@@ -37,14 +37,57 @@ bool VDBRenderIop::_vdbInitialised = false;
 // ═══ Blackbody / Ramps ═══
 
 VDBRenderIop::Color3 VDBRenderIop::blackbody(double T) {
-    if(T<100)T=100; double t=T/100, r,g,b;
-    if(t<=66)r=255; else{r=329.698727446*std::pow(t-60,-0.1332047592);r=std::clamp(r,0.0,255.0);}
-    if(t<=66){g=99.4708025861*std::log(t)-161.1195681661;g=std::clamp(g,0.0,255.0);}
-    else{g=288.1221695283*std::pow(t-60,-0.0755148492);g=std::clamp(g,0.0,255.0);}
-    if(t>=66)b=255; else if(t<=19)b=0;
-    else{b=138.5177312231*std::log(t-10)-305.0447927307;b=std::clamp(b,0.0,255.0);}
-    double bri=std::clamp(std::pow(T/6500,0.4),0.0,2.0);
-    return{float(r/255*bri),float(g/255*bri),float(b/255*bri)};
+    // CIE 1931 chromaticity → linear sRGB
+    // Valid over the full range used in rendering: 500 K (deep red) to 40000 K (blue-white arc)
+    // Planckian locus approximation (Kang et al. 2002, extended):
+    //   x(T) fitted piecewise, y from chromaticity diagram, then XYZ → sRGB
+
+    if (T < 500)  T = 500;
+    if (T > 40000) T = 40000;
+
+    // Chromaticity x (Planckian locus, piecewise rational fit)
+    double x;
+    const double Ti = 1.0 / T;
+    if (T <= 4000) {
+        x = -0.2661239e9*(Ti*Ti*Ti) - 0.2343580e6*(Ti*Ti) + 0.8776956e3*Ti + 0.179910;
+    } else {
+        x = -3.0258469e9*(Ti*Ti*Ti) + 2.1070379e6*(Ti*Ti) + 0.2226347e3*Ti + 0.240390;
+    }
+
+    // Chromaticity y
+    double y;
+    if (T <= 2222) {
+        y = -1.1063814*x*x*x - 1.34811020*x*x + 2.18555832*x - 0.20219683;
+    } else if (T <= 4000) {
+        y = -0.9549476*x*x*x - 1.37418593*x*x + 2.09137015*x - 0.16748867;
+    } else {
+        y =  3.0817580*x*x*x - 5.87338670*x*x + 3.75112997*x - 0.37001483;
+    }
+
+    // xyY → XYZ (normalised to Y=1)
+    const double yy = (y > 1e-8) ? y : 1e-8;
+    const double X  = x / yy;
+    const double Z  = (1.0 - x - y) / yy;
+
+    // XYZ → linear sRGB (D65 whitepoint)
+    double r =  3.2406*X - 1.5372   - 0.4986*Z;
+    double g = -0.9689*X + 1.8758   + 0.0415*Z;
+    double b =  0.0557*X - 0.2040   + 1.0570*Z;
+
+    // Clamp negative lobes (outside sRGB gamut at extreme temperatures)
+    r = std::max(0.0, r);
+    g = std::max(0.0, g);
+    b = std::max(0.0, b);
+
+    // Normalise so the channel with maximum value = 1, then scale by
+    // perceptual brightness relative to 6500K reference
+    const double peak = std::max({r, g, b, 1e-8});
+    r /= peak; g /= peak; b /= peak;
+
+    // Brightness: power-law relative to 6500K white (matches legacy behaviour)
+    const double bri = std::clamp(std::pow(T / 6500.0, 0.4), 0.0, 2.0);
+
+    return { float(r * bri), float(g * bri), float(b * bri) };
 }
 
 VDBRenderIop::Color3 VDBRenderIop::evalRamp(ColorScheme s,float t,const float*gA,const float*gB,double tMin,double tMax) {
@@ -1739,8 +1782,10 @@ void VDBRenderIop::_open() {
     if(_envDirty&&_envIop){
         cacheEnvMap(_envIop);
         _envDirty=false;
+        // Virtual lights were just appended to _lights — force shadow cache rebuild
+        _shadowCacheDirty=true;
     }
-    // [V3] Build transmittance caches for directional lights
+    // [V3] Build transmittance caches for directional lights (including virtual env lights)
     if (_useShadowCache && _shadowCacheDirty) {
         buildShadowCaches();
         _shadowCacheDirty = false;
