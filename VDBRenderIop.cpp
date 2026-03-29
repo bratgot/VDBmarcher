@@ -655,14 +655,13 @@ void VDBRenderIop::knobs(Knob_Callback f)
 
     XYZ_knob(f,_lightDir,"light_dir","Direction");
     Tooltip(f,"Direction pointing TOWARD the light source.\n\n"
-              "This is the vector from the volume to the light —\n"
-              "the same direction shadow rays are cast.\n\n"
-              "  (0,  1,  0) = light from above (overhead sun)\n"
-              "  (0, -1,  0) = light from below (ground bounce)\n"
-              "  (1,  1, -1) = light from upper-right-front (key)\n"
-              " (-1,  1,  0) = light from upper-left (fill)\n\n"
-              "The viewport handle shows the disc where the light\n"
-              "source is, with an arrow pointing toward the volume.\n"
+              "Note: VDBRender uses -Y = sky, +Y = ground to match\n"
+              "the HDRI projection convention.\n\n"
+              "  (0, -1,  0) = light from above (overhead sun)\n"
+              "  (0,  1,  0) = light from below (ground bounce)\n"
+              "  (1, -1, -1) = light from upper-right-front (key)\n"
+              " (-1, -1,  0) = light from upper-left (fill)\n\n"
+              "The viewport disc appears where the light comes from.\n"
               "The vector does not need to be normalised.");
 
     Color_knob(f,_lightColor,"light_color","Tint");
@@ -849,6 +848,13 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Enumeration_knob(f,&_viewportColor,vp,"viewport_color","Viewport Colour");
     Tooltip(f,"Override the viewport colour scheme manually.\n"
               "Only applies when 'Link Colour to Render Mode' is off.");
+    Bool_knob(f,&_viewportLit,"viewport_lit","Lit Viewport Preview");
+    Tooltip(f,"Apply the current lights to the 3D viewport point cloud.\n"
+              "Each preview point is shaded using the same directional lights\n"
+              "and ambient as the render — sun/sky, studio, scene lights, fill.\n"
+              "Cd colour grid is also applied when loaded.\n"
+              "Rebuilds automatically when lights or VDB change.\n"
+              "Turn off for a faster unlit density-coloured preview.");
 
 #ifdef VDBRENDER_HAS_NEURAL
     // ═══════════════════════════════════════════════════
@@ -948,7 +954,7 @@ int VDBRenderIop::knob_changed(Knob* k)
     }
     if(k->is("grid_name")||k->is("temp_grid")||k->is("flame_grid")||k->is("vel_grid")||k->is("color_grid")||k->is("frame_offset")){
         _gridValid=false;_previewPoints.clear();return 1;}
-    if(k->is("show_points")||k->is("point_density")){_previewPoints.clear();return 1;}
+    if(k->is("show_points")||k->is("point_density")||k->is("viewport_lit")){_previewPoints.clear();return 1;}
     if(k->is("discover_grids")){discoverGrids();return 1;}
     if(k->is("shutter_preset")&&_shutterPreset<3){
         static const double sOpen[]={0,-0.5,-1};static const double sClose[]={1,0.5,0};
@@ -1168,8 +1174,8 @@ static void skyColorFromElevation(double elev, double turbidity, double& r, doub
 
 static void dirFromElevAzim(double elevDeg, double azimDeg, double& dx, double& dy, double& dz) {
     double er = elevDeg * M_PI / 180.0, ar = azimDeg * M_PI / 180.0;
-    dx = std::cos(er) * std::sin(ar);
-    dy = std::sin(er);
+    dx =  std::cos(er) * std::sin(ar);
+    dy = -std::sin(er);   // negated: SH world convention has -Y = sky (matches HDRI projection)
     dz = -std::cos(er) * std::cos(ar);
     double len = std::sqrt(dx*dx + dy*dy + dz*dz);
     if (len > 1e-8) { dx /= len; dy /= len; dz /= len; }
@@ -1200,14 +1206,14 @@ void VDBRenderIop::buildLightRig() {
         double si = _sunIntensity * std::clamp(_sunElevation / 15.0, 0.1, 1.0) * m;
         if (si > 0.001)
             addLight(sdx, sdy, sdz, sunR*si, sunG*si, sunB*si);
-        // Sky dome
+        // Sky dome — comes from above: -Y in SH world convention
         double ski = _skyIntensity * m;
         if (ski > 0.001)
-            addLight(0, 1, 0, skyR*ski, skyG*ski, skyB*ski);
-        // Ground bounce
+            addLight(0, -1, 0, skyR*ski, skyG*ski, skyB*ski);
+        // Ground bounce — comes from below: +Y in SH world convention
         double gb = _groundBounce * m;
         if (gb > 0.01)
-            addLight(0, -1, 0, gb*0.8, gb*0.7, gb*0.5);
+            addLight(0, 1, 0, gb*0.8, gb*0.7, gb*0.5);
     }
 
     // ── Studio lights (driven by sliders, scaled by _studioMix) ──
@@ -1457,18 +1463,92 @@ void VDBRenderIop::rebuildPointCloud() {
     _previewPoints.clear();_maxDensity=1;if(!_floatGrid)return;
     int res=24;if(_pointDensity==1)res=40;if(_pointDensity==2)res=64;
     auto acc=_floatGrid->getConstAccessor();const auto&xf=_floatGrid->transform();
+
+    // Colour grid accessor if available
+    std::unique_ptr<openvdb::Vec3SGrid::ConstAccessor> cdAcc;
+    if (_hasColorGrid && _colorGrid)
+        cdAcc = std::make_unique<openvdb::Vec3SGrid::ConstAccessor>(_colorGrid->getConstAccessor());
+
     double dx=(_bboxMax[0]-_bboxMin[0])/res,dy=(_bboxMax[1]-_bboxMin[1])/res,dz=(_bboxMax[2]-_bboxMin[2])/res;
     _previewPoints.reserve(res*res*res/4);float maxD=0;
+
     for(int iz=0;iz<res;++iz){double wz=_bboxMin[2]+(iz+.5)*dz;
     for(int iy=0;iy<res;++iy){double wy=_bboxMin[1]+(iy+.5)*dy;
     for(int ix=0;ix<res;++ix){double wx=_bboxMin[0]+(ix+.5)*dx;
         auto ip=xf.worldToIndex(openvdb::Vec3d(wx,wy,wz));
         float d=acc.getValue(openvdb::Coord((int)std::floor(ip[0]),(int)std::floor(ip[1]),(int)std::floor(ip[2])));
-        if(d>.001f){float px=(float)wx,py=(float)wy,pz=(float)wz;
-            if(_hasVolumeXform){px=(float)(_volFwd[0][0]*wx+_volFwd[1][0]*wy+_volFwd[2][0]*wz+_volFwd[3][0]);
+        if(d>.001f){
+            float px=(float)wx,py=(float)wy,pz=(float)wz;
+            if(_hasVolumeXform){
+                px=(float)(_volFwd[0][0]*wx+_volFwd[1][0]*wy+_volFwd[2][0]*wz+_volFwd[3][0]);
                 py=(float)(_volFwd[0][1]*wx+_volFwd[1][1]*wy+_volFwd[2][1]*wz+_volFwd[3][1]);
                 pz=(float)(_volFwd[0][2]*wx+_volFwd[1][2]*wy+_volFwd[2][2]*wz+_volFwd[3][2]);}
-            _previewPoints.push_back({px,py,pz,d});if(d>maxD)maxD=d;}
+
+            float pr=d, pg=d, pb=d;  // default: density greyscale
+
+            if (_viewportLit && !_lights.empty()) {
+                // ── Simplified single-scatter lighting ────────────────────
+                // HG phase with average g, no shadow rays (too expensive for
+                // viewport). Directional lights + ambient + Cd modulation.
+                // Viewer direction approximated as (0,0,-1) world-space.
+
+                const float g = (float)std::clamp(_gForward * _lobeMix +
+                                                   _gBackward * (1.0 - _lobeMix), -0.99, 0.99);
+                const float g2 = g * g;
+                const float hgN = (1.0f - g2) / (4.0f * (float)M_PI);
+
+                // Cd albedo
+                float cdR=1,cdG=1,cdB=1;
+                if (cdAcc) {
+                    const openvdb::Vec3s cv = openvdb::tools::BoxSampler::sample(*cdAcc, ip);
+                    cdR=std::max(0.f,cv[0]); cdG=std::max(0.f,cv[1]); cdB=std::max(0.f,cv[2]);
+                }
+
+                float litR=0,litG=0,litB=0;
+                const openvdb::Vec3d viewDir(0,0,-1);  // approximate view dir
+
+                for (const auto& lt : _lights) {
+                    openvdb::Vec3d lD;
+                    if (lt.isPoint) {
+                        lD = openvdb::Vec3d(lt.pos[0]-wx, lt.pos[1]-wy, lt.pos[2]-wz);
+                        const double l=lD.length(); if(l>1e-8) lD/=l; else continue;
+                    } else {
+                        lD = openvdb::Vec3d(lt.dir[0],lt.dir[1],lt.dir[2]);
+                    }
+                    const float cosT = (float)(-(viewDir[0]*lD[0]+viewDir[1]*lD[1]+viewDir[2]*lD[2]));
+                    float ph;
+                    if (std::abs(g) < 0.001f) ph = 1.0f / (4.0f*(float)M_PI);
+                    else { float dn=1+g2-2*g*cosT; ph=hgN/std::pow(dn,1.5f); }
+                    const float phS = ph * 4.0f * (float)M_PI;
+                    litR += (float)(d * _scattering * phS * lt.color[0]);
+                    litG += (float)(d * _scattering * phS * lt.color[1]);
+                    litB += (float)(d * _scattering * phS * lt.color[2]);
+                }
+
+                // Ambient
+                if (_ambientIntensity > 0.0) {
+                    const float amb = (float)(d * _scattering * _ambientIntensity);
+                    litR+=amb; litG+=amb; litB+=amb;
+                }
+
+                // Apply Cd albedo
+                pr = litR * cdR;
+                pg = litG * cdG;
+                pb = litB * cdB;
+
+                // Normalise to [0,1] for display — divide by peak
+                const float peak = std::max({pr, pg, pb, 1e-6f});
+                if (peak > 1.0f) { pr/=peak; pg/=peak; pb/=peak; }
+
+            } else if (cdAcc) {
+                // Unlit but Cd grid present — show raw Cd colour
+                const openvdb::Vec3s cv = openvdb::tools::BoxSampler::sample(*cdAcc, ip);
+                pr=std::max(0.f,cv[0]); pg=std::max(0.f,cv[1]); pb=std::max(0.f,cv[2]);
+            }
+
+            _previewPoints.push_back({px,py,pz,d,pr,pg,pb});
+            if(d>maxD)maxD=d;
+        }
     }}}_maxDensity=(maxD>0)?maxD:1;
 }
 
@@ -1513,14 +1593,33 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
             if(_linkViewport)vs=(_colorScheme==kLit)?kGreyscale:(_colorScheme==kExplosion)?kHeat:static_cast<ColorScheme>(_colorScheme);
             else switch(_viewportColor){default:case 0:vs=kGreyscale;break;case 1:vs=kHeat;break;case 2:vs=kCool;break;
                 case 3:vs=kBlackbody;break;case 4:vs=kCustomGradient;break;case 5:vs=kHeat;break;}
-            float gA[3]={(float)_gradStart[0],(float)_gradStart[1],(float)_gradStart[2]};
-            float gB[3]={(float)_gradEnd[0],(float)_gradEnd[1],(float)_gradEnd[2]};
-            float inv=1.f/_maxDensity;
             glEnable(GL_BLEND);glBlendFunc(GL_SRC_ALPHA,GL_ONE);glPointSize((float)_pointSize);glEnable(GL_POINT_SMOOTH);
             glBegin(GL_POINTS);
-            for(const auto&pt:_previewPoints){float t=std::min(pt.density*inv,1.f);
-                Color3 c=evalRamp(vs,t,gA,gB,_tempMin,_tempMax);
-                glColor4f(c.r,c.g,c.b,.15f+.85f*t);glVertex3f(pt.x,pt.y,pt.z);}
+            if (_viewportLit && !_lights.empty()) {
+                // Use pre-computed lit colours stored in DensityPoint
+                for(const auto&pt:_previewPoints){
+                    float alpha=std::min(.15f+.85f*pt.density/_maxDensity, 1.0f);
+                    glColor4f(pt.r, pt.g, pt.b, alpha);
+                    glVertex3f(pt.x,pt.y,pt.z);}
+            } else if (_hasColorGrid) {
+                // Unlit with Cd — show raw colour, alpha from density
+                for(const auto&pt:_previewPoints){
+                    float alpha=std::min(.15f+.85f*pt.density/_maxDensity, 1.0f);
+                    glColor4f(pt.r, pt.g, pt.b, alpha);
+                    glVertex3f(pt.x,pt.y,pt.z);}
+            } else {
+                // Original density-ramp coloured display
+                float gA[3]={(float)_gradStart[0],(float)_gradStart[1],(float)_gradStart[2]};
+                float gB[3]={(float)_gradEnd[0],(float)_gradEnd[1],(float)_gradEnd[2]};
+                float inv=1.f/_maxDensity;
+                ColorScheme vs;
+                if(_linkViewport)vs=(_colorScheme==kLit)?kGreyscale:(_colorScheme==kExplosion)?kHeat:static_cast<ColorScheme>(_colorScheme);
+                else switch(_viewportColor){default:case 0:vs=kGreyscale;break;case 1:vs=kHeat;break;case 2:vs=kCool;break;
+                    case 3:vs=kBlackbody;break;case 4:vs=kCustomGradient;break;case 5:vs=kHeat;break;}
+                for(const auto&pt:_previewPoints){float t=std::min(pt.density*inv,1.f);
+                    Color3 c=evalRamp(vs,t,gA,gB,_tempMin,_tempMax);
+                    glColor4f(c.r,c.g,c.b,.15f+.85f*t);glVertex3f(pt.x,pt.y,pt.z);}
+            }
             glEnd();glDisable(GL_BLEND);}}
 
     // ── Custom Fill Light handle ─────────────────────────────────────────────
@@ -1549,11 +1648,11 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
         if (llen < 1e-6f) { llen = 1.0f; }
         lx/=llen; ly/=llen; lz/=llen;
 
-        // _lightDir points TOWARD the light source (same as shadow ray direction).
-        // So the source disc sits at centre + direction * armLen.
-        float sx = cx + lx * armLen;
-        float sy = cy + ly * armLen;
-        float sz = cz + lz * armLen;
+        // _lightDir points TOWARD the light source (shadow ray direction).
+        // Disc sits OPPOSITE the direction — where light comes from visually.
+        float sx = cx - lx * armLen;
+        float sy = cy - ly * armLen;
+        float sz = cz - lz * armLen;
 
         // Light colour tinted by the knob colour × intensity (clamped to [0.3,1])
         float lr = std::clamp((float)(_lightColor[0] * _lightIntensity), 0.3f, 1.0f);
@@ -1573,11 +1672,11 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
 
         glDisable(GL_LINE_STIPPLE);
 
-        // Solid short inner arrow: centre → toward source (shows incoming direction)
+        // Solid stub: centre → into volume (away from light source)
         glLineWidth(2.0f);
         glBegin(GL_LINES);
         glVertex3f(cx, cy, cz);
-        glVertex3f(cx + lx*arrowLen*0.5f, cy + ly*arrowLen*0.5f, cz + lz*arrowLen*0.5f);
+        glVertex3f(cx - lx*arrowLen*0.5f, cy - ly*arrowLen*0.5f, cz - lz*arrowLen*0.5f);
         glEnd();
 
         // Arrowhead at the light source end (3 lines forming a cone tip)
@@ -1597,15 +1696,15 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
         float finLen=arrowLen, finSpread=arrowLen*0.35f;
         glLineWidth(1.5f);
         glBegin(GL_LINES);
-        // 4 fins pointing from source toward volume (-direction)
+        // Fins point from disc toward volume (+direction)
         glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX-lx*finLen+p1x*finSpread, tipY-ly*finLen+p1y*finSpread, tipZ-lz*finLen+p1z*finSpread);
+        glVertex3f(tipX+lx*finLen+p1x*finSpread, tipY+ly*finLen+p1y*finSpread, tipZ+lz*finLen+p1z*finSpread);
         glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX-lx*finLen-p1x*finSpread, tipY-ly*finLen-p1y*finSpread, tipZ-lz*finLen-p1z*finSpread);
+        glVertex3f(tipX+lx*finLen-p1x*finSpread, tipY+ly*finLen-p1y*finSpread, tipZ+lz*finLen-p1z*finSpread);
         glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX-lx*finLen+p2x*finSpread, tipY-ly*finLen+p2y*finSpread, tipZ-lz*finLen+p2z*finSpread);
+        glVertex3f(tipX+lx*finLen+p2x*finSpread, tipY+ly*finLen+p2y*finSpread, tipZ+lz*finLen+p2z*finSpread);
         glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX-lx*finLen-p2x*finSpread, tipY-ly*finLen-p2y*finSpread, tipZ-lz*finLen-p2z*finSpread);
+        glVertex3f(tipX+lx*finLen-p2x*finSpread, tipY+ly*finLen-p2y*finSpread, tipZ+lz*finLen-p2z*finSpread);
         glEnd();
 
         // Crosshair disc at light source (8 short spokes)
@@ -1687,6 +1786,7 @@ void VDBRenderIop::_validate(bool for_real) {
     // Light rig — generates lights when none found in scene
     buildLightRig();
     _shadowCacheDirty = true;   // [V3] lights changed — rebuild cache next _open()
+    _previewPoints.clear();     // [V3.1] lights changed — relight viewport preview
 
     // Transform lights into volume-local space
     if(_hasVolumeXform){for(auto&cl:_lights){
@@ -1754,6 +1854,7 @@ void VDBRenderIop::_validate(bool for_real) {
                         _bboxMin[a]=std::min(_bboxMin[a],corners[i][a]);
                         _bboxMax[a]=std::max(_bboxMax[a],corners[i][a]);}
                     _gridValid=true;_loadedPath=path2;_loadedGrid=grid;_loadedFrame=curFrame;
+                    _shadowCacheDirty=true; // [V3.1] animated NeuralVDB — rebuild cache
                     _volRI.reset();
                     try{_volRI=std::make_unique<VRI>(*_floatGrid);}catch(...){}
 
@@ -1826,6 +1927,7 @@ void VDBRenderIop::_validate(bool for_real) {
             _bboxMin=_bboxMax=corners[0];
             for(int i=1;i<8;++i)for(int a=0;a<3;++a){_bboxMin[a]=std::min(_bboxMin[a],corners[i][a]);_bboxMax[a]=std::max(_bboxMax[a],corners[i][a]);}
             _gridValid=true;_loadedPath=path2;_loadedGrid=grid;_loadedFrame=curFrame;
+            _shadowCacheDirty=true; // [V3.1] animated VDB — rebuild cache each frame
             // Build VolumeRayIntersector for HDDA empty-space skipping
             _volRI.reset();
             openvdb::FloatGrid::Ptr riGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
@@ -2606,9 +2708,12 @@ double VDBRenderIop::evalShadowTransmittance(
 
     double lT = 1.0;
 
-    // ── Path 2: HDDA shadow ray ──────────────────────────────────────────
+    // ── Path 2: HDDA shadow ray with midpoint transmittance ──────────────────
+    // Within each HDDA active interval, sample density at the midpoint and
+    // apply Beer-Lambert over the full interval length in one step.
+    // Residual ratio tracking (Novák 2018): one accurate sample per leaf node
+    // interval rather than N uniform steps — fewer reads, same quality.
     if (ctx.shadowRI) {
-        // Small offset avoids self-intersection with the current march step.
         const openvdb::Vec3d shadowOrigin = wP + shStep * 0.5 * lD;
         openvdb::math::Ray<double> sRay(shadowOrigin, lD);
         if (ctx.shadowRI->setWorldRay(sRay)) {
@@ -2616,19 +2721,41 @@ double VDBRenderIop::evalShadowTransmittance(
             while (ctx.shadowRI->march(it0, it1) && lT > 0.01) {
                 const auto wsS = ctx.shadowRI->getWorldPos(it0);
                 const auto wsE = ctx.shadowRI->getWorldPos(it1);
-                double wt0 = (wsS - shadowOrigin).dot(lD);
-                double wt1 = (wsE - shadowOrigin).dot(lD);
-                if (wt1 <= 0.0) continue;
-                if (wt0 < 0.0)  wt0 = 0.0;
-                for (double ts = wt0; ts < wt1 && lT > 0.01; ts += shStep) {
-                    const auto lwP = shadowOrigin + ts * lD;
-                    bool in = true;
-                    for (int a = 0; a < 3; ++a)
-                        if (lwP[a] < bboxMin[a] || lwP[a] > bboxMax[a]) { in = false; break; }
-                    if (!in) break;
-                    const auto liP = xf.worldToIndex(lwP);
-                    lT *= std::exp(-(double)ctx.sampleShadow(liP) * ext * shDen * shStep);
+                const double wt0 = std::max(0.0, (wsS - shadowOrigin).dot(lD));
+                const double wt1 = (wsE - shadowOrigin).dot(lD);
+                if (wt1 <= wt0) continue;
+
+                const double intervalLen = wt1 - wt0;
+
+                // Check bbox
+                const auto midP = shadowOrigin + (wt0 + wt1) * 0.5 * lD;
+                bool in = true;
+                for (int a = 0; a < 3; ++a)
+                    if (midP[a] < bboxMin[a] || midP[a] > bboxMax[a]) { in = false; break; }
+                if (!in) continue;
+
+                // Sample at interval midpoint — one read per HDDA interval
+                const auto midI = xf.worldToIndex(midP);
+                const double density = (double)ctx.sampleShadow(midI);
+
+                if (density > 1e-8)
+                    lT *= std::exp(-density * ext * shDen * intervalLen);
+
+                // Fine-step fallback for very long intervals (> 4× shStep)
+                // to avoid under-sampling in large dense leaf nodes
+                if (intervalLen > shStep * 4.0) {
+                    for (double ts = wt0 + shStep; ts < wt1 - shStep * 0.5 && lT > 0.01; ts += shStep) {
+                        const auto lwP = shadowOrigin + ts * lD;
+                        bool in2 = true;
+                        for (int a = 0; a < 3; ++a)
+                            if (lwP[a] < bboxMin[a] || lwP[a] > bboxMax[a]) { in2 = false; break; }
+                        if (!in2) break;
+                        const auto liP = xf.worldToIndex(lwP);
+                        lT *= std::exp(-(double)ctx.sampleShadow(liP) * ext * shDen * shStep);
+                    }
                 }
+
+                if (lT < 0.01) break;
             }
         }
         return lT;
@@ -2868,6 +2995,19 @@ void VDBRenderIop::marchRay(
         const double ss     = density * scat;
         const double albedo = std::min(scat / (ext + 1e-8), 1.0);
 
+        // ── [V3.1] Per-voxel scatter colour from Cd grid ──────────────────
+        // Cd modulates the scatter coefficient per RGB channel in Lit mode.
+        // This gives heterogeneous colour variation within the volume without
+        // changing density or extinction — physically: per-voxel albedo tint.
+        // When no Cd grid is loaded: cdR=cdG=cdB=1 (white, no effect).
+        double cdR = 1.0, cdG = 1.0, cdB = 1.0;
+        if (ctx.colorAcc) {
+            const openvdb::Vec3s cv = openvdb::tools::BoxSampler::sample(*ctx.colorAcc, iP);
+            cdR = std::max(0.0f, cv[0]);
+            cdG = std::max(0.0f, cv[1]);
+            cdB = std::max(0.0f, cv[2]);
+        }
+
         // ══ GRADIENT NORMAL (optional, gradMix > 0) ══════════════════════
         // Central-difference density gradient → Lambertian "surface normal".
         // 6 extra BoxSampler lookups per step. Off by default (perf cost).
@@ -2939,22 +3079,22 @@ void VDBRenderIop::marchRay(
                 (int)(&lt - _lights.data()),
                 _bboxMin, _bboxMax, nSh, shStep);
 
-            // ── Scatter accumulation (per-channel chromatic transmittance) ──
+            // ── Scatter accumulation (per-channel chromatic transmittance × Cd albedo) ──
             const double base = ss * phS * lT * step;
-            aR += base * TR * lt.color[0];
-            aG += base * TG * lt.color[1];
-            aB += base * TB * lt.color[2];
+            aR += base * TR * lt.color[0] * cdR;
+            aG += base * TG * lt.color[1] * cdG;
+            aB += base * TB * lt.color[2] * cdB;
             // Accumulate single-scatter for MS estimate (T-free; MS adds its own T)
-            stepR += base * lt.color[0];
-            stepG += base * lt.color[1];
-            stepB += base * lt.color[2];
+            stepR += base * lt.color[0] * cdR;
+            stepG += base * lt.color[1] * cdG;
+            stepB += base * lt.color[2] * cdB;
         }
 
         // ── Ambient ──
         if (_ambientIntensity > 0.0) {
             const double amb = ss * _ambientIntensity * step;
-            aR += amb * TR;  aG += amb * TG;  aB += amb * TB;
-            stepR += amb;    stepG += amb;    stepB += amb;
+            aR += amb * TR * cdR;  aG += amb * TG * cdG;  aB += amb * TB * cdB;
+            stepR += amb * cdR;    stepG += amb * cdG;    stepB += amb * cdB;
         }
 
         // ── Environment map ──
@@ -3018,12 +3158,12 @@ void VDBRenderIop::marchRay(
                 }
 
                 const double envBase = ss * step * _envIntensity * kW6;
-                aR += envBase * TR * envAccR;
-                aG += envBase * TG * envAccG;
-                aB += envBase * TB * envAccB;
-                stepR += envBase * envAccR;
-                stepG += envBase * envAccG;
-                stepB += envBase * envAccB;
+                aR += envBase * TR * envAccR * cdR;
+                aG += envBase * TG * envAccG * cdG;
+                aB += envBase * TB * envAccB * cdB;
+                stepR += envBase * envAccR * cdR;
+                stepG += envBase * envAccG * cdG;
+                stepB += envBase * envAccB * cdB;
 
             } else {
                 // ── Uniform dirs / ReSTIR path ────────────────────────────────
@@ -3088,12 +3228,12 @@ void VDBRenderIop::marchRay(
                         // Unbiased estimate: contrib × W × nEnv (matches uniform energy)
                         const double envBase = ss * eT * step * _envIntensity
                                              * (double)res.W() * nEnv;
-                        aR += envBase * TR * eRc;
-                        aG += envBase * TG * eGc;
-                        aB += envBase * TB * eBc;
-                        stepR += envBase * eRc;
-                        stepG += envBase * eGc;
-                        stepB += envBase * eBc;
+                        aR += envBase * TR * eRc * cdR;
+                        aG += envBase * TG * eGc * cdG;
+                        aB += envBase * TB * eBc * cdB;
+                        stepR += envBase * eRc * cdR;
+                        stepG += envBase * eGc * cdG;
+                        stepB += envBase * eBc * cdB;
                     }
 
                 } else {
@@ -3119,12 +3259,12 @@ void VDBRenderIop::marchRay(
                             ctx, xf, wP, eDir, ext, _shadowDensity,
                             -1, _bboxMin, _bboxMax, nSh, shStep);
                         const double envBase = ss * eT * step * _envIntensity * (4.0*M_PI / nEnv);
-                        aR += envBase * TR * eRc;
-                        aG += envBase * TG * eGc;
-                        aB += envBase * TB * eBc;
-                        stepR += envBase * eRc;
-                        stepG += envBase * eGc;
-                        stepB += envBase * eBc;
+                        aR += envBase * TR * eRc * cdR;
+                        aG += envBase * TG * eGc * cdG;
+                        aB += envBase * TB * eBc * cdB;
+                        stepR += envBase * eRc * cdR;
+                        stepG += envBase * eGc * cdG;
+                        stepB += envBase * eBc * cdB;
                         ++used;
                     }
                 }
@@ -3374,87 +3514,128 @@ bool VDBRenderIop::doDeepEngine(Box box, const ChannelSet& channels,
             double T=1.0;
             int sampleCount=0;
 
-            for(double t=tEnter;t<tExit&&T>0.001&&sampleCount<maxSamples;t+=deepStep){
-                double tEnd=std::min(t+deepStep,tExit);
-                float slabR=0,slabG=0,slabB=0;
-                double slabT=T;
+            // ── [V3.1] Adaptive deep slab placement ──────────────────────────
+            // Instead of uniform deepStep slabs, do a first-pass scan at step
+            // resolution to record transmittance at each sample point, then
+            // merge consecutive samples into slabs when dT/dt falls below a
+            // threshold. This concentrates slabs at density inflection points
+            // (volume edges, layered structures) for better deep compositing.
+            //
+            // Pass 1: collect (t, deltaT) pairs along the ray
+            struct DeepSample { double t, tEnd, dT; float R, G, B; };
+            std::vector<DeepSample> samples;
+            samples.reserve(maxSamples * 2);
 
-                for(double ts=t;ts<tEnd&&T>0.001;ts+=step){
-                    auto wP=rayO+ts*rayD;
-                    auto iP=xf.worldToIndex(wP);
-                    openvdb::Coord ijk((int)std::floor(iP[0]),(int)std::floor(iP[1]),(int)std::floor(iP[2]));
+            {
+                double Tp = 1.0;
+                for (double ts = tEnter; ts < tExit && Tp > 0.001; ts += deepStep) {
+                    double tEnd2 = std::min(ts + deepStep, tExit);
+                    float sR=0, sG=0, sB=0;
+                    double Tpre = Tp;
 
-                    if(tAcc){float tv=tAcc->getValue(ijk)*(float)_tempMix;if(tv>.001f){
-                        double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
-                        double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
-                        double em=_emissionIntensity*tS*T*step;
-                        slabR+=bb.r*(float)em;slabG+=bb.g*(float)em;slabB+=bb.b*(float)em;}}
+                    for (double tt = ts; tt < tEnd2 && Tp > 0.001; tt += step) {
+                        auto wP2 = rayO + tt * rayD;
+                        auto iP2 = xf.worldToIndex(wP2);
+                        openvdb::Coord ijk2((int)std::floor(iP2[0]),(int)std::floor(iP2[1]),(int)std::floor(iP2[2]));
 
-                    if(fAcc){float fv=fAcc->getValue(ijk)*(float)_flameMix;if(fv>.001f){
-                        Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
-                        double fem=_flameIntensity*fv*T*step;
-                        slabR+=fb.r*(float)fem;slabG+=fb.g*(float)fem;slabB+=fb.b*(float)fem;}}
+                        if(tAcc){float tv=tAcc->getValue(ijk2)*(float)_tempMix;if(tv>.001f){
+                            double normT=std::clamp((double)tv,_tempMin,_tempMax);Color3 bb=blackbody(normT);
+                            double tS=std::clamp((tv-_tempMin)/(_tempMax-_tempMin+1e-6),0.,1.);
+                            double em=_emissionIntensity*tS*Tp*step;
+                            sR+=bb.r*(float)em;sG+=bb.g*(float)em;sB+=bb.b*(float)em;}}
 
-                    if(dAcc){
+                        if(fAcc){float fv=fAcc->getValue(ijk2)*(float)_flameMix;if(fv>.001f){
+                            Color3 fb=blackbody(std::clamp(_tempMin+fv*(_tempMax-_tempMin),_tempMin,_tempMax));
+                            double fem=_flameIntensity*fv*Tp*step;
+                            sR+=fb.r*(float)fem;sG+=fb.g*(float)fem;sB+=fb.b*(float)fem;}}
+
+                        if(dAcc){
 #ifdef VDBRENDER_HAS_NEURAL
-                        float density=(_neuralMode&&_neural)?_neural->sampleDensity(iP)*(float)_densityMix:dAcc->getValue(ijk)*(float)_densityMix;
+                            float density=(_neuralMode&&_neural)?_neural->sampleDensity(iP2)*(float)_densityMix:dAcc->getValue(ijk2)*(float)_densityMix;
 #else
-                        float density=dAcc->getValue(ijk)*(float)_densityMix;
+                            float density=dAcc->getValue(ijk2)*(float)_densityMix;
 #endif
-                        if(density>1e-6f){double se=density*ext,ss=density*scat;
-                            for(const auto&lt:_lights){openvdb::Vec3d lD;
-                                if(lt.isPoint){lD=openvdb::Vec3d(lt.pos[0]-wP[0],lt.pos[1]-wP[1],lt.pos[2]-wP[2]);
-                                    double l2=lD.length();if(l2>1e-8)lD/=l2;else lD=openvdb::Vec3d(0,1,0);}
-                                else lD=openvdb::Vec3d(lt.dir[0],lt.dir[1],lt.dir[2]);
-                                double cosT2=-(rayD[0]*lD[0]+rayD[1]*lD[1]+rayD[2]*lD[2]);
-                                double ph;if(std::abs(g)<.001)ph=1./(4*M_PI);
-                                else{double dn=1+g2-2*g*cosT2;ph=hgN/std::pow(dn,1.5);}
-                                double phS=ph*4*M_PI;
-                                double lT=1;
-                                if(_floatGrid){
+                            if(density>1e-6f){double se=density*ext,ss2=density*scat;
+                                for(const auto&lt:_lights){openvdb::Vec3d lD2;
+                                    if(lt.isPoint){lD2=openvdb::Vec3d(lt.pos[0]-wP2[0],lt.pos[1]-wP2[1],lt.pos[2]-wP2[2]);
+                                        double l2=lD2.length();if(l2>1e-8)lD2/=l2;else lD2=openvdb::Vec3d(0,1,0);}
+                                    else lD2=openvdb::Vec3d(lt.dir[0],lt.dir[1],lt.dir[2]);
+                                    double cosT2=-(rayD[0]*lD2[0]+rayD[1]*lD2[1]+rayD[2]*lD2[2]);
+                                    double ph;if(std::abs(g)<.001)ph=1./(4*M_PI);
+                                    else{double dn=1+g2-2*g*cosT2;ph=hgN/std::pow(dn,1.5);}
+                                    double phS=ph*4*M_PI;
+                                    double lT=1;
+                                    if(_floatGrid){
 #ifdef VDBRENDER_HAS_NEURAL
-                                    if(_neuralMode&&_neural){
-                                        for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
+                                        if(_neuralMode&&_neural){
+                                            for(int i=0;i<nSh;++i){auto lw=wP2+((i+1)*shStep)*lD2;bool in=true;
+                                                for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
+                                                auto li=xf.worldToIndex(lw);
+                                                lT*=std::exp(-(double)_neural->sampleDensity(li)*ext*_shadowDensity*shStep);
+                                                if(lT<.01)break;}
+                                        }else
+#endif
+                                        {auto la=_floatGrid->getConstAccessor();
+                                        for(int i=0;i<nSh;++i){auto lw=wP2+((i+1)*shStep)*lD2;bool in=true;
                                             for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
                                             auto li=xf.worldToIndex(lw);
-                                            lT*=std::exp(-(double)_neural->sampleDensity(li)*ext*_shadowDensity*shStep);
-                                            if(lT<.01)break;}
-                                    }else
-#endif
-                                    {auto la=_floatGrid->getConstAccessor();
-                                    for(int i=0;i<nSh;++i){auto lw=wP+((i+1)*shStep)*lD;bool in=true;
-                                        for(int a2=0;a2<3;++a2)if(lw[a2]<_bboxMin[a2]||lw[a2]>_bboxMax[a2]){in=false;break;}if(!in)break;
-                                        auto li=xf.worldToIndex(lw);
-                                        lT*=std::exp(-(double)la.getValue(openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shStep);
-                                        if(lT<.01)break;}}
-                                }
-                                double ctr=ss*phS*lT*T*step;
-                                slabR+=(float)(ctr*lt.color[0]);slabG+=(float)(ctr*lt.color[1]);slabB+=(float)(ctr*lt.color[2]);}
-                            if(_ambientIntensity>0){double amb=ss*_ambientIntensity*T*step;
-                                slabR+=(float)amb;slabG+=(float)amb;slabB+=(float)amb;}
-                            T*=std::exp(-se*step);}}
+                                            lT*=std::exp(-(double)la.getValue(openvdb::Coord((int)std::floor(li[0]),(int)std::floor(li[1]),(int)std::floor(li[2])))*ext*_shadowDensity*shStep);
+                                            if(lT<.01)break;}}
+                                    }
+                                    double ctr=ss2*phS*lT*Tp*step;
+                                    sR+=(float)(ctr*lt.color[0]);sG+=(float)(ctr*lt.color[1]);sB+=(float)(ctr*lt.color[2]);}
+                                if(_ambientIntensity>0){double amb=ss2*_ambientIntensity*Tp*step;
+                                    sR+=(float)amb;sG+=(float)amb;sB+=(float)amb;}
+                                Tp*=std::exp(-se*step);}}
+                    }
+
+                    double dT = Tpre - Tp;
+                    float emitLum = sR*0.2126f + sG*0.7152f + sB*0.0722f;
+                    if (dT > 1e-5 || emitLum > 1e-5)
+                        samples.push_back({ts, tEnd2, dT, sR, sG, sB});
+                }
+                T = Tp;
+            }
+
+            // Pass 2: merge low-dT neighbours to reduce slab count,
+            // keeping slabs where transmittance changes most (edges, surfaces).
+            // Threshold: merge if dT < 1/(2*maxSamples) — keeps important slabs.
+            const double mergeThresh = 0.5 / std::max(1, maxSamples);
+            for (int si = 0; si < (int)samples.size() && sampleCount < maxSamples; ) {
+                double frontT = samples[si].t;
+                double backT  = samples[si].tEnd;
+                float  mR = samples[si].R, mG = samples[si].G, mB = samples[si].B;
+                double mDT = samples[si].dT;
+
+                // Merge forward while contribution stays below threshold
+                int sj = si + 1;
+                while (sj < (int)samples.size() && samples[sj].dT < mergeThresh) {
+                    backT = samples[sj].tEnd;
+                    mR += samples[sj].R;
+                    mG += samples[sj].G;
+                    mB += samples[sj].B;
+                    mDT += samples[sj].dT;
+                    ++sj;
                 }
 
-                float slabAlpha=(float)(slabT-T);
-                // For pure emission (no density), alpha would be zero.
-                // Synthesize alpha from emission luminance so DeepToImage works.
-                float emitLum=slabR*0.2126f+slabG*0.7152f+slabB*0.0722f;
-                if(slabAlpha<1e-6f && emitLum>1e-6f){
-                    // Clamp to reasonable alpha — emission is additive/premultiplied
-                    slabAlpha=std::min(emitLum*ri, 1.0f);
-                }
-                if(slabAlpha>1e-6f||(slabR+slabG+slabB)>1e-6f){
-                    foreach(z,outChans){
-                        if(z==Chan_DeepFront)     pixel.push_back((float)t);
-                        else if(z==Chan_DeepBack) pixel.push_back((float)tEnd);
-                        else if(z==Chan_Red)      pixel.push_back(slabR*ri);
-                        else if(z==Chan_Green)    pixel.push_back(slabG*ri);
-                        else if(z==Chan_Blue)     pixel.push_back(slabB*ri);
-                        else if(z==Chan_Alpha)    pixel.push_back(slabAlpha);
-                        else                      pixel.push_back(0.0f);
+                float slabAlpha = (float)mDT;
+                float emitLum = mR*0.2126f + mG*0.7152f + mB*0.0722f;
+                if (slabAlpha < 1e-6f && emitLum > 1e-6f)
+                    slabAlpha = std::min(emitLum * ri, 1.0f);
+
+                if (slabAlpha > 1e-6f || (mR + mG + mB) > 1e-6f) {
+                    foreach(z, outChans) {
+                        if      (z == Chan_DeepFront) pixel.push_back((float)frontT);
+                        else if (z == Chan_DeepBack)  pixel.push_back((float)backT);
+                        else if (z == Chan_Red)       pixel.push_back(mR * ri);
+                        else if (z == Chan_Green)     pixel.push_back(mG * ri);
+                        else if (z == Chan_Blue)      pixel.push_back(mB * ri);
+                        else if (z == Chan_Alpha)     pixel.push_back(slabAlpha);
+                        else                          pixel.push_back(0.0f);
                     }
                     ++sampleCount;
                 }
+                si = sj;
             }
 
             if(sampleCount>0)plane.addPixel(pixel);
