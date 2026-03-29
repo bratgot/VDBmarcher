@@ -1,66 +1,44 @@
 # VDBRender
 
-OpenVDB volume ray marcher for Nuke 17. Physically-based single and multiple scatter rendering with deep output, environment lighting, and NeuralVDB support.
+OpenVDB volume ray marcher for Nuke 17. Physically-based single and multiple scatter rendering with deep output, HDRI environment lighting, procedural noise, and NeuralVDB support.
 
-Created by Marten Blumen
+Created by Marten Blumen · [Nukepedia](https://www.nukepedia.com/tools/plugins/3d/vdb-render/)
+
+---
+
+## What's new in v3
+
+- **Dual-lobe HG + approximate Mie** phase functions — forward/backward lobes, silver-lining on clouds, correct fog scattering
+- **Powder effect** (Schneider & Vos 2015) — interior brightening for dense fireballs, zero extra rays
+- **Analytical multiple scattering** (Wrenninge et al. 2017) — replaces brute-force bounce rays at 100× lower cost
+- **Procedural fBm detail noise** — density perturbation at render time, world-space, no UV setup
+- **Gradient-normal blend** — sculpted cloud edges, enabled in Cumulus Cloud preset
+- **Chromatic extinction** — per-channel σt for Rayleigh-like depth colour shifts
+- **HDDA shadow rays** — always active, skips empty tiles on every shadow ray
+- **Transmittance cache** — precomputed FloatGrid per directional light, O(1) shadow lookup (5–10× speedup)
+- **SH environment lighting** — HDRI projected to L2 spherical harmonics at load time, 6-dir HDDA shadow sampling at render time (10–20× faster for clouds)
+- **Virtual directional lights** — brightest HDRI peaks extracted as shadowed directional lights, benefit from transmittance cache
+- **CIE 1931 blackbody** — accurate 500K–40000K, replaces limited polynomial approximation
+- **Distribution build** — `cmake --build --target dist` produces a ready-to-zip folder with all runtime DLLs
 
 ---
 
 ## Features
 
-- **Ray marching** — HDDA empty-space skipping via OpenVDB `VolumeRayIntersector`, adaptive step size, Beer-Lambert transmittance
-- **Shading V2** — Dual-lobe Henyey-Greenstein, powder effect, analytical multiple scattering, chromatic extinction, ray jitter
-- **Lighting** — Directional and point lights via Nuke scene input, environment map (HDRI), procedural sky rig (Preetham), studio 3-point rig
-- **Emission** — Blackbody temperature grid, flame grid, fire self-absorption
-- **Deep output** — Depth-sorted RGBA slabs for compositing over CG
-- **AOV passes** — Density, emission, shadow, depth
-- **Motion blur** — Velocity grid ray-origin offset across shutter interval
-- **Vec3 colour grid** — Per-voxel colour (Cd) override
-- **NeuralVDB** — Optional neural compressed volume support via LibTorch (10–100× smaller .nvdb files)
-- **Viewport** — Live point cloud and bounding box preview in Nuke's 3D viewer
-
----
-
-## Shading V2
-
-The **Shading V2** tab adds production-grade shading techniques with zero render cost overhead on most features.
-
-### Dual-lobe Henyey-Greenstein
-
-Replaces the single-lobe phase function with a weighted blend of two lobes — forward scatter and backward scatter. Gives backlit smoke its silver-lining rim and explosion fireballs their characteristic backlit corona.
-
-| Knob | Description | Typical values |
-|---|---|---|
-| `G Forward` | Forward-scatter lobe asymmetry | Smoke: 0.4 · Cloud: 0.8 · Explosion: 0.85 |
-| `G Backward` | Backward-scatter lobe asymmetry | Smoke: −0.15 · Cloud: −0.1 · Explosion: −0.25 |
-| `Lobe Mix` | Blend weight (1.0 = pure forward) | 0.65–0.85 for most volumes |
-
-### Powder Effect
-
-Interior brightening from multiple forward-scattering (Schneider & Vos, Horizon Zero Dawn, SIGGRAPH 2015). Transforms flat explosion renders into glowing fireballs with a lit interior. Zero extra rays.
-
-| Value | Result |
-|---|---|
-| 0 | Off |
-| 2 | Natural smoke |
-| 4–6 | Dense explosion fireball |
-| 10 | Maximum |
-
-### Analytical Multiple Scattering
-
-Two-parameter approximation to the infinite-bounce diffusion solution (Wrenninge et al., SIGGRAPH 2017). Replaces the brute-force bounce rays at ~100× lower cost with equivalent quality for dense media. **Scatter Tint** adds a subtle warm or cool bias to the bounced light contribution.
-
-### Chromatic Extinction
-
-Per-channel extinction coefficient (σt per wavelength). Real smoke scatters blue wavelengths more than red — set `Extinction B > Extinction R` for a Rayleigh-like depth colour shift. Shadow rays remain greyscale for performance.
-
-### Ray Jitter
-
-Per-pixel deterministic hash offset on the march start position. Eliminates the concentric banding (wood-grain artifact) that appears at low quality settings. Zero render cost.
-
-### Gradient Mix
-
-Blends the HG phase function with a density-gradient Lambertian term. Gives clouds sculpted, three-dimensional billowing edges. Off by default — adds 6 grid lookups per march step when enabled. Recommended for clouds only.
+- Physically-based ray marching (Beer–Lambert, HDDA empty-space skipping, adaptive step size)
+- Dual-lobe Henyey-Greenstein and approximate Mie (Jendersie & d'Eon 2023) phase functions
+- Powder effect, analytical multiple scattering, chromatic extinction, ray jitter
+- Procedural fBm detail noise (world-space, per-render)
+- HDDA + precomputed transmittance cache shadow system
+- SH environment lighting with virtual directional lights
+- Sun/sky (Preetham) and studio 3-point lighting rigs with mix controls
+- Emission: CIE 1931 blackbody temperature, flame grid, custom gradient
+- Velocity motion blur
+- Deep output and AOVs — Density, Emission, Shadow, Depth
+- 9 scene presets: Thin Smoke, Dense Smoke, Fog/Mist, Cumulus Cloud, Fire, Explosion, Pyroclastic, Dust Storm, Steam
+- Auto grid detection and frame sequence handling
+- Viewport preview — point cloud + bounding box
+- NeuralVDB support (optional, requires LibTorch)
 
 ---
 
@@ -70,19 +48,17 @@ Blends the HG phase function with a density-gradient Lambertian term. Gives clou
 |---|---|---|
 | 0 | `bg` | Background plate — sets output resolution |
 | 1 | `cam` | Camera |
-| 2 | `scn` | Scene — pipe lights, an Axis, and optionally an EnvironLight into a Scene node |
+| 2 | `scn` | Scene — pipe lights, Axis, and EnvironLight into a Scene node |
 
 ---
 
 ## Quick start
 
 1. Create a **VDBRender** node from the VDB menu
-2. Connect a **Camera** to input 1
-3. Connect a **Scene** node (with lights) to input 2
-4. Set the **VDB File** path to your `.vdb` file
-5. Click **Discover Grids** to auto-detect density, temperature, flame, and velocity grids
-6. Choose a **Scene Preset** — Explosion or Cumulus Cloud are good starting points
-7. Adjust the **Shading V2** tab for look development
+2. Connect a **Camera** to input 1 and a **Scene** node to input 2
+3. Set the **VDB File** path and click **Discover Grids**
+4. Choose a **Scene Preset** — Explosion or Cumulus Cloud are good starting points
+5. For clouds: enable **Shadow Cache** (Quality tab) and set **Env Mode** to *SH + Virtual Lights* (Lighting tab)
 
 ---
 
@@ -94,9 +70,7 @@ Blends the HG phase function with a density-gradient Lambertian term. Gives clou
 - Nuke 17.0v1
 - OpenVDB via vcpkg: `vcpkg install openvdb:x64-windows`
 
-**Configure and build**
-
-Open *x64 Native Tools Command Prompt for VS 2022*, then:
+Open *x64 Native Tools Command Prompt for VS 2022*:
 
 ```bat
 cmake -B build -G "Visual Studio 17 2022" -A x64 ^
@@ -108,63 +82,65 @@ cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
 cmake --install build --config Release
 ```
 
-Output installs to `%USERPROFILE%\.nuke\plugins\VDBRender\nuke17\VDBRender.dll`.
+Installs to `%USERPROFILE%\.nuke\plugins\VDBRender\`.
 
-**NeuralVDB build** (optional — requires LibTorch)
+**Build a distribution zip:**
+
+```bat
+cmake --build build --config Release --target dist
+```
+
+Produces `dist\VDBRender_v3\` with the DLL, menu script, all runtime DLLs, INSTALL.txt, and THIRD_PARTY_LICENSES.txt. Rename the folder to `VDBRender` and drop it in `.nuke\plugins\`.
+
+**NeuralVDB (optional — requires LibTorch):**
 
 ```bat
 cmake -B build ... -DVDBRENDER_NEURAL=ON -DLIBTORCH_PATH="C:\libtorch"
-cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
 ```
 
 ---
 
-## Installation
+## Installation (from distribution zip)
 
-1. Copy `VDBRender_menu.py` contents into `~/.nuke/menu.py` (or import it)
-2. Copy the required runtime DLLs alongside `VDBRender.dll`:
-
-```
-openvdb.dll    Imath-3_2.dll    tbb12.dll
-blosc.dll      zlib1.dll        zstd.dll    lz4.dll
-```
-
-These are found in `C:\vcpkg\installed\x64-windows\bin\`.
+1. Rename `VDBRender_v3` to `VDBRender`
+2. Copy to `%USERPROFILE%\.nuke\plugins\`
+3. Add to `%USERPROFILE%\.nuke\menu.py`:
+   ```python
+   import VDBRender.VDBRender_menu
+   ```
+4. Restart Nuke
 
 ---
 
-## NeuralVDB
+## Performance tips
 
-Neural compressed volumes reduce `.vdb` file sizes by 10–100× using two small MLPs (topology classifier + value regressor with Fourier positional encoding).
-
-**Encode a VDB file:**
-
-```bash
-pip install -r requirements.txt
-python nvdb_encoder.py --input smoke.vdb --output smoke.nvdb
-```
-
-**Validate compression quality:**
-
-```bash
-python nvdb_validate.py --original smoke.vdb --compressed smoke.nvdb
-```
-
-Load the resulting `.nvdb` file in VDBRender exactly like a standard `.vdb`. All lighting, shading, and deep output work identically.
+| Setting | Location | Effect |
+|---|---|---|
+| Shadow Cache | Quality tab | Precomputes transmittance per directional light — O(1) shadow lookup. Use Half resolution for production. |
+| Cache Resolution | Quality tab | Full = best quality. Half = recommended. Quarter = fastest. |
+| Env Mode | Lighting tab | *SH + Virtual Lights* is 10–20× faster than *Uniform dirs* for clouds. |
+| Virtual Lights | Lighting tab | 1–2 peaks from HDRI as shadowed directional lights. Captures sun + bright sky. |
+| Proxy | Quality tab | Downscale for interactive preview. Set to Full before final render. |
+| Adaptive Step | Quality tab | 2–4× speedup with minimal quality loss on sparse volumes. Leave on. |
 
 ---
 
 ## References
 
-- Museth (2013) — OpenVDB / HDDA empty-space skipping
+- Museth (2013) — OpenVDB, HDDA empty-space skipping
 - Henyey & Greenstein (1941) — Phase function for volume scattering
-- Schneider & Vos — *The Real-Time Volumetric Cloudscapes of Horizon Zero Dawn*, SIGGRAPH 2015 — powder effect, dual-lobe HG
-- Wrenninge, Fong, Kulla, Habel — *Production Volume Rendering*, SIGGRAPH 2017 — analytical multiple scattering, RTE derivation
-- Hillaire — *Physically-Based & Unified Volumetric Rendering in Frostbite*, SIGGRAPH 2015 — chromatic extinction, transmittance volumes
+- Schneider & Vos — *Real-Time Volumetric Cloudscapes of Horizon Zero Dawn*, SIGGRAPH 2015
+- Wrenninge, Fong, Kulla, Habel — *Production Volume Rendering*, SIGGRAPH 2017
+- Hillaire — *Physically-Based & Unified Volumetric Rendering in Frostbite*, SIGGRAPH 2015
+- Jendersie & d'Eon — *An Approximate Mie Scattering Function for Fog and Cloud Rendering*, SIGGRAPH 2023
+- Ramamoorthi & Hanrahan (2001) — Efficient representation for irradiance environment maps
+- Kang et al. (2002) — Planckian locus approximation
 - Novák et al. (2018) — Null-scattering / residual ratio tracking
 
 ---
 
 ## License
 
-See `THIRD_PARTY_LICENSES.txt` for OpenVDB, LibTorch, and other dependencies.
+MIT — see [LICENSE](LICENSE)
+
+See [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt) for OpenVDB, TBB, Blosc, zlib, zstd, LZ4, and Imath.
