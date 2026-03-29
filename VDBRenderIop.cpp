@@ -513,9 +513,9 @@ void VDBRenderIop::knobs(Knob_Callback f)
 
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Sun/Sky and Studio lights can be blended together using the<br>"
-        "Mix sliders. Scene lights from the scn input override the rig.<br>"
-        "Presets set the sliders below — tweak them freely afterwards."
+        "Sun/Sky and Studio lights compose with scene lights from the scn input.<br>"
+        "All sources are additive — use the Mix sliders to balance them.<br>"
+        "Set Sky Mix and Studio Mix to 0 to use scene lights only."
         "</font>");
 
     Divider(f,"Sun and Sky");
@@ -533,6 +533,8 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Master brightness for all sun and sky lights.\n"
               "0 = off. 1 = natural. 2 = double brightness.\n"
               "Use this to balance sun/sky against studio lights.");
+
+    BeginClosedGroup(f,"grp_sky_detail","Sun and Sky Settings");
     Double_knob(f,&_sunElevation,"sun_elevation","Sun Elevation");SetRange(f,0,90);
     Tooltip(f,"Sun height above the horizon in degrees.\n"
               "90 = directly overhead (noon)\n"
@@ -555,6 +557,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Light bounced up from the ground surface.\n"
               "Fills the underside of volumes.\n"
               "0 = none. 0.1 = subtle. 0.3 = sandy ground.");
+    EndGroup(f);
 
     Divider(f,"Studio Lights");
     static const char*stuP[]={"Off","3-Point","Dramatic","Soft","Rim Only","Top Light",nullptr};
@@ -570,6 +573,8 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Master brightness for all studio lights.\n"
               "0 = off. 1 = natural. 2 = double brightness.\n"
               "Blend with Sky Mix for hybrid lighting.");
+
+    BeginClosedGroup(f,"grp_studio_detail","Studio Light Settings");
     Double_knob(f,&_studioKeyAzimuth,"studio_key_azimuth","Key Azimuth");SetRange(f,0,360);
     Tooltip(f,"Horizontal angle of the key (main) light.\n"
               "45 = classic 3/4 from camera-left. 315 = camera-right.");
@@ -585,6 +590,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Double_knob(f,&_studioRimIntensity,"studio_rim_intensity","Rim Intensity");SetRange(f,0,20);
     Tooltip(f,"Backlight intensity for edge definition.\n"
               "0 = no rim. 2 = standard. 4 = strong halo.");
+    EndGroup(f);
 
     Divider(f,"Global");
     Double_knob(f,&_ambientIntensity,"ambient","Ambient");SetRange(f,0,5);
@@ -648,15 +654,16 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Divider(f,"");
 
     XYZ_knob(f,_lightDir,"light_dir","Direction");
-    Tooltip(f,"The direction the light travels — NOT where it points from.\n\n"
-              "Think of it as the vector the light rays move along:\n"
-              "  (0, -1,  0) = light coming straight down (overhead sun)\n"
-              "  (0,  1,  0) = light coming straight up (ground bounce)\n"
-              "  (1, -1, -1) = light from upper-right-front (typical key)\n\n"
-              "The vector does not need to be normalised.\n"
-              "Set using the XYZ sliders or type values directly.\n"
-              "Tip: match the sun elevation from the Sky rig by\n"
-              "setting Y to -sin(elevation) and adjusting XZ for azimuth.");
+    Tooltip(f,"Direction pointing TOWARD the light source.\n\n"
+              "This is the vector from the volume to the light —\n"
+              "the same direction shadow rays are cast.\n\n"
+              "  (0,  1,  0) = light from above (overhead sun)\n"
+              "  (0, -1,  0) = light from below (ground bounce)\n"
+              "  (1,  1, -1) = light from upper-right-front (key)\n"
+              " (-1,  1,  0) = light from upper-left (fill)\n\n"
+              "The viewport handle shows the disc where the light\n"
+              "source is, with an arrow pointing toward the volume.\n"
+              "The vector does not need to be normalised.");
 
     Color_knob(f,_lightColor,"light_color","Tint");
     Tooltip(f,"Colour tint multiplied by the Intensity value.\n\n"
@@ -1169,7 +1176,9 @@ static void dirFromElevAzim(double elevDeg, double azimDeg, double& dx, double& 
 }
 
 void VDBRenderIop::buildLightRig() {
-    if (!_lights.empty()) return; // scene lights override
+    // [V3.1] Rig lights always added on top of scene lights.
+    // Previously scene lights suppressed the rig entirely — now they compose.
+    // Turn Sky Mix and Studio Mix to 0 to disable the rig manually.
     if (_skyMix < 0.001 && _studioMix < 0.001 && !_useFallbackLight) return;
 
     auto addLight = [&](double dx, double dy, double dz, double r, double g, double b) {
@@ -1540,10 +1549,11 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
         if (llen < 1e-6f) { llen = 1.0f; }
         lx/=llen; ly/=llen; lz/=llen;
 
-        // Light source position = centre OPPOSITE to direction (where it comes from)
-        float sx = cx - lx * armLen;
-        float sy = cy - ly * armLen;
-        float sz = cz - lz * armLen;
+        // _lightDir points TOWARD the light source (same as shadow ray direction).
+        // So the source disc sits at centre + direction * armLen.
+        float sx = cx + lx * armLen;
+        float sy = cy + ly * armLen;
+        float sz = cz + lz * armLen;
 
         // Light colour tinted by the knob colour × intensity (clamped to [0.3,1])
         float lr = std::clamp((float)(_lightColor[0] * _lightIntensity), 0.3f, 1.0f);
@@ -1563,7 +1573,7 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
 
         glDisable(GL_LINE_STIPPLE);
 
-        // Solid short inner arrow: centre → slightly into volume
+        // Solid short inner arrow: centre → toward source (shows incoming direction)
         glLineWidth(2.0f);
         glBegin(GL_LINES);
         glVertex3f(cx, cy, cz);
@@ -1582,20 +1592,20 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
         // perp2 = l × perp1
         float p2x=ly*p1z-lz*p1y, p2y=lz*p1x-lx*p1z, p2z=lx*p1y-ly*p1x;
 
-        // Arrow tip = light source pos, fins 4 directions back along +l
+        // Arrow tip = light source pos, fins point toward the volume (negate dir)
         float tipX=sx, tipY=sy, tipZ=sz;
         float finLen=arrowLen, finSpread=arrowLen*0.35f;
         glLineWidth(1.5f);
         glBegin(GL_LINES);
-        // 4 fins
+        // 4 fins pointing from source toward volume (-direction)
         glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX+lx*finLen+p1x*finSpread, tipY+ly*finLen+p1y*finSpread, tipZ+lz*finLen+p1z*finSpread);
+        glVertex3f(tipX-lx*finLen+p1x*finSpread, tipY-ly*finLen+p1y*finSpread, tipZ-lz*finLen+p1z*finSpread);
         glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX+lx*finLen-p1x*finSpread, tipY+ly*finLen-p1y*finSpread, tipZ+lz*finLen-p1z*finSpread);
+        glVertex3f(tipX-lx*finLen-p1x*finSpread, tipY-ly*finLen-p1y*finSpread, tipZ-lz*finLen-p1z*finSpread);
         glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX+lx*finLen+p2x*finSpread, tipY+ly*finLen+p2y*finSpread, tipZ+lz*finLen+p2z*finSpread);
+        glVertex3f(tipX-lx*finLen+p2x*finSpread, tipY-ly*finLen+p2y*finSpread, tipZ-lz*finLen+p2z*finSpread);
         glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX+lx*finLen-p2x*finSpread, tipY+ly*finLen-p2y*finSpread, tipZ+lz*finLen-p2z*finSpread);
+        glVertex3f(tipX-lx*finLen-p2x*finSpread, tipY-ly*finLen-p2y*finSpread, tipZ-lz*finLen-p2z*finSpread);
         glEnd();
 
         // Crosshair disc at light source (8 short spokes)
