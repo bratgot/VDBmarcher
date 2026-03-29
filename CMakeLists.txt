@@ -96,7 +96,7 @@ install(FILES "${CMAKE_SOURCE_DIR}/VDBRender_menu.py"
 # ── Distribution folder ────────────────────────────────────────────────────────
 # Builds a self-contained dist/ folder ready to zip and share.
 # Contents:
-#   dist/VDBRender/
+#   dist/VDBRender_v3/
 #     VDBRender.dll          — plugin
 #     VDBRender_menu.py      — Nuke menu loader
 #     openvdb.dll            — runtime dependencies
@@ -108,7 +108,7 @@ install(FILES "${CMAKE_SOURCE_DIR}/VDBRender_menu.py"
 #     lz4.dll
 #     INSTALL.txt            — one-page setup instructions
 
-set(DIST_DIR "${CMAKE_BINARY_DIR}/dist/VDBRender")
+set(DIST_DIR "${CMAKE_SOURCE_DIR}/dist/VDBRender_v3")
 
 set(VCPKG_BIN "$ENV{VCPKG_ROOT}/installed/x64-windows/bin")
 if(NOT EXISTS "${VCPKG_BIN}")
@@ -127,27 +127,37 @@ set(DIST_RUNTIME_DLLS
 
 # INSTALL.txt content
 set(INSTALL_TXT
-"VDBRender — OpenVDB Volume Ray Marcher for Nuke 17
+"VDBRender v3 — OpenVDB Volume Ray Marcher for Nuke 17
 Created by Marten Blumen
 https://github.com/bratgot/VDBmarcher
 
 INSTALLATION
 ============
-1. Copy the entire VDBRender/ folder to:
+1. Rename this folder from VDBRender_v3 to VDBRender
+
+2. Copy the VDBRender/ folder to:
      %USERPROFILE%\\.nuke\\plugins\\
 
-2. Add this line to %USERPROFILE%\\.nuke\\menu.py:
+   So the result is:
+     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\VDBRender.dll
+     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\VDBRender_menu.py
+     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\openvdb.dll  (etc.)
+
+3. Add this line to %USERPROFILE%\\.nuke\\menu.py:
      import VDBRender.VDBRender_menu
 
-3. Restart Nuke. VDBRender appears in the VDB menu.
+4. Restart Nuke. VDBRender appears in the VDB menu.
+
+   NOTE: The folder must be named VDBRender (not VDBRender_v3)
+   for the Python import to work correctly.
 
 REQUIREMENTS
 ============
 - Nuke 17.0v1 or later
 - Windows x64
 
-The DLLs in this folder (openvdb.dll, tbb12.dll, etc.)
-must remain alongside VDBRender.dll.
+All DLLs in this folder must remain alongside VDBRender.dll.
+Do not move VDBRender.dll to a different directory.
 
 USAGE
 =====
@@ -159,11 +169,24 @@ USAGE
 For clouds: enable Shadow Cache (Quality tab) and set
 Env Mode to 'SH + Virtual Lights' (Lighting tab) for
 best performance.
+
+WHAT'S NEW IN V3
+================
+- Dual-lobe HG and approximate Mie phase functions
+- Powder effect, analytical multiple scattering, ray jitter
+- Procedural fBm detail noise
+- HDDA shadow rays + optional transmittance cache (5-10x faster)
+- SH environment lighting (10-20x faster for clouds)
+- Virtual directional lights from HDRI peaks with shadowing
+- CIE 1931 blackbody (accurate to 40000K)
+- Distribution build target (this folder)
+
+Full changelog: https://github.com/bratgot/VDBmarcher
 ")
 
 add_custom_target(dist
     DEPENDS VDBRender
-    COMMENT "Building distribution package in dist/VDBRender/"
+    COMMENT "Building distribution package in dist/VDBRender_v3/"
 
     # Create dist dir
     COMMAND ${CMAKE_COMMAND} -E make_directory "${DIST_DIR}"
@@ -177,6 +200,11 @@ add_custom_target(dist
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_SOURCE_DIR}/VDBRender_menu.py"
         "${DIST_DIR}/VDBRender_menu.py"
+
+    # Copy third party licenses
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/THIRD_PARTY_LICENSES.txt"
+        "${DIST_DIR}/THIRD_PARTY_LICENSES.txt"
 
     # Copy runtime DLLs (warn but don't fail if a DLL is missing)
     COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime DLLs from ${VCPKG_BIN}..."
@@ -194,10 +222,10 @@ foreach(DLL_PATH ${DIST_RUNTIME_DLLS})
 endforeach()
 
 # Write INSTALL.txt
-file(WRITE "${CMAKE_BINARY_DIR}/INSTALL.txt.in" "${INSTALL_TXT}")
+file(WRITE "${CMAKE_SOURCE_DIR}/dist/INSTALL.txt.in" "${INSTALL_TXT}")
 add_custom_command(TARGET dist POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_BINARY_DIR}/INSTALL.txt.in"
+        "${CMAKE_SOURCE_DIR}/dist/INSTALL.txt.in"
         "${DIST_DIR}/INSTALL.txt"
     COMMENT "  INSTALL.txt"
 )
