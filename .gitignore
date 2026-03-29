@@ -26,3 +26,7 @@ Desktop.ini
 
 # NanoVDB headers (not needed for OpenVDB build)
 nanovdb/
+build/ 
+build_neural/ 
+*.tar.gz 
+files.zip 
