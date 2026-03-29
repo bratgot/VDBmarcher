@@ -257,12 +257,25 @@ private:
     void discoverGrids();
 
     // ── [V2] Phase function helpers ──
-    // hgRaw: HG phase function without the 1/(4π) factor (= phS in old code).
-    // Returns 1.0 for |g| < 0.001 (isotropic).
     static double hgRaw(double cosT, double g) noexcept;
-
-    // jitterHash: deterministic per-pixel [0,1) offset for step jitter.
     static double jitterHash(int x, int y) noexcept;
+
+    // ── [V3] Shadow performance ──
+    // Two-tier shadow system:
+    //   Tier 1 — HDDA shadow rays: always active, skips empty VDB tiles.
+    //   Tier 2 — Transmittance cache: precomputed FloatGrid per directional
+    //             light, reduces shadow cost to O(1) per primary sample.
+    bool _useShadowCache   = false;  // knob: enable tier-2 cache
+    int  _shadowCacheRes   = 1;      // knob: 0=full, 1=half, 2=quarter res
+    bool _shadowCacheDirty = true;   // invalidated when lights or grid change
+
+    struct ShadowCache {
+        openvdb::FloatGrid::Ptr transGrid;  // T(voxel) = transmittance toward light
+        openvdb::Vec3d          lightDir;   // normalized light direction
+        bool valid = false;
+    };
+    std::vector<ShadowCache> _shadowCaches;
+    void buildShadowCaches();   // called from _open() on main thread
 
     // ══════════════════════════════════════════════════════════
     //  [NEURAL] NeuralVDB integration
@@ -325,6 +338,16 @@ private:
         bool   jitter    = true;
         double jitterOff = 0.0;  // set per-pixel by engine() before marchRay()
 
+        // ── [V3] Shadow performance ──
+        // shadowRI: per-scanline shallow copy of _volRI for HDDA shadow rays.
+        // Always used when available — skips empty VDB tiles on shadow rays.
+        std::unique_ptr<VRI> shadowRI;
+
+        // Shadow transmittance cache accessors — one per light.
+        // nullptr for point lights or when cache is disabled.
+        std::vector<std::unique_ptr<openvdb::FloatGrid::ConstAccessor>> shadowCacheAcc;
+        bool useShadowCache = false;
+
 #ifdef VDBRENDER_HAS_NEURAL
         const neural::NeuralDecoder* neuralDec = nullptr;
         bool neuralMode = false;
@@ -373,6 +396,14 @@ private:
 
     void marchRayDensity(MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
                          float& den, float& alpha) const;
+
+    // [V3] Three-path shadow transmittance: cache lookup / HDDA / uniform march
+    static double evalShadowTransmittance(
+        MarchCtx& ctx, const openvdb::math::Transform& xf,
+        const openvdb::Vec3d& wP, const openvdb::Vec3d& lD,
+        double ext, double shDen, int lightIdx,
+        const openvdb::Vec3d& bboxMin, const openvdb::Vec3d& bboxMax,
+        int nSh, double shStep);
 
     DD::Image::Lock _loadLock;
     std::string _loadedPath, _loadedGrid;
