@@ -14,9 +14,9 @@ using namespace DD::Image;
 const char* VDBRenderIop::CLASS = "VDBRender";
 const char* VDBRenderIop::HELP =
     "VDBRender — OpenVDB Volume Ray Marcher\n\n"
-    "Single and multiple scatter volume renderer\n"
-    "with deep output, environment lighting,\n"
-    "and Henyey-Greenstein phase function.\n\n"
+    "v3.1 — Dual-lobe HG, Mie, powder, analytical MS,\n"
+    "HDDA shadows, transmittance cache, SH env lighting,\n"
+    "ReSTIR sampling, procedural noise, deep output.\n\n"
 #ifdef VDBRENDER_HAS_NEURAL
     "Supports .nvdb neural compressed volumes\n"
     "(10-100x smaller) alongside standard .vdb files.\n\n"
@@ -127,7 +127,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
 
     Text_knob(f,
         "<font size='+2'><b>VDBRender</b></font>"
-        " <font color='#888' size='-1'>v3.0</font><br>"
+        " <font color='#888' size='-1'>v3.1</font><br>"
         "<font color='#aaa'>OpenVDB volume ray marcher"
 #ifdef VDBRENDER_HAS_NEURAL
         " + NeuralVDB"
@@ -624,15 +624,62 @@ void VDBRenderIop::knobs(Knob_Callback f)
                "Only active in Uniform dirs mode.");
     EndGroup(f);
 
-    BeginClosedGroup(f,"grp_manual","Manual Override");
+    BeginClosedGroup(f,"grp_manual","Custom Fill Light");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Add a custom directional light on top of everything."
+        "A single directional light added on top of the scene and rig lights.<br>"
+        "Useful for a quick fill, bounce, or rim when no scene input is connected,<br>"
+        "or to add a complementary light to an existing setup."
         "</font>");
-    Bool_knob(f,&_useFallbackLight,"use_fallback_light","Custom Light");
+
+    Bool_knob(f,&_useFallbackLight,"use_fallback_light","Enable");
+    Tooltip(f,"Enable the custom directional fill light.\n\n"
+              "This light is always additive — it adds to whatever lights\n"
+              "already exist from the scene input and lighting rig.\n"
+              "It is NOT a fallback that replaces missing lights.\n\n"
+              "Common uses:\n"
+              "  · Quick fill when no scene lights are connected\n"
+              "  · Rim or back-light to define volume silhouettes\n"
+              "  · Bounce light from a surface below the volume\n"
+              "  · Secondary key for artistic contrast\n\n"
+              "The light participates fully in shadow rays,\n"
+              "phase function evaluation, and multiple scattering.");
+
+    Divider(f,"");
+
     XYZ_knob(f,_lightDir,"light_dir","Direction");
-    Color_knob(f,_lightColor,"light_color","Color");
-    Double_knob(f,&_lightIntensity,"light_intensity","Intensity");SetRange(f,0,50);
+    Tooltip(f,"The direction the light travels — NOT where it points from.\n\n"
+              "Think of it as the vector the light rays move along:\n"
+              "  (0, -1,  0) = light coming straight down (overhead sun)\n"
+              "  (0,  1,  0) = light coming straight up (ground bounce)\n"
+              "  (1, -1, -1) = light from upper-right-front (typical key)\n\n"
+              "The vector does not need to be normalised.\n"
+              "Set using the XYZ sliders or type values directly.\n"
+              "Tip: match the sun elevation from the Sky rig by\n"
+              "setting Y to -sin(elevation) and adjusting XZ for azimuth.");
+
+    Color_knob(f,_lightColor,"light_color","Tint");
+    Tooltip(f,"Colour tint multiplied by the Intensity value.\n\n"
+              "Common choices:\n"
+              "  White (1,1,1)   — neutral fill, adds brightness evenly\n"
+              "  Warm (1,0.9,0.7) — afternoon bounce or warm key\n"
+              "  Cool (0.7,0.85,1) — sky fill, shadow fill, moonlight\n"
+              "  Coloured        — gelled light for atmospheric effects\n\n"
+              "This is a linear RGB colour — values above 1.0 are valid\n"
+              "and will boost that channel beyond white.");
+
+    Double_knob(f,&_lightIntensity,"light_intensity","Intensity");SetRange(f,0,20);
+    Tooltip(f,"Brightness of the custom fill light.\n\n"
+              "Relative to scene lights — a value of 1.0 is roughly\n"
+              "equivalent to a standard directional light at full intensity.\n\n"
+              "Suggested starting points:\n"
+              "  0.1 – 0.3   Subtle fill, barely visible, lifts shadow areas\n"
+              "  0.5 – 1.0   Moderate fill or secondary key\n"
+              "  1.0 – 3.0   Strong key or artistic emphasis\n"
+              "  3.0+        Overexposed / stylised look\n\n"
+              "Tip: for a fill light, keep it below the main key intensity\n"
+              "to preserve the volume's sense of depth and self-shadowing.");
+
     EndGroup(f);
 
     BeginClosedGroup(f,"grp_light_info","Lighting Technical Reference");
