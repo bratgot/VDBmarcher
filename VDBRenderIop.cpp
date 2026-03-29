@@ -1649,62 +1649,55 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
         lx/=llen; ly/=llen; lz/=llen;
 
         // _lightDir points TOWARD the light source (shadow ray direction).
-        // Disc sits OPPOSITE the direction — where light comes from visually.
-        float sx = cx - lx * armLen;
+        // Disc at source (cx - dir*armLen). Line extends through centre
+        // and out the other side. Arrowhead at centre pointing light direction.
+        float sx = cx - lx * armLen;   // light source position
         float sy = cy - ly * armLen;
         float sz = cz - lz * armLen;
+
+        float ex = cx + lx * armLen * 0.5f;  // extension on far side of centre
+        float ey = cy + ly * armLen * 0.5f;
+        float ez = cz + lz * armLen * 0.5f;
 
         // Light colour tinted by the knob colour × intensity (clamped to [0.3,1])
         float lr = std::clamp((float)(_lightColor[0] * _lightIntensity), 0.3f, 1.0f);
         float lg2= std::clamp((float)(_lightColor[1] * _lightIntensity), 0.3f, 1.0f);
         float lb2= std::clamp((float)(_lightColor[2] * _lightIntensity), 0.3f, 1.0f);
 
-        glEnable(GL_LINE_STIPPLE);
-        glLineStipple(3, 0xAAAA);  // dashed: ----  ----
-        glLineWidth(1.5f);
         glColor3f(lr, lg2, lb2);
 
-        // Dashed arm: light source → volume centre
+        // Dashed full line: source → centre → extension
+        glEnable(GL_LINE_STIPPLE);
+        glLineStipple(3, 0xAAAA);
+        glLineWidth(1.5f);
         glBegin(GL_LINES);
         glVertex3f(sx, sy, sz);
-        glVertex3f(cx, cy, cz);
+        glVertex3f(ex, ey, ez);
         glEnd();
-
         glDisable(GL_LINE_STIPPLE);
 
-        // Solid stub: centre → into volume (away from light source)
-        glLineWidth(2.0f);
-        glBegin(GL_LINES);
-        glVertex3f(cx, cy, cz);
-        glVertex3f(cx - lx*arrowLen*0.5f, cy - ly*arrowLen*0.5f, cz - lz*arrowLen*0.5f);
-        glEnd();
-
-        // Arrowhead at the light source end (3 lines forming a cone tip)
-        // Build two perpendicular vectors to lx/ly/lz for the arrowhead fins
+        // Build two perpendicular vectors to lx/ly/lz for arrowhead fins
         float ax=0, ay=1, az=0;
         if (std::abs(ly) > 0.9f) { ax=1; ay=0; az=0; }
-        // Gram-Schmidt: perp1 = ax - (ax·l)*l
         float dot1 = ax*lx + ay*ly + az*lz;
         float p1x=ax-dot1*lx, p1y=ay-dot1*ly, p1z=az-dot1*lz;
         float p1len=std::sqrt(p1x*p1x+p1y*p1y+p1z*p1z);
         if(p1len>1e-6f){p1x/=p1len;p1y/=p1len;p1z/=p1len;}
-        // perp2 = l × perp1
         float p2x=ly*p1z-lz*p1y, p2y=lz*p1x-lx*p1z, p2z=lx*p1y-ly*p1x;
 
-        // Arrow tip = light source pos, fins point toward the volume (negate dir)
-        float tipX=sx, tipY=sy, tipZ=sz;
+        // Arrowhead at volume centre, tip pointing in direction light travels (+dir)
+        // Fins open back toward source (-dir from centre)
         float finLen=arrowLen, finSpread=arrowLen*0.35f;
-        glLineWidth(1.5f);
+        glLineWidth(2.0f);
         glBegin(GL_LINES);
-        // Fins point from disc toward volume (+direction)
-        glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX+lx*finLen+p1x*finSpread, tipY+ly*finLen+p1y*finSpread, tipZ+lz*finLen+p1z*finSpread);
-        glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX+lx*finLen-p1x*finSpread, tipY+ly*finLen-p1y*finSpread, tipZ+lz*finLen-p1z*finSpread);
-        glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX+lx*finLen+p2x*finSpread, tipY+ly*finLen+p2y*finSpread, tipZ+lz*finLen+p2z*finSpread);
-        glVertex3f(tipX,tipY,tipZ);
-        glVertex3f(tipX+lx*finLen-p2x*finSpread, tipY+ly*finLen-p2y*finSpread, tipZ+lz*finLen-p2z*finSpread);
+        glVertex3f(cx,cy,cz);
+        glVertex3f(cx-lx*finLen+p1x*finSpread, cy-ly*finLen+p1y*finSpread, cz-lz*finLen+p1z*finSpread);
+        glVertex3f(cx,cy,cz);
+        glVertex3f(cx-lx*finLen-p1x*finSpread, cy-ly*finLen-p1y*finSpread, cz-lz*finLen-p1z*finSpread);
+        glVertex3f(cx,cy,cz);
+        glVertex3f(cx-lx*finLen+p2x*finSpread, cy-ly*finLen+p2y*finSpread, cz-lz*finLen+p2z*finSpread);
+        glVertex3f(cx,cy,cz);
+        glVertex3f(cx-lx*finLen-p2x*finSpread, cy-ly*finLen-p2y*finSpread, cz-lz*finLen-p2z*finSpread);
         glEnd();
 
         // Crosshair disc at light source (8 short spokes)
