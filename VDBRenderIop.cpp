@@ -1685,19 +1685,19 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
         if(p1len>1e-6f){p1x/=p1len;p1y/=p1len;p1z/=p1len;}
         float p2x=ly*p1z-lz*p1y, p2y=lz*p1x-lx*p1z, p2z=lx*p1y-ly*p1x;
 
-        // Arrowhead at volume centre, tip pointing in direction light travels (+dir)
-        // Fins open back toward source (-dir from centre)
+        // Arrowhead at far end (ex,ey,ez), tip pointing in light travel direction (+dir)
+        // Fins open back toward centre (-dir from tip)
         float finLen=arrowLen, finSpread=arrowLen*0.35f;
         glLineWidth(2.0f);
         glBegin(GL_LINES);
-        glVertex3f(cx,cy,cz);
-        glVertex3f(cx-lx*finLen+p1x*finSpread, cy-ly*finLen+p1y*finSpread, cz-lz*finLen+p1z*finSpread);
-        glVertex3f(cx,cy,cz);
-        glVertex3f(cx-lx*finLen-p1x*finSpread, cy-ly*finLen-p1y*finSpread, cz-lz*finLen-p1z*finSpread);
-        glVertex3f(cx,cy,cz);
-        glVertex3f(cx-lx*finLen+p2x*finSpread, cy-ly*finLen+p2y*finSpread, cz-lz*finLen+p2z*finSpread);
-        glVertex3f(cx,cy,cz);
-        glVertex3f(cx-lx*finLen-p2x*finSpread, cy-ly*finLen-p2y*finSpread, cz-lz*finLen-p2z*finSpread);
+        glVertex3f(ex,ey,ez);
+        glVertex3f(ex-lx*finLen+p1x*finSpread, ey-ly*finLen+p1y*finSpread, ez-lz*finLen+p1z*finSpread);
+        glVertex3f(ex,ey,ez);
+        glVertex3f(ex-lx*finLen-p1x*finSpread, ey-ly*finLen-p1y*finSpread, ez-lz*finLen-p1z*finSpread);
+        glVertex3f(ex,ey,ez);
+        glVertex3f(ex-lx*finLen+p2x*finSpread, ey-ly*finLen+p2y*finSpread, ez-lz*finLen+p2z*finSpread);
+        glVertex3f(ex,ey,ez);
+        glVertex3f(ex-lx*finLen-p2x*finSpread, ey-ly*finLen-p2y*finSpread, ez-lz*finLen-p2z*finSpread);
         glEnd();
 
         // Crosshair disc at light source (8 short spokes)
