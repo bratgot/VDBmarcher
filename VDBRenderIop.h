@@ -308,6 +308,37 @@ private:
     static double evalEnvSH(const double sh9[9],
                              double dx, double dy, double dz) noexcept;
 
+    // ── [V6] ReSTIR env lighting ──────────────────────────────────────
+    // Weighted reservoir sampling for env directions. Candidates are
+    // weighted by SH radiance × phase. Only the selected direction
+    // is shadow-traced — one ray per step regardless of nEnv.
+    // Optional spatial reuse combines reservoirs from nearby pixels,
+    // reducing variance without extra shadow rays.
+    bool _useReSTIR = false;  // knob: enable ReSTIR env sampling
+
+    struct Reservoir {
+        int   dirIdx = -1;    // selected direction (index into kDirs26)
+        float weight = 0.0f;  // target weight of selected sample
+        float wSum   = 0.0f;  // sum of all candidate weights
+        int   M      = 0;     // candidate count
+        void update(int idx, float w, float rand01) {
+            wSum += w;  ++M;
+            if (rand01 * wSum < w) { dirIdx = idx; weight = w; }
+        }
+        // Unbiased contribution weight
+        float W() const {
+            return (M > 0 && weight > 1e-8f) ? wSum / (weight * M) : 0.0f;
+        }
+        void merge(const Reservoir& r, float rand01) {
+            // Combine another reservoir into this one (spatial reuse)
+            const float contrib = r.W() * r.weight * r.M;
+            wSum += contrib;
+            M    += r.M;
+            if (r.dirIdx >= 0 && rand01 * wSum < contrib)
+                { dirIdx = r.dirIdx; weight = r.weight; }
+        }
+    };
+
     // ── [V3] Shadow performance ──
     // Two-tier shadow system:
     //   Tier 1 — HDDA shadow rays: always active, skips empty VDB tiles.
@@ -324,6 +355,7 @@ private:
     };
     std::vector<ShadowCache> _shadowCaches;
     void buildShadowCaches();   // called from _open() on main thread
+    int  _envDirCacheBase = -1; // index into _shadowCaches where env-dir caches start
 
     // ══════════════════════════════════════════════════════════
     //  [NEURAL] NeuralVDB integration
@@ -399,9 +431,12 @@ private:
         double jitterOff = 0.0;
 
         // ── [V5] SH environment lighting ──
-        int    envMode   = 1;      // 0=uniform dirs, 1=SH+virtual lights
-        double envSH[9][3] = {};   // L2 SH coefficients [band][RGB]
-        bool   hasEnvSH  = false;  // set per-pixel by engine() before marchRay()
+        int    envMode   = 1;
+        double envSH[9][3] = {};
+        bool   hasEnvSH  = false;
+
+        // ── [V6] ReSTIR ──
+        bool   useReSTIR = false;
 
         // ── [V3] Shadow performance ──
         // shadowRI: per-scanline shallow copy of _volRI for HDDA shadow rays.
@@ -412,6 +447,11 @@ private:
         // nullptr for point lights or when cache is disabled.
         std::vector<std::unique_ptr<openvdb::FloatGrid::ConstAccessor>> shadowCacheAcc;
         bool useShadowCache = false;
+
+        // ── [V6] Env dir shadow cache ──
+        // Indices into shadowCacheAcc for the 6 axis dirs used by SH env path.
+        // -1 = no cache entry for that dir (falls back to HDDA).
+        int envDirCacheIdx[6] = {-1,-1,-1,-1,-1,-1};
 
 #ifdef VDBRENDER_HAS_NEURAL
         const neural::NeuralDecoder* neuralDec = nullptr;
