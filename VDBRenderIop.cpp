@@ -1513,6 +1513,110 @@ void VDBRenderIop::draw_handle(ViewerContext*ctx) {
                 Color3 c=evalRamp(vs,t,gA,gB,_tempMin,_tempMax);
                 glColor4f(c.r,c.g,c.b,.15f+.85f*t);glVertex3f(pt.x,pt.y,pt.z);}
             glEnd();glDisable(GL_BLEND);}}
+
+    // ── Custom Fill Light handle ─────────────────────────────────────────────
+    // Drawn when the light is enabled. Shows:
+    //   · A dashed line from the volume centre toward the light source
+    //     (opposite the direction vector — where the light comes FROM)
+    //   · An arrowhead at the outer end indicating incoming light direction
+    //   · A small crosshair disc at the light source position
+    //   · A short solid line from centre toward the volume, showing
+    //     how the light enters the volume
+    if (_useFallbackLight) {
+        // Compute volume world-space centre
+        float cx=0,cy=0,cz=0;
+        for(int i=0;i<8;++i){cx+=co[i][0];cy+=co[i][1];cz+=co[i][2];}
+        cx/=8; cy/=8; cz/=8;
+
+        // Bbox diagonal — used to scale handle length sensibly
+        float bx=_bboxMax[0]-_bboxMin[0], by=_bboxMax[1]-_bboxMin[1], bz=_bboxMax[2]-_bboxMin[2];
+        float bdiag = std::sqrt(bx*bx + by*by + bz*bz);
+        float armLen = bdiag * 0.7f;   // dashed arm to light source
+        float arrowLen = bdiag * 0.08f; // arrowhead size
+
+        // Normalise light direction (travels FROM source TO volume)
+        float lx=(float)_lightDir[0], ly=(float)_lightDir[1], lz=(float)_lightDir[2];
+        float llen = std::sqrt(lx*lx + ly*ly + lz*lz);
+        if (llen < 1e-6f) { llen = 1.0f; }
+        lx/=llen; ly/=llen; lz/=llen;
+
+        // Light source position = centre OPPOSITE to direction (where it comes from)
+        float sx = cx - lx * armLen;
+        float sy = cy - ly * armLen;
+        float sz = cz - lz * armLen;
+
+        // Light colour tinted by the knob colour × intensity (clamped to [0.3,1])
+        float lr = std::clamp((float)(_lightColor[0] * _lightIntensity), 0.3f, 1.0f);
+        float lg2= std::clamp((float)(_lightColor[1] * _lightIntensity), 0.3f, 1.0f);
+        float lb2= std::clamp((float)(_lightColor[2] * _lightIntensity), 0.3f, 1.0f);
+
+        glEnable(GL_LINE_STIPPLE);
+        glLineStipple(3, 0xAAAA);  // dashed: ----  ----
+        glLineWidth(1.5f);
+        glColor3f(lr, lg2, lb2);
+
+        // Dashed arm: light source → volume centre
+        glBegin(GL_LINES);
+        glVertex3f(sx, sy, sz);
+        glVertex3f(cx, cy, cz);
+        glEnd();
+
+        glDisable(GL_LINE_STIPPLE);
+
+        // Solid short inner arrow: centre → slightly into volume
+        glLineWidth(2.0f);
+        glBegin(GL_LINES);
+        glVertex3f(cx, cy, cz);
+        glVertex3f(cx + lx*arrowLen*0.5f, cy + ly*arrowLen*0.5f, cz + lz*arrowLen*0.5f);
+        glEnd();
+
+        // Arrowhead at the light source end (3 lines forming a cone tip)
+        // Build two perpendicular vectors to lx/ly/lz for the arrowhead fins
+        float ax=0, ay=1, az=0;
+        if (std::abs(ly) > 0.9f) { ax=1; ay=0; az=0; }
+        // Gram-Schmidt: perp1 = ax - (ax·l)*l
+        float dot1 = ax*lx + ay*ly + az*lz;
+        float p1x=ax-dot1*lx, p1y=ay-dot1*ly, p1z=az-dot1*lz;
+        float p1len=std::sqrt(p1x*p1x+p1y*p1y+p1z*p1z);
+        if(p1len>1e-6f){p1x/=p1len;p1y/=p1len;p1z/=p1len;}
+        // perp2 = l × perp1
+        float p2x=ly*p1z-lz*p1y, p2y=lz*p1x-lx*p1z, p2z=lx*p1y-ly*p1x;
+
+        // Arrow tip = light source pos, fins 4 directions back along +l
+        float tipX=sx, tipY=sy, tipZ=sz;
+        float finLen=arrowLen, finSpread=arrowLen*0.35f;
+        glLineWidth(1.5f);
+        glBegin(GL_LINES);
+        // 4 fins
+        glVertex3f(tipX,tipY,tipZ);
+        glVertex3f(tipX+lx*finLen+p1x*finSpread, tipY+ly*finLen+p1y*finSpread, tipZ+lz*finLen+p1z*finSpread);
+        glVertex3f(tipX,tipY,tipZ);
+        glVertex3f(tipX+lx*finLen-p1x*finSpread, tipY+ly*finLen-p1y*finSpread, tipZ+lz*finLen-p1z*finSpread);
+        glVertex3f(tipX,tipY,tipZ);
+        glVertex3f(tipX+lx*finLen+p2x*finSpread, tipY+ly*finLen+p2y*finSpread, tipZ+lz*finLen+p2z*finSpread);
+        glVertex3f(tipX,tipY,tipZ);
+        glVertex3f(tipX+lx*finLen-p2x*finSpread, tipY+ly*finLen-p2y*finSpread, tipZ+lz*finLen-p2z*finSpread);
+        glEnd();
+
+        // Crosshair disc at light source (8 short spokes)
+        float discR = arrowLen * 0.5f;
+        glPointSize(5.0f);
+        glBegin(GL_POINTS);
+        glVertex3f(sx, sy, sz);
+        glEnd();
+        glLineWidth(1.0f);
+        glBegin(GL_LINES);
+        for (int s=0; s<8; ++s) {
+            float ang = (float)s * (float)M_PI / 4.0f;
+            float ux = std::cos(ang)*p1x + std::sin(ang)*p2x;
+            float uy = std::cos(ang)*p1y + std::sin(ang)*p2y;
+            float uz = std::cos(ang)*p1z + std::sin(ang)*p2z;
+            glVertex3f(sx+ux*discR*0.3f, sy+uy*discR*0.3f, sz+uz*discR*0.3f);
+            glVertex3f(sx+ux*discR,      sy+uy*discR,      sz+uz*discR);
+        }
+        glEnd();
+    }
+
     glPopAttrib();
 }
 
