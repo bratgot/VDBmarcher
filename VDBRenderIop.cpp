@@ -191,8 +191,8 @@ void VDBRenderIop::knobs(Knob_Callback f)
     BeginClosedGroup(f,"grp_shading","Shading");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Extinction controls opacity. Scattering controls brightness under<br>"
-        "lighting. Anisotropy shifts the scatter direction for backlit or rim effects."
+        "Extinction controls opacity. Scattering controls brightness under lighting.<br>"
+        "Phase function and scatter quality are set in the Shading V2 tab."
         "</font>");
     Double_knob(f,&_extinction,"extinction","Extinction");SetRange(f,0,100);
     Tooltip(f,"How quickly light is absorbed per unit density.\n"
@@ -202,16 +202,9 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"How bright the volume appears under direct lighting.\n"
               "Only used in Lit and Explosion modes.\n"
               "0 = pure absorption (dark). Higher = brighter.");
-    static const char*aniP[]={"Custom","Isotropic (0.0)","Smoke (0.4)","Dust (0.6)","Cloud (0.76)","Fog (0.8)","Rim Light (-0.4)","Strong Back (-0.7)",nullptr};
-    Enumeration_knob(f,&_anisotropyPreset,aniP,"aniso_preset","Anisotropy Preset");
-    Tooltip(f,"Quick presets for the Henyey-Greenstein g value.\n"
-              "Sets the Anisotropy slider below automatically.");
-    Double_knob(f,&_anisotropy,"anisotropy","Anisotropy (g)");SetRange(f,-1,1);
-    Tooltip(f,"Controls the direction light scatters through the volume.\n"
-              "-1 = backward scatter (rim light / halo effect)\n"
-              " 0 = even scatter in all directions\n"
-              "+1 = forward scatter (backlit glow, silver lining)\n"
-              "Smoke: 0.4, Cloud: 0.76, Dust: 0.6");
+    // [V2] anisotropy/aniso_preset replaced by g_forward/g_backward/lobe_mix in Shading V2 tab
+    Double_knob(f,&_anisotropy,"anisotropy","");SetFlags(f,Knob::INVISIBLE|Knob::DO_NOT_WRITE);
+    Int_knob(f,&_anisotropyPreset,"aniso_preset","");SetFlags(f,Knob::INVISIBLE|Knob::DO_NOT_WRITE);
     EndGroup(f);
 
     BeginClosedGroup(f,"grp_emission","Emission");
@@ -253,8 +246,9 @@ void VDBRenderIop::knobs(Knob_Callback f)
         "BoxSampler interpolation."
         "</font><br><br>"
         "<font size='-1' color='#bbb'>"
-        "<b>Phase</b> — Henyey-Greenstein. <b>Scatter</b> — N-bounce<br>"
-        "with 6-26 directions, albedo-weighted energy conservation."
+        "<b>Phase</b> — Dual-lobe Henyey-Greenstein (Shading V2).<br>"
+        "<b>Scatter</b> — Analytical MS approximation (Wrenninge 2015).<br>"
+        "<b>Powder</b> — Interior brightening (Schneider &amp; Vos 2015)."
         "</font><br><br>"
         "<font size='-1' color='#bbb'>"
         "<b>Blackbody</b> — Planckian locus, 1000K red to<br>"
@@ -610,32 +604,10 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Above 1 = darker, heavier shadows.\n"
               "0 = no self-shadowing at all (fully lit volume).");
 
-    Divider(f,"Multiple Scattering");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "Simulates light bouncing through the volume. Essential for<br>"
-        "realistic clouds and thick fog. More bounces = slower render."
-        "</font>");
-    static const char*scP[]={"Off","Preview","Thin Volume","Cloud / Fog","Dense Volume","Ultra",nullptr};
-    Enumeration_knob(f,&_scatterPreset,scP,"scatter_preset","Scatter Preset");
-    Tooltip(f,"Quick scatter quality presets:\n"
-              "Off — single scatter only, fastest\n"
-              "Preview — 1 bounce, 6 rays\n"
-              "Thin Volume — 1 bounce, 14 rays\n"
-              "Cloud / Fog — 2 bounces, 14 rays\n"
-              "Dense Volume — 3 bounces, 26 rays\n"
-              "Ultra — 4 bounces, 26 rays, slowest");
-    Int_knob(f,&_multiBounces,"multi_bounces","Bounces");
-    Tooltip(f,"Number of extra light bounces through the volume.\n"
-              "0 = single scatter only (fastest)\n"
-              "1 = one bounce, good for clouds\n"
-              "2-3 = dense fog and thick volumes\n"
-              "4 = maximum physical realism, slowest");
-    Int_knob(f,&_bounceRays,"bounce_rays","Bounce Rays");
-    Tooltip(f,"Directions sampled per bounce.\n"
-              "6 = axis-aligned (fast but blocky)\n"
-              "14 = adds diagonals (smoother)\n"
-              "26 = full directional coverage (best quality)");
+    // [V2] brute-force scatter replaced by analytical MS in Shading V2 tab
+    Int_knob(f,&_scatterPreset,"scatter_preset","");SetFlags(f,Knob::INVISIBLE|Knob::DO_NOT_WRITE);
+    Int_knob(f,&_multiBounces,"multi_bounces","");SetFlags(f,Knob::INVISIBLE|Knob::DO_NOT_WRITE);
+    Int_knob(f,&_bounceRays,  "bounce_rays",  "");SetFlags(f,Knob::INVISIBLE|Knob::DO_NOT_WRITE);
 
     Divider(f,"Optimization");
     Bool_knob(f,&_adaptiveStep,"adaptive_step","Adaptive Step Size");
@@ -787,30 +759,31 @@ int VDBRenderIop::knob_changed(Knob* k)
         knob("shutter_close")->set_value(sClose[_shutterPreset]);return 1;
     }
     if(k->is("scene_preset")&&_scenePreset>0){
-        struct Preset {
-            int mode; double ext,scat,aniso; int shSteps;
+       struct Preset {
+            int mode; double ext,scat; int shSteps;
             double shDen,tMin,tMax,emInt,flInt,quality,ambient;
-            int bounces,bRays; double intensity,envDiff;
-            int skyP,stuP; // sky preset, studio preset (triggers their knob_changed)
+            double intensity,envDiff;
+            int skyP,stuP;
+            // [V2] phase function presets
+            double gFwd,gBck,lobeMix,powder;
         };
-        //                                   mode ext   scat  ani  sh shDen tMn   tMx    eI   fI   q    amb  bnc bR   int  envD  skyP stuP
+        //                              mode ext    scat   sh  shDen tMn   tMx    eI   fI   q    amb  int  envD  skyP stuP  gFwd  gBck  mix  pwd
         static const Preset pv[] = {
-            {},                             // 0: Custom
-            {0, 2.0, 1.5, 0.4, 8, 1.0,       500,6500,  0,   0,   3, 0.1,  0, 6,  1.0, 0.5,  2, 0},  // 1: Thin Smoke — Day Sky
-            {0, 15.0,6.0, 0.35,12,1.0,       500,6500,  0,   0,   3, 0.05, 1, 6,  1.0, 0.5,  2, 0},  // 2: Dense Smoke — Day Sky
-            {0, 1.0, 0.95,0.8, 8, 0.5,       500,6500,  0,   0,   3, 0.3,  2, 14, 1.0, 0.8,  4, 0},  // 3: Fog / Mist — Overcast
-            {0, 12.0,11.4,0.76,16,1.0,       500,6500,  0,   0,   5, 0.2,  3, 14, 1.0, 0.6,  2, 0},  // 4: Cumulus Cloud — Day Sky
-            {6, 5.0, 2.0, 0.3, 8, 0.6,       800,3000,  2.5, 5.0, 3, 0.15, 0, 6,  1.5, 0.3,  3, 0},  // 5: Fire — Golden Hour
-            {6, 20.0,5.0, 0.4, 16,0.5,       500,6000,  2.0, 3.5, 5, 0.1,  1, 14, 1.0, 0.4,  2, 0},  // 6: Explosion — Day Sky
-            {6, 30.0,6.0, 0.4, 16,0.4,      1000,8000,  1.5, 2.5, 7, 0.08, 1, 14, 0.8, 0.3,  2, 0},  // 7: Pyroclastic — Day Sky
-            {0, 4.0, 3.0, 0.55, 8, 1.0,      500,6500,  0,   0,   3, 0.15, 0, 6,  1.0, 0.5,  2, 0},  // 8: Dust Storm — Day Sky
-            {0, 2.0, 1.9, 0.7, 8, 0.5,       500,6500,  0,   0,   3, 0.2,  1, 6,  1.0, 0.7,  0, 3},  // 9: Steam — Studio Soft
+            {},                         // 0: Custom
+            {0, 2.0,  1.5,  8, 1.0,    500,6500,  0,   0,   3, 0.1,  1.0, 0.5,  2, 0,  0.40,-0.15,0.80,1.5}, // 1: Thin Smoke
+            {0, 15.0, 6.0, 12, 1.0,    500,6500,  0,   0,   3, 0.05, 1.0, 0.5,  2, 0,  0.50,-0.15,0.75,2.0}, // 2: Dense Smoke
+            {0, 1.0,  0.95, 8, 0.5,    500,6500,  0,   0,   3, 0.3,  1.0, 0.8,  4, 0,  0.80,-0.10,0.85,1.5}, // 3: Fog / Mist
+            {0, 12.0,11.4, 16, 1.0,    500,6500,  0,   0,   5, 0.2,  1.0, 0.6,  2, 0,  0.80,-0.10,0.80,3.0}, // 4: Cumulus Cloud
+            {6, 5.0,  2.0,  8, 0.6,    800,3000,  2.5, 5.0, 3, 0.15, 1.5, 0.3,  3, 0,  0.85,-0.25,0.65,3.0}, // 5: Fire
+            {6, 20.0, 5.0, 16, 0.5,    500,6000,  2.0, 3.5, 5, 0.1,  1.0, 0.4,  2, 0,  0.85,-0.25,0.65,5.0}, // 6: Explosion
+            {6, 30.0, 6.0, 16, 0.4,   1000,8000,  1.5, 2.5, 7, 0.08, 0.8, 0.3,  2, 0,  0.60,-0.20,0.70,4.0}, // 7: Pyroclastic
+            {0, 4.0,  3.0,  8, 1.0,    500,6500,  0,   0,   3, 0.15, 1.0, 0.5,  2, 0,  0.50,-0.30,0.60,2.0}, // 8: Dust Storm
+            {0, 2.0,  1.9,  8, 0.5,    500,6500,  0,   0,   3, 0.2,  1.0, 0.7,  0, 3,  0.70,-0.10,0.80,1.5}, // 9: Steam
         };
         const auto&p=pv[_scenePreset];
         knob("color_scheme")->set_value(p.mode);_colorScheme=p.mode;
         knob("extinction")->set_value(p.ext);_extinction=p.ext;
         knob("scattering")->set_value(p.scat);_scattering=p.scat;
-        knob("anisotropy")->set_value(p.aniso);_anisotropy=p.aniso;
         knob("shadow_steps")->set_value(p.shSteps);_shadowSteps=p.shSteps;
         knob("shadow_density")->set_value(p.shDen);_shadowDensity=p.shDen;
         knob("temp_min")->set_value(p.tMin);_tempMin=p.tMin;
@@ -819,19 +792,19 @@ int VDBRenderIop::knob_changed(Knob* k)
         knob("flame_intensity")->set_value(p.flInt);_flameIntensity=p.flInt;
         knob("quality")->set_value(p.quality);_quality=p.quality;
         knob("ambient")->set_value(p.ambient);_ambientIntensity=p.ambient;
-        knob("multi_bounces")->set_value(p.bounces);_multiBounces=p.bounces;
-        knob("bounce_rays")->set_value(p.bRays);_bounceRays=p.bRays;
         knob("ramp_intensity")->set_value(p.intensity);_rampIntensity=p.intensity;
         knob("env_diffuse")->set_value(p.envDiff);_envDiffuse=p.envDiff;
-        // Set lighting presets — triggers their knob_changed to populate sliders
         knob("sky_preset")->set_value(p.skyP);_skyPreset=p.skyP;
         knob("studio_preset")->set_value(p.stuP);_studioPreset=p.stuP;
         if(p.skyP>0){knob("sky_mix")->set_value(1.0);_skyMix=1.0;
             knob("studio_mix")->set_value(0.0);_studioMix=0.0;}
         if(p.stuP>0){knob("studio_mix")->set_value(1.0);_studioMix=1.0;
             if(p.skyP==0){knob("sky_mix")->set_value(0.0);_skyMix=0.0;}}
-        knob("aniso_preset")->set_value(0);_anisotropyPreset=0;
-        knob("scatter_preset")->set_value(0);_scatterPreset=0;
+        // [V2] set dual-lobe phase function and powder from preset
+        knob("g_forward") ->set_value(p.gFwd);  _gForward  = p.gFwd;
+        knob("g_backward")->set_value(p.gBck);  _gBackward = p.gBck;
+        knob("lobe_mix")  ->set_value(p.lobeMix);_lobeMix  = p.lobeMix;
+        knob("powder_strength")->set_value(p.powder);_powderStrength=p.powder;
         knob("quality_preset")->set_value(0);_qualityPreset=0;
         return 1;
     }
@@ -903,42 +876,26 @@ int VDBRenderIop::knob_changed(Knob* k)
        ||k->is("studio_key_azimuth")||k->is("studio_key_elevation")
        ||k->is("studio_key_intensity")||k->is("studio_fill_ratio")
        ||k->is("studio_rim_intensity"))return 1;
-    if(k->is("aniso_preset")){
-        static const double pv[]={0,0,0.4,0.6,0.76,0.8,-0.4,-0.7};
-        if(_anisotropyPreset>0&&_anisotropyPreset<(int)(sizeof(pv)/sizeof(double))){
-            _anisotropy=pv[_anisotropyPreset];knob("anisotropy")->set_value(_anisotropy);}
-        return 1;}
-    if(k->is("scatter_preset")){
-        static const int bounces[]={0,1,1,2,3,4};
-        static const int rays[]   ={6,6,14,14,26,26};
-        if(_scatterPreset<(int)(sizeof(bounces)/sizeof(int))){
-            knob("multi_bounces")->set_value(bounces[_scatterPreset]);
-            _multiBounces=bounces[_scatterPreset];
-            knob("bounce_rays")->set_value(rays[_scatterPreset]);
-            _bounceRays=rays[_scatterPreset];}
-        return 1;}
+    
     if(k->is("quality_preset")){
         // Custom(0), Draft(1), Preview(2), Production(3), Final(4), Ultra(5)
         // Step size = 1/(q*q). Lower = finer detail but slower.
-        struct QPreset { double q; int sh; double shDen; int bnc,bRays,deep; double envD; };
+       struct QPreset { double q; int sh; double shDen; int deep; double envD; };
         static const QPreset qv[]={
-            {},                               // 0: Custom
-            {1.5,  4, 1.0, 0,  6,  16, 0.3}, // 1: Draft     — step 0.44, fast layout check
-            {3.0,  8, 1.0, 0,  6,  32, 0.4}, // 2: Preview   — step 0.11, smooth enough for review
-            {5.0, 16, 1.0, 1, 14,  48, 0.6}, // 3: Production— step 0.04, 1-bounce for realism
-            {7.0, 24, 1.0, 2, 14,  64, 0.7}, // 4: Final     — step 0.02, 2-bounce
-            {10.0,32, 1.0, 3, 26, 128, 1.0}, // 5: Ultra     — step 0.01, full quality
+            {},                          // 0: Custom
+            {1.5,  4, 1.0,  16, 0.3},   // 1: Draft
+            {3.0,  8, 1.0,  32, 0.4},   // 2: Preview
+            {5.0, 16, 1.0,  48, 0.6},   // 3: Production
+            {7.0, 24, 1.0,  64, 0.7},   // 4: Final
+            {10.0,32, 1.0, 128, 1.0},   // 5: Ultra
         };
         if(_qualityPreset>0&&_qualityPreset<(int)(sizeof(qv)/sizeof(QPreset))){
             const auto&q=qv[_qualityPreset];
             knob("quality")->set_value(q.q);_quality=q.q;
             knob("shadow_steps")->set_value(q.sh);_shadowSteps=q.sh;
             knob("shadow_density")->set_value(q.shDen);_shadowDensity=q.shDen;
-            knob("multi_bounces")->set_value(q.bnc);_multiBounces=q.bnc;
-            knob("bounce_rays")->set_value(q.bRays);_bounceRays=q.bRays;
             knob("deep_samples")->set_value(q.deep);_deepSamples=q.deep;
-            knob("env_diffuse")->set_value(q.envD);_envDiffuse=q.envD;
-            knob("scatter_preset")->set_value(0);_scatterPreset=0;}
+            knob("env_diffuse")->set_value(q.envD);_envDiffuse=q.envD;}
         return 1;}
         if(k->is("chromatic_ext")){
         if(_chromaticExt){
