@@ -711,6 +711,15 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Above 1 = darker, heavier shadows.\n"
               "0 = no self-shadowing at all (fully lit volume).");
 
+    Divider(f,"Sampling");
+    Int_knob(f,&_renderSamples,"render_samples","Render Samples");SetRange(f,1,16);
+    Tooltip(f,"Number of independent stochastic passes per pixel, averaged.\n"
+              "Each pass uses a different jitter seed — noise reduces as sqrt(N).\n"
+              "1 = single pass (default, fastest).\n"
+              "4 = 2x noise reduction. 9 = 3x. 16 = 4x.\n"
+              "Cost scales linearly. Use 4-9 for final renders,\n"
+              "1-2 for interactive work.");
+
     // [V2] brute-force scatter replaced by analytical MS in Shading V2 tab
     Int_knob(f,&_scatterPreset,"scatter_preset","");SetFlags(f,Knob::INVISIBLE|Knob::DO_NOT_WRITE);
     Int_knob(f,&_multiBounces,"multi_bounces","");SetFlags(f,Knob::INVISIBLE|Knob::DO_NOT_WRITE);
@@ -1010,14 +1019,14 @@ int VDBRenderIop::knob_changed(Knob* k)
     if(k->is("quality_preset")){
         // Custom(0), Draft(1), Preview(2), Production(3), Final(4), Ultra(5)
         // Step size = 1/(q*q). Lower = finer detail but slower.
-       struct QPreset { double q; int sh; double shDen; int deep; double envD; };
+       struct QPreset { double q; int sh; double shDen; int deep; double envD; int rs; };
         static const QPreset qv[]={
-            {},                          // 0: Custom
-            {1.5,  4, 1.0,  16, 0.3},   // 1: Draft
-            {3.0,  8, 1.0,  32, 0.4},   // 2: Preview
-            {5.0, 16, 1.0,  48, 0.6},   // 3: Production
-            {7.0, 24, 1.0,  64, 0.7},   // 4: Final
-            {10.0,32, 1.0, 128, 1.0},   // 5: Ultra
+            {},                               // 0: Custom
+            {1.5,  4, 1.0,  16, 0.3,  1},   // 1: Draft
+            {3.0,  8, 1.0,  32, 0.4,  1},   // 2: Preview
+            {5.0, 16, 1.0,  48, 0.6,  4},   // 3: Production
+            {7.0, 24, 1.0,  64, 0.7,  9},   // 4: Final
+            {10.0,32, 1.0, 128, 1.0, 16},   // 5: Ultra
         };
         if(_qualityPreset>0&&_qualityPreset<(int)(sizeof(qv)/sizeof(QPreset))){
             const auto&q=qv[_qualityPreset];
@@ -1025,7 +1034,8 @@ int VDBRenderIop::knob_changed(Knob* k)
             knob("shadow_steps")->set_value(q.sh);_shadowSteps=q.sh;
             knob("shadow_density")->set_value(q.shDen);_shadowDensity=q.shDen;
             knob("deep_samples")->set_value(q.deep);_deepSamples=q.deep;
-            knob("env_diffuse")->set_value(q.envD);_envDiffuse=q.envD;}
+            knob("env_diffuse")->set_value(q.envD);_envDiffuse=q.envD;
+            knob("render_samples")->set_value(q.rs);_renderSamples=q.rs;}
         return 1;}
         if(k->is("chromatic_ext")){
         if(_chromaticExt){
@@ -1040,6 +1050,7 @@ int VDBRenderIop::knob_changed(Knob* k)
     if(k->is("ms_approx")||k->is("ms_tint"))return 1;
     if(k->is("shadow_cache")||k->is("shadow_cache_res")){_shadowCacheDirty=true;return 1;}
     if(k->is("phase_mode")||k->is("mie_droplet_d"))return 1;
+    if(k->is("render_samples"))return 1;
     if(k->is("noise_enable")||k->is("noise_scale")||k->is("noise_strength")||
        k->is("noise_octaves")||k->is("noise_roughness"))return 1;
     if(k->is("env_mode")||k->is("env_virtual_lights")){_envDirty=true;return 1;}
@@ -1353,6 +1364,7 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_msTint[0]);hash.append(_msTint[1]);hash.append(_msTint[2]);
     hash.append(_chromaticExt);hash.append(_extR);hash.append(_extG);hash.append(_extB);
     hash.append(_useShadowCache);hash.append(_shadowCacheRes);
+    hash.append(_renderSamples);
     hash.append(_noiseEnable);hash.append(_noiseScale);hash.append(_noiseStrength);
     hash.append(_noiseOctaves);hash.append(_noiseRoughness);
     hash.append(_phaseMode);hash.append(_mieDropletD);
@@ -1900,9 +1912,24 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
          }
         }
 
-        // Accumulate across motion blur time samples
+        // Accumulate across motion blur time samples AND render samples
         float R=0,G=0,B=0,A=0;
         float emAccR=0,emAccG=0,emAccB=0;
+
+        const int nRenderSamples = std::max(1, _renderSamples);
+
+        for(int si=0;si<nRenderSamples;++si){
+        // Per-sample jitter seed — XOR pixel coords with a per-sample constant
+        // so each sample explores a different step-offset stratum.
+        // Uses the same PCG hash as single-pass jitter, just with different inputs.
+        if(ctx.jitter){
+            // Combine sample index into hash so all N seeds are uncorrelated
+            const uint32_t sx = static_cast<uint32_t>(ix) ^ (static_cast<uint32_t>(si) * 2246822519u);
+            const uint32_t sy = static_cast<uint32_t>(y)  ^ (static_cast<uint32_t>(si) * 2654435761u);
+            uint32_t u = sx * 2654435761u ^ sy * 2246822519u;
+            u ^= u >> 16; u *= 0x45d9f3bu; u ^= u >> 16;
+            ctx.jitterOff = (u & 0xFFFFu) / 65536.0;
+        }
 
         for(int ts=0;ts<nTimeSamples;++ts){
             // Motion blur: offset ray origin by velocity * time
@@ -1932,9 +1959,11 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
             R+=sR;G+=sG;B+=sB;A+=sA;
             emAccR+=sEmR;emAccG+=sEmG;emAccB+=sEmB;
         }
+        } // end render samples loop
 
-        // Average motion blur samples
-        if(nTimeSamples>1){float inv=1.0f/nTimeSamples;R*=inv;G*=inv;B*=inv;A*=inv;emAccR*=inv;emAccG*=inv;emAccB*=inv;}
+        // Average over motion blur × render samples
+        const int totalSamples = nTimeSamples * nRenderSamples;
+        if(totalSamples>1){float inv=1.0f/totalSamples;R*=inv;G*=inv;B*=inv;A*=inv;emAccR*=inv;emAccG*=inv;emAccB*=inv;}
 
         // Composite volume OVER background
         if(hasBg){
