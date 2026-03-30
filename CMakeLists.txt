@@ -89,11 +89,15 @@ set_property(TARGET VDBRender PROPERTY
 install(TARGETS VDBRender
     DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17"
 )
-install(FILES "${CMAKE_SOURCE_DIR}/VDBRender_menu.py"
+install(FILES "${CMAKE_SOURCE_DIR}/menu.py"
+    DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17"
+)
+install(FILES "${CMAKE_SOURCE_DIR}/init.py"
     DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17"
 )
 
-# Runtime DLLs must live next to VDBRender.dll so Windows finds them at load time
+# Runtime DLLs go in lib/ subfolder — Nuke scans the plugin dir for .dll files
+# and will error on any non-plugin DLL. init.py adds lib/ to PATH.
 set(VCPKG_BIN_INSTALL "$ENV{VCPKG_ROOT}/installed/x64-windows/bin")
 if(NOT EXISTS "${VCPKG_BIN_INSTALL}")
     set(VCPKG_BIN_INSTALL "C:/vcpkg/installed/x64-windows/bin")
@@ -110,8 +114,8 @@ set(INSTALL_RUNTIME_DLLS
 )
 
 install(FILES ${INSTALL_RUNTIME_DLLS}
-    DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17"
-    OPTIONAL   # skip silently if a DLL isn't present (e.g. blosc not always built)
+    DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17/lib"
+    OPTIONAL
 )
 
 # ── Distribution folder ────────────────────────────────────────────────────────
@@ -119,14 +123,16 @@ install(FILES ${INSTALL_RUNTIME_DLLS}
 # Contents:
 #   dist/VDBRender_v3/
 #     VDBRender.dll          — plugin
-#     VDBRender_menu.py      — Nuke menu loader
-#     openvdb.dll            — runtime dependencies
-#     Imath-3_2.dll
-#     tbb12.dll
-#     blosc.dll
-#     zlib1.dll
-#     zstd.dll
-#     lz4.dll
+#     init.py                — DLL path setup (runs before plugin load)
+#     menu.py                — Nuke menu entries
+#     lib/                   — runtime dependencies (not scanned by Nuke)
+#       openvdb.dll
+#       Imath-3_2.dll
+#       tbb12.dll
+#       blosc.dll
+#       zlib1.dll
+#       zstd.dll
+#       lz4.dll
 #     INSTALL.txt            — one-page setup instructions
 
 set(DIST_DIR "${CMAKE_SOURCE_DIR}/dist/VDBRender_v3")
@@ -160,25 +166,27 @@ INSTALLATION
      %USERPROFILE%\\.nuke\\plugins\\
 
    So the result is:
-     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\VDBRender.dll
-     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\VDBRender_menu.py
-     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\openvdb.dll  (etc.)
+     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\nuke17\\VDBRender.dll
+     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\nuke17\\init.py
+     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\nuke17\\menu.py
+     %USERPROFILE%\\.nuke\\plugins\\VDBRender\\nuke17\\lib\\openvdb.dll  (etc.)
 
-3. Add this line to %USERPROFILE%\\.nuke\\menu.py:
-     import VDBRender.VDBRender_menu
+3. Add this line to %USERPROFILE%\\.nuke\\init.py (create it if missing):
+     nuke.pluginAddPath('./plugins/VDBRender/nuke17')
+
+   This runs init.py which sets up DLL paths before Nuke loads plugins.
+   The VDB menu is created automatically by menu.py.
 
 4. Restart Nuke. VDBRender appears in the VDB menu.
-
-   NOTE: The folder must be named VDBRender (not VDBRender_v3)
-   for the Python import to work correctly.
 
 REQUIREMENTS
 ============
 - Nuke 17.0v1 or later
 - Windows x64
 
-All DLLs in this folder must remain alongside VDBRender.dll.
-Do not move VDBRender.dll to a different directory.
+The lib/ subfolder contains runtime DLLs that must stay alongside
+the plugin. Do not move them out of lib/ or into the parent folder
+— Nuke will try to load any .dll in the plugin directory as a plugin.
 
 USAGE
 =====
@@ -217,28 +225,33 @@ add_custom_target(dist
         "$<TARGET_FILE:VDBRender>"
         "${DIST_DIR}/VDBRender.dll"
 
-    # Copy menu script
+    # Copy menu script and init.py
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_SOURCE_DIR}/VDBRender_menu.py"
-        "${DIST_DIR}/VDBRender_menu.py"
+        "${CMAKE_SOURCE_DIR}/menu.py"
+        "${DIST_DIR}/menu.py"
+
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/init.py"
+        "${DIST_DIR}/init.py"
 
     # Copy third party licenses
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_SOURCE_DIR}/THIRD_PARTY_LICENSES.txt"
         "${DIST_DIR}/THIRD_PARTY_LICENSES.txt"
 
-    # Copy runtime DLLs (warn but don't fail if a DLL is missing)
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime DLLs from ${VCPKG_BIN}..."
+    # Copy runtime DLLs into lib/ subfolder (Nuke scans plugin dir for .dll)
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${DIST_DIR}/lib"
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying runtime DLLs to lib/ from ${VCPKG_BIN}..."
 )
 
-# Copy each runtime DLL individually
+# Copy each runtime DLL into lib/ subfolder
 foreach(DLL_PATH ${DIST_RUNTIME_DLLS})
     get_filename_component(DLL_NAME "${DLL_PATH}" NAME)
     add_custom_command(TARGET dist POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${DLL_PATH}"
-            "${DIST_DIR}/${DLL_NAME}"
-        COMMENT "  ${DLL_NAME}"
+            "${DIST_DIR}/lib/${DLL_NAME}"
+        COMMENT "  lib/${DLL_NAME}"
     )
 endforeach()
 

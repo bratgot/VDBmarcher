@@ -56,6 +56,7 @@ public:
 
     void _validate(bool for_real) override;
     void _open() override;
+
     void _request(int x, int y, int r, int t, DD::Image::ChannelMask, int count) override;
     void engine(int y, int x, int r, DD::Image::ChannelMask, DD::Image::Row&) override;
     void append(DD::Image::Hash& hash) override;

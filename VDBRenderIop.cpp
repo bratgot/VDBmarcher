@@ -811,33 +811,6 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Half = recommended for production, 8x less memory.\n"
               "Quarter = fastest build, slight shadow softening.");
 
-    Divider(f,"Denoiser");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "Intel OIDN post-process denoiser. Renders all samples first,<br>"
-        "then denoises the full frame. Enable Albedo and Normal AOVs<br>"
-        "in the Output tab for best quality."
-#ifndef VDBRENDER_HAS_OIDN
-        "<br><font color='#c66'><b>Not compiled in</b> — build with -DVDBRENDER_OIDN=ON</font>"
-#endif
-        "</font>");
-    Bool_knob(f,&_denoiseEnable,"denoise_enable","Denoise");
-    Tooltip(f,"Run Intel Open Image Denoise after rendering.\n"
-              "Buffers the full frame then denoises in _close().\n"
-              "Enable Albedo and Normal in Output > AOVs for best quality.\n"
-              "HDR-aware — safe with any lighting intensity.");
-    static const char*dqP[]={"Fast","Balanced","High",nullptr};
-    Enumeration_knob(f,&_denoiseQuality,dqP,"denoise_quality","Quality");
-    Tooltip(f,"OIDN filter quality preset.\n"
-              "Fast = smallest model, lowest latency.\n"
-              "Balanced = good quality/speed trade-off (recommended).\n"
-              "High = largest model, best quality, slower.");
-    Bool_knob(f,&_denoisePrefilter,"denoise_prefilter","Pre-filter auxiliaries");
-    Tooltip(f,"Pre-denoise the albedo and normal buffers before using them as\n"
-              "guidance for the beauty pass.\n"
-              "Improves quality when albedo/normal are noisy (low-sample renders).\n"
-              "Adds one extra OIDN pass per auxiliary buffer.");
-
     Divider(f,"3D Viewport");
     Text_knob(f,
         "<font size='-1' color='#777'>"
@@ -914,17 +887,17 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Divider(f,"Denoiser inputs");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "These passes feed OIDN or NLM denoisers as auxiliary buffers.<br>"
+        "These passes feed denoisers as auxiliary buffers.<br>"
         "Enable alongside beauty and connect to a Denoise node downstream."
         "</font>");
     Bool_knob(f,&_aovAlbedo,"aov_albedo","Albedo");
     Tooltip(f,"Outputs unlit scatter albedo as vdb_albedo (RGB).\n"
               "Cd grid colour when loaded, otherwise white scaled by density.\n"
-              "OIDN uses this to separate lighting from material colour.");
+              "Denoisers use this to separate lighting from material colour.");
     Bool_knob(f,&_aovNormal,"aov_normal","Normal");
     Tooltip(f,"Outputs density-gradient world normals as vdb_normal (RGB).\n"
               "Computed as the normalised central-difference density gradient.\n"
-              "OIDN uses this to preserve volume edges during denoising.\n"
+              "Denoisers use this to preserve volume edges.\n"
               "Most useful on clouds and dense smoke — noisy in thin volumes.");
 
     Divider(f,"Deep Output");
@@ -1573,7 +1546,6 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_motionBlur);hash.append(_shutterOpen);hash.append(_shutterClose);hash.append(_motionSamples);
     hash.append(_aovDensity);hash.append(_aovEmission);hash.append(_aovShadow);hash.append(_aovDepth);
     hash.append(_aovLights);hash.append(_aovMotion);hash.append(_aovAlbedo);hash.append(_aovNormal);
-    hash.append(_denoiseEnable);hash.append(_denoiseQuality);hash.append(_denoisePrefilter);
     hash.append(_gForward);hash.append(_gBackward);hash.append(_lobeMix);
     hash.append(_powderStrength);hash.append(_gradientMix);hash.append(_jitter);
     hash.append(_msApprox);
@@ -2316,7 +2288,7 @@ void VDBRenderIop::buildShadowCaches() {
 
 void VDBRenderIop::_request(int x,int y,int r,int t,ChannelMask channels,int count){
     Iop*bg=dynamic_cast<Iop*>(Op::input(0));
-    if(bg) bg->request(x,y,r,t,Mask_RGBA,count);  // only RGBA from BG, not AOV channels
+    if(bg) bg->request(x,y,r,t,Mask_RGBA,count);
     // Request full env image for caching
     if(_envIop&&_envDirty){
         const int ew=_envIop->info().format().width();
@@ -2324,6 +2296,7 @@ void VDBRenderIop::_request(int x,int y,int r,int t,ChannelMask channels,int cou
         _envIop->request(0,0,ew,eh,Mask_RGB,1);
     }
 }
+
 
 // _open runs once on the main thread after all _request calls
 // and before any engine threads — safe to read env data here
@@ -2338,105 +2311,10 @@ void VDBRenderIop::_open() {
         buildShadowCaches();
         _shadowCacheDirty = false;
     }
-
-    // ── OIDN: allocate full-frame buffers ────────────────────────────────
-    _denoiseReady = false;
-    _rowsWritten.store(0);
-    if (_denoiseEnable) {
-        const int W = info_.format().width();
-        const int H = info_.format().height();
-        _denoiseW = W; _denoiseH = H;
-        _rawBuf     .assign((size_t)W * H * 4, 0.f);
-        _denoisedBuf.assign((size_t)W * H * 4, 0.f);
-        _albedoBuf = _aovAlbedo ? std::vector<float>((size_t)W*H*3, 0.f) : std::vector<float>{};
-        _normalBuf = _aovNormal ? std::vector<float>((size_t)W*H*3, 0.f) : std::vector<float>{};
-    } else {
-        _rawBuf.clear(); _denoisedBuf.clear();
-        _albedoBuf.clear(); _normalBuf.clear();
-    }
 }
 
-// _close runs once on the main thread after all engine rows are done
-void VDBRenderIop::_close() {
-#ifdef VDBRENDER_HAS_OIDN
-    if (_denoiseEnable && !_denoiseReady && _denoiseW > 0 && _denoiseH > 0) {
-        std::lock_guard<std::mutex> lk(_denoiseMutex);
-        if (_denoiseReady) { Iop::_close(); return; } // double-check
-
-        const int W = _denoiseW, H = _denoiseH;
-        try {
-            oidn::DeviceRef dev = oidn::newDevice();
-            dev.commit();
-
-            // Optional: pre-filter auxiliaries for noisy renders
-            auto prefilter = [&](std::vector<float>& buf, const char* name) {
-                if (buf.empty()) return;
-                auto f = dev.newFilter("RT");
-                f.setImage("color",  buf.data(), oidn::Format::Float3, W, H);
-                f.setImage("output", buf.data(), oidn::Format::Float3, W, H);
-                f.set("hdr", false);
-                f.commit(); f.execute();
-            };
-            if (_denoisePrefilter) {
-                prefilter(_albedoBuf, "albedo");
-                prefilter(_normalBuf, "normal");
-            }
-
-            // Main beauty filter
-            oidn::FilterRef filter = dev.newFilter("RT");
-            filter.setImage("color",  _rawBuf.data(),      oidn::Format::Float3, W, H, 0, 4*sizeof(float));
-            filter.setImage("output", _denoisedBuf.data(), oidn::Format::Float3, W, H, 0, 4*sizeof(float));
-            if (!_albedoBuf.empty())
-                filter.setImage("albedo", _albedoBuf.data(), oidn::Format::Float3, W, H);
-            if (!_normalBuf.empty())
-                filter.setImage("normal", _normalBuf.data(), oidn::Format::Float3, W, H);
-            filter.set("hdr", true);
-            // Copy alpha channel straight through (OIDN only denoises RGB)
-            const int npx = W * H;
-            for (int i = 0; i < npx; ++i)
-                _denoisedBuf[i*4+3] = _rawBuf[i*4+3];
-
-            // Quality preset
-            static const oidn::Quality kQ[] = {
-                oidn::Quality::Fast, oidn::Quality::Balanced, oidn::Quality::High };
-            filter.set("quality", kQ[std::clamp(_denoiseQuality, 0, 2)]);
-            filter.commit();
-            filter.execute();
-
-            const char* err = nullptr;
-            if (dev.getError(err) != oidn::Error::None)
-                error("OIDN: %s", err ? err : "unknown error");
-            else
-                _denoiseReady = true;
-
-        } catch (const std::exception& e) {
-            error("OIDN exception: %s", e.what());
-        }
-
-        if (_denoiseReady)
-            asapUpdate(); // ask Nuke to re-request all rows from cache
-    }
-#endif
-    Iop::_close();
-}
 
 void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
-    // ── OIDN second pass: serve denoised result from cache ────────────────
-    if (_denoiseEnable && _denoiseReady && _denoiseW > 0 && y < _denoiseH) {
-        const int W = _denoiseW;
-        float* rO=row.writable(Chan_Red);
-        float* gO=row.writable(Chan_Green);
-        float* bO=row.writable(Chan_Blue);
-        float* aO=row.writable(Chan_Alpha);
-        for (int ix=x; ix<r && ix<W; ++ix) {
-            rO[ix]=_denoisedBuf[(y*W+ix)*4+0];
-            gO[ix]=_denoisedBuf[(y*W+ix)*4+1];
-            bO[ix]=_denoisedBuf[(y*W+ix)*4+2];
-            aO[ix]=_denoisedBuf[(y*W+ix)*4+3];
-        }
-        return;
-    }
-
     // Proxy scaling — map pixel coords to lower-res render
     static const double kProxyScales[]={1.0, 0.75, 0.5, 0.25};
     double pxScale=kProxyScales[std::clamp(_proxyMode,0,3)];
@@ -2676,35 +2554,54 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         if(aovDenR){aovDenR[ix]=A;aovDenG[ix]=A;aovDenB[ix]=A;}
         if(aovEmR){aovEmR[ix]=emAccR;aovEmG[ix]=emAccG;aovEmB[ix]=emAccB;}
         if(aovShR){aovShR[ix]=shAccR;aovShG[ix]=shAccG;aovShB[ix]=shAccB;}
-        if(aovDpP){
-            // Compute depth: AABB ray intersection for first-hit distance
-            float depth=0;
-            if(A>1e-6f){
-                double tMin=0,tMax=1e20;
-                for(int a=0;a<3;++a){
-                    double invD=1.0/((a==0)?rayD[0]:(a==1)?rayD[1]:rayD[2]);
-                    double o=(a==0)?rayO[0]:(a==1)?rayO[1]:rayO[2];
-                    double bMin=(a==0)?_bboxMin[0]:(a==1)?_bboxMin[1]:_bboxMin[2];
-                    double bMax=(a==0)?_bboxMax[0]:(a==1)?_bboxMax[1]:_bboxMax[2];
-                    double t1=(bMin-o)*invD, t2=(bMax-o)*invD;
-                    if(t1>t2)std::swap(t1,t2);
-                    tMin=std::max(tMin,t1);tMax=std::min(tMax,t2);
-                }
-                if(tMax>=tMin&&tMax>0) depth=(float)std::max(tMin,0.0);
+
+        // ── First-hit world position — shared by depth, albedo, normal ────────
+        // Walk the ray to the first voxel with significant density.
+        // Falls back to AABB front face if no density threshold met.
+        openvdb::Vec3d hitP = rayO;
+        double hitT = 0.0;
+        if (A > 1e-6f) {
+            // AABB front face distance
+            double tMin=0, tMax=1e20;
+            for(int a=0;a<3;++a){
+                double invD=1.0/((a==0)?rayD[0]:(a==1)?rayD[1]:rayD[2]);
+                double o=(a==0)?rayO[0]:(a==1)?rayO[1]:rayO[2];
+                double bMin=(a==0)?_bboxMin[0]:(a==1)?_bboxMin[1]:_bboxMin[2];
+                double bMax=(a==0)?_bboxMax[0]:(a==1)?_bboxMax[1]:_bboxMax[2];
+                double t1=(bMin-o)*invD, t2=(bMax-o)*invD;
+                if(t1>t2)std::swap(t1,t2);
+                tMin=std::max(tMin,t1); tMax=std::min(tMax,t2);
             }
-            aovDpP[ix]=depth;
+            if(tMax>=tMin&&tMax>0){
+                hitT = std::max(tMin, 0.0);
+                // Step into volume to find first non-trivial density sample
+                if (_floatGrid) {
+                    const double stepSz = _floatGrid->transform().voxelSize()[0];
+                    const double threshold = 0.01 * _extinction;
+                    double t = hitT;
+                    while (t < tMax) {
+                        const openvdb::Vec3d wp = rayO + t * rayD;
+                        const auto ip = _floatGrid->transform().worldToIndex(wp);
+                        const float d = openvdb::tools::BoxSampler::sample(ctx.densAcc, ip);
+                        if (d > threshold) { hitT = t; hitP = wp; break; }
+                        t += stepSz;
+                    }
+                    if (t >= tMax) hitP = rayO + hitT * rayD;
+                } else {
+                    hitP = rayO + hitT * rayD;
+                }
+            }
         }
+
+        if(aovDpP) aovDpP[ix] = (A > 1e-6f) ? (float)hitT : 0.f;
+
         // ── Motion vector AOV ─────────────────────────────────────────────
-        // Projects world-space velocity into screen-space pixels/frame.
-        // Samples velocity at the primary ray origin (approx. volume centroid).
         if ((aovMvX||aovMvY) && _hasVelGrid && ctx.velAcc && A > 1e-6f) {
-            const auto velIP = _velGrid->transform().worldToIndex(rayO);
+            const auto velIP = _velGrid->transform().worldToIndex(hitP);
             const openvdb::Vec3s vel = openvdb::tools::BoxSampler::sample(*ctx.velAcc, velIP);
-            // Transform velocity from world to camera space (ignore translation)
             const double vcx = _camRot[0][0]*vel[0]+_camRot[1][0]*vel[1]+_camRot[2][0]*vel[2];
             const double vcy = _camRot[0][1]*vel[0]+_camRot[1][1]*vel[1]+_camRot[2][1]*vel[2];
             const double vcz = _camRot[0][2]*vel[0]+_camRot[1][2]*vel[1]+_camRot[2][2]*vel[2];
-            // Project into NDC then pixels (perspective divide by -z)
             const double invZ = (std::abs(vcz) > 1e-8) ? 1.0 / -vcz : 0.0;
             const double ndcVx = vcx * invZ / (2.0 * _halfW);
             const double ndcVy = vcy * invZ / (2.0 * _halfW) * ((double)H/(double)W);
@@ -2715,13 +2612,11 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         }
 
         // ── Albedo AOV ────────────────────────────────────────────────────
-        // Unlit per-voxel albedo for denoiser. Uses Cd grid when loaded,
-        // otherwise density-normalised white. Density-weighted average along ray.
+        // Unlit Cd at first-hit point. White where no Cd grid loaded.
         if (aovAlR) {
             if (A > 1e-6f) {
                 if (_hasColorGrid && ctx.colorAcc) {
-                    // Sample Cd at ray origin as representative albedo
-                    const auto iPC = _colorGrid->transform().worldToIndex(rayO);
+                    const auto iPC = _colorGrid->transform().worldToIndex(hitP);
                     const openvdb::Vec3s cv = openvdb::tools::BoxSampler::sample(*ctx.colorAcc, iPC);
                     aovAlR[ix]=std::max(0.f,cv[0]);
                     aovAlG[ix]=std::max(0.f,cv[1]);
@@ -2733,17 +2628,18 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         }
 
         // ── Normal AOV ────────────────────────────────────────────────────
-        // Density-gradient world normal, remapped [−1,1]→[0,1] for EXR.
-        // Meaningful on cloud/smoke surfaces; noisy in thin volumes.
+        // Central-difference density gradient at first-hit point.
+        // Step size = 2 voxels for stable gradient in sparse volumes.
         if (aovNrR) {
             if (A > 1e-6f && _floatGrid) {
-                const auto iP2 = _floatGrid->transform().worldToIndex(rayO);
-                float nx = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(1,0,0))
-                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(1,0,0));
-                float ny = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(0,1,0))
-                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(0,1,0));
-                float nz = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(0,0,1))
-                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(0,0,1));
+                const auto iP2 = _floatGrid->transform().worldToIndex(hitP);
+                const double gs = 2.0; // gradient step in voxels
+                float nx = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(gs,0,0))
+                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(gs,0,0));
+                float ny = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(0,gs,0))
+                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(0,gs,0));
+                float nz = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(0,0,gs))
+                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(0,0,gs));
                 const float nl = std::sqrt(nx*nx+ny*ny+nz*nz);
                 if (nl > 1e-6f) { nx/=nl; ny/=nl; nz/=nl; }
                 aovNrR[ix]=nx*0.5f+0.5f; aovNrG[ix]=ny*0.5f+0.5f; aovNrB[ix]=nz*0.5f+0.5f;
@@ -2765,31 +2661,6 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
     // composites particles over the already-written volume pixels
     if (_hasPointGrid)
         renderPoints(y, x, r, ctx, rO, gO, bO, aO);
-
-    // ── OIDN first pass: copy rendered row into full-frame buffer ─────────
-    if (_denoiseEnable && !_rawBuf.empty() && y < _denoiseH) {
-        const int W = _denoiseW;
-        for (int ix=x; ix<r && ix<W; ++ix) {
-            _rawBuf[(y*W+ix)*4+0] = rO[ix];
-            _rawBuf[(y*W+ix)*4+1] = gO[ix];
-            _rawBuf[(y*W+ix)*4+2] = bO[ix];
-            _rawBuf[(y*W+ix)*4+3] = aO[ix];
-            if (!_albedoBuf.empty() && aovAlR && ix < r) {
-                _albedoBuf[(y*W+ix)*3+0] = aovAlR[ix];
-                _albedoBuf[(y*W+ix)*3+1] = aovAlG[ix];
-                _albedoBuf[(y*W+ix)*3+2] = aovAlB[ix];
-            }
-            if (!_normalBuf.empty() && aovNrR && ix < r) {
-                _normalBuf[(y*W+ix)*3+0] = aovNrR[ix];
-                _normalBuf[(y*W+ix)*3+1] = aovNrG[ix];
-                _normalBuf[(y*W+ix)*3+2] = aovNrB[ix];
-            }
-        }
-        // When every row is written, trigger OIDN execute
-        if (_rowsWritten.fetch_add(1) + 1 == _denoiseH) {
-            _close();
-        }
-    }
 }
 
 // ═══ Environment Map ═══
