@@ -2,7 +2,7 @@
 
 **OpenVDB Volume Ray Marcher for Nuke 17**
 
-A volume renderer that brings Houdini VDB files directly into Nuke's 2D compositing pipeline. Supports smoke, fire, explosions, clouds, and particle point clouds with physically-based lighting.
+A volume renderer that brings VDB files directly into Nuke's 2D compositing pipeline. Supports smoke, fire, explosions, clouds, and particle point clouds with physically-based lighting.
 
 Created by Marten Blumen
 
