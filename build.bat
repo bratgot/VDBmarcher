@@ -1,23 +1,47 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-set BUILD_TYPE=Release
-set TARGET=all
-set LOG_FILE=%~dp0build\build_log.txt
-set ERROR_FILE=%~dp0build\build_errors.txt
+:: ════════════════════════════════════════════════════════════════
+::  VDBRender build script
+::  Usage: build.bat [release|debug] [configure|build|install|all]
+::  Default: release all
+:: ════════════════════════════════════════════════════════════════
+
+:: ── User config ──────────────────────────────────────────────────────────────
 set NUKE_ROOT=C:\Program Files\Nuke17.0v1
 set VCPKG=C:\vcpkg\scripts\buildsystems\vcpkg.cmake
 set VCPKG_PREFIX=C:\vcpkg\installed\x64-windows
 set VCPKG_BIN=C:\vcpkg\installed\x64-windows\bin
-set PLUGIN_DIR=%USERPROFILE%\.nuke\plugins\VDBRender\nuke17
-set PLUGIN_DIR_N17=%USERPROFILE%\.nuke\plugins\VDBRender\nuke17
 
+:: OIDN denoiser — set to ON and point OIDN_ROOT at the extracted zip from
+:: https://www.openimagedenoise.org/downloads.html  (Windows x64 binary)
+:: e.g. extract to C:\oidn so that C:\oidn\include\OpenImageDenoise\oidn.hpp exists
+set OIDN_ENABLE=ON
+set OIDN_ROOT=C:\oidn
+
+:: NeuralVDB — set to ON and point LIBTORCH_PATH at a LibTorch install
+set NEURAL_ENABLE=OFF
+set LIBTORCH_PATH=
+
+:: CUDA GPU ray march — set to ON (requires NVIDIA GPU + CUDA Toolkit 12+)
+:: SM 7.5+ recommended: RTX 20xx / 30xx / 40xx
+set CUDA_ENABLE=OFF
+
+:: Plugin install path (Nuke 17 loads from the nuke17 subfolder)
+set PLUGIN_DIR=%USERPROFILE%\.nuke\plugins\VDBRender\nuke17
+
+:: ── Arg parsing ──────────────────────────────────────────────────────────────
+set BUILD_TYPE=Release
+set TARGET=all
 if /i "%1"=="debug"     set BUILD_TYPE=Debug
 if /i "%1"=="release"   set BUILD_TYPE=Release
 if /i "%2"=="configure" set TARGET=configure
 if /i "%2"=="build"     set TARGET=build
 if /i "%2"=="install"   set TARGET=install
 if /i "%2"=="dist"      set TARGET=dist
+
+set LOG_FILE=%~dp0build\build_log.txt
+set ERROR_FILE=%~dp0build\build_errors.txt
 
 mkdir "%~dp0build" 2>nul
 echo. > "%LOG_FILE%"
@@ -26,6 +50,10 @@ echo. > "%ERROR_FILE%"
 echo.
 echo  VDBRender  [%BUILD_TYPE%]  %DATE% %TIME%
 echo  ================================================
+if /i "%OIDN_ENABLE%"=="ON"   echo  OIDN denoiser : ON  ^(%OIDN_ROOT%^)
+if /i "%NEURAL_ENABLE%"=="ON" echo  NeuralVDB     : ON  ^(%LIBTORCH_PATH%^)
+if /i "%CUDA_ENABLE%"=="ON"   echo  CUDA GPU march: ON
+echo.
 
 :: ── Configure ────────────────────────────────────────────────────────────────
 if /i "%TARGET%"=="build"   goto :do_build
@@ -33,10 +61,29 @@ if /i "%TARGET%"=="install" goto :do_install
 if /i "%TARGET%"=="dist"    goto :do_dist
 
 echo  [1/3] Configuring...
+
+set CMAKE_EXTRA=
+if /i "%OIDN_ENABLE%"=="ON" (
+    set CMAKE_EXTRA=!CMAKE_EXTRA! -DVDBRENDER_OIDN=ON -DOIDN_ROOT="%OIDN_ROOT%"
+) else (
+    set CMAKE_EXTRA=!CMAKE_EXTRA! -DVDBRENDER_OIDN=OFF
+)
+if /i "%NEURAL_ENABLE%"=="ON" (
+    set CMAKE_EXTRA=!CMAKE_EXTRA! -DVDBRENDER_NEURAL=ON -DLIBTORCH_PATH="%LIBTORCH_PATH%"
+) else (
+    set CMAKE_EXTRA=!CMAKE_EXTRA! -DVDBRENDER_NEURAL=OFF
+)
+if /i "%CUDA_ENABLE%"=="ON" (
+    set CMAKE_EXTRA=!CMAKE_EXTRA! -DVDBRENDER_CUDA=ON
+) else (
+    set CMAKE_EXTRA=!CMAKE_EXTRA! -DVDBRENDER_CUDA=OFF
+)
+
 cmake -B "%~dp0build" -G "Visual Studio 17 2022" -A x64 ^
     -DCMAKE_TOOLCHAIN_FILE="%VCPKG%" ^
     -DCMAKE_PREFIX_PATH="%VCPKG_PREFIX%" ^
     -DNUKE_ROOT="%NUKE_ROOT%" ^
+    !CMAKE_EXTRA! ^
     >> "%LOG_FILE%" 2>&1
 call :check_step "Configure" || goto :print_summary
 
@@ -48,31 +95,46 @@ cmake --build "%~dp0build" --config %BUILD_TYPE% -j %NUMBER_OF_PROCESSORS% ^
 call :check_step "Build" || goto :print_summary
 if /i "%TARGET%"=="build" goto :print_summary
 
-:: ── Install — manual xcopy, no cmake install ─────────────────────────────────
+:: ── Install ──────────────────────────────────────────────────────────────────
 :do_install
 echo  [3/3] Installing to %PLUGIN_DIR%...
 mkdir "%PLUGIN_DIR%" 2>nul
 
-:: DLL
+:: Main DLL
 copy /Y "%~dp0build\%BUILD_TYPE%\VDBRender.dll" "%PLUGIN_DIR%\" >> "%LOG_FILE%" 2>&1
 call :check_step "Copy VDBRender.dll" || goto :print_summary
-:: Also copy to nuke17 subfolder (legacy install path)
-mkdir "%PLUGIN_DIR_N17%" 2>nul
-copy /Y "%~dp0build\%BUILD_TYPE%\VDBRender.dll" "%PLUGIN_DIR_N17%\" >> "%LOG_FILE%" 2>&1
 
-:: Menu script
-copy /Y "%~dp0VDBRender_menu.py" "%PLUGIN_DIR%\" >> "%LOG_FILE%" 2>&1
+:: Menu script (skip silently if missing)
+if exist "%~dp0VDBRender_menu.py" (
+    copy /Y "%~dp0VDBRender_menu.py" "%PLUGIN_DIR%\" >> "%LOG_FILE%" 2>&1
+)
 
-:: Runtime DLLs
+:: vcpkg runtime DLLs
 for %%F in (openvdb.dll Imath-3_2.dll tbb12.dll blosc.dll zlib1.dll zstd.dll lz4.dll) do (
     if exist "%VCPKG_BIN%\%%F" (
         copy /Y "%VCPKG_BIN%\%%F" "%PLUGIN_DIR%\" >> "%LOG_FILE%" 2>&1
     )
 )
 
-echo  [OK]   Installed to %PLUGIN_DIR%
+:: OIDN runtime DLLs (only when enabled)
+if /i "%OIDN_ENABLE%"=="ON" (
+    echo  Copying OIDN runtime DLLs...
+    for %%F in (
+        OpenImageDenoise.dll
+        OpenImageDenoise_device_cpu.dll
+        OpenImageDenoise_core.dll
+        tbb12.dll
+    ) do (
+        if exist "%OIDN_ROOT%\bin\%%F" (
+            copy /Y "%OIDN_ROOT%\bin\%%F" "%PLUGIN_DIR%\" >> "%LOG_FILE%" 2>&1
+            echo    Copied %%F
+        )
+    )
+)
+
 echo.
-dir "%PLUGIN_DIR%\VDBRender.dll" | findstr VDBRender
+echo  ── Installed files ──────────────────────────────
+dir "%PLUGIN_DIR%" | findstr /V "^$\| Dir\|Volume\|bytes free"
 echo.
 pause
 goto :print_summary
@@ -82,7 +144,7 @@ goto :print_summary
 echo  [3/3] Building dist package...
 cmake --build "%~dp0build" --config %BUILD_TYPE% --target dist >> "%LOG_FILE%" 2>&1
 call :check_step "Dist" || goto :print_summary
-echo        Output: %~dp0dist\VDBRender_v3\
+echo  Output: %~dp0dist\VDBRender_v3\
 goto :print_summary
 
 :: ── Summary ──────────────────────────────────────────────────────────────────
@@ -136,12 +198,13 @@ if %ERR% GTR 0 (
     exit /b 0
 )
 
+:: ── Helpers ──────────────────────────────────────────────────────────────────
 :check_step
-set STEP=%~1
 if errorlevel 1 (
-    echo  [FAIL] %STEP% failed.
+    echo  [FAIL] %~1 failed.
+    pause
     exit /b 1
 ) else (
-    echo  [OK]   %STEP% done.
+    echo  [OK]   %~1 done.
     exit /b 0
 )

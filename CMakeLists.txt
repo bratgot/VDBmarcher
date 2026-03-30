@@ -57,6 +57,26 @@ if(VDBRENDER_NEURAL)
     target_include_directories(VDBRender PRIVATE ${TORCH_INCLUDE_DIRS})
 endif()
 
+# ── [CUDA] Optional NanoVDB GPU primary ray march ────────────────────────────
+# Requires CUDA Toolkit 12+ and an NVIDIA GPU (SM 7.5+ recommended).
+# SM architectures: 75=Turing RTX20xx  86=Ampere RTX30xx  89=Ada RTX40xx
+option(VDBRENDER_CUDA "Enable CUDA GPU primary ray march (NanoVDB)" OFF)
+if(VDBRENDER_CUDA)
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    target_sources(VDBRender PRIVATE VDBRenderKernel.cu)
+    target_compile_definitions(VDBRender PRIVATE VDBRENDER_HAS_CUDA=1)
+    target_link_libraries(VDBRender PRIVATE CUDA::cudart)
+    set_property(TARGET VDBRender PROPERTY CUDA_ARCHITECTURES 75 86 89)
+    target_include_directories(VDBRender PRIVATE
+        ${CUDAToolkit_INCLUDE_DIRS}
+        "${VCPKG_PREFIX}/include"
+    )
+    set_source_files_properties(VDBRenderKernel.cu
+        PROPERTIES COMPILE_OPTIONS "--std=c++17")
+    message(STATUS "[CUDA] GPU ray march enabled — SM 75/86/89")
+endif()
+
 # AVX2 SIMD + fast math for volume ray marching
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(VDBRender PRIVATE -mavx2 -mfma -ffast-math)
@@ -314,5 +334,10 @@ if(VDBRENDER_NEURAL)
     message(STATUS "    NeuralVDB:   ENABLED (LibTorch: ${LIBTORCH_PATH})")
 else()
     message(STATUS "    NeuralVDB:   disabled (use -DVDBRENDER_NEURAL=ON to enable)")
+endif()
+if(VDBRENDER_CUDA)
+    message(STATUS "    CUDA:        ENABLED (SM 75/86/89)")
+else()
+    message(STATUS "    CUDA:        disabled (use -DVDBRENDER_CUDA=ON to enable)")
 endif()
 message(STATUS "")
