@@ -123,7 +123,7 @@ void VDBRenderIop::knobs(Knob_Callback f)
     // ═══════════════════════════════════════════════════
     //  TAB: VDBRender
     // ═══════════════════════════════════════════════════
-    Tab_knob(f,"VDBRender");
+    Tab_knob(f,"Volume");
 
     Text_knob(f,
         "<font size='+2'><b>VDBRender</b></font>"
@@ -204,7 +204,27 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "e.g. -10 makes frame 20 read file frame 10.");
     EndGroup(f);
 
-    BeginGroup(f,"grp_render","Render");
+    BeginClosedGroup(f,"grp_layer2","Layer 2 VDB");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Optional second VDB volume layered on top of the primary.<br>"
+        "Both volumes ray march through the same camera ray and accumulate.<br>"
+        "Useful for hero smoke + distant haze, or two overlapping sims."
+        "</font>");
+    Bool_knob(f,&_grid2Enable,"grid2_enable","Enable Layer 2");
+    Tooltip(f,"Enable the second VDB layer.\n"
+              "When off, the second VDB is ignored entirely (zero cost).");
+    File_knob(f,&_vdbFilePath2,"file2","VDB File 2");
+    Tooltip(f,"Path to a second .vdb file. Leave empty to disable.\n"
+              "The secondary grid is density-only — lighting, shadows,\n"
+              "and extinction settings are shared with the primary.");
+    String_knob(f,&_gridName2,"grid_name2","Density Grid");
+    Tooltip(f,"Density grid name in the second VDB file.\n"
+              "Leave empty to use the same name as the primary density grid.");
+    Double_knob(f,&_densityMix2,"density_mix2","Density Mix");SetRange(f,0,5);
+    Tooltip(f,"Density multiplier for the second layer.\n"
+              "Use lower values (0.1–0.5) for thin background haze.");
+    EndGroup(f);
     Text_knob(f,
         "<font size='-1' color='#777'>"
         "Scene Presets configure all shading values for common volume types.<br>"
@@ -268,6 +288,17 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Brightness of temperature grid emission.\n"
               "Only active when a temperature grid is loaded.\n"
               "Start with 1-5 and adjust to taste.");
+    Bool_knob(f,&_emissionRampEnable,"emission_ramp_enable","Custom Emission Ramp");
+    Tooltip(f,"Replace the blackbody emission curve with a custom two-colour ramp.\n"
+              "Low colour = cool end (Temp Min), High colour = hot end (Temp Max).\n"
+              "Useful for stylised fire: neon, alien plasma, or cartoon flame.\n"
+              "When off: CIE 1931 blackbody (physically accurate).");
+    Color_knob(f,_emissionRampLow,"emission_ramp_low","Ramp Cool");
+    Tooltip(f,"Emission colour at the low temperature end (Temp Min).\n"
+              "Only active when Custom Emission Ramp is on.");
+    Color_knob(f,_emissionRampHigh,"emission_ramp_high","Ramp Hot");
+    Tooltip(f,"Emission colour at the high temperature end (Temp Max).\n"
+              "Only active when Custom Emission Ramp is on.");
     Double_knob(f,&_flameIntensity,"flame_intensity","Flame Emission");SetRange(f,0,20);
     Tooltip(f,"Brightness of flame grid emission.\n"
               "Only active when a flames grid is loaded.\n"
@@ -456,13 +487,39 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Full colour RGB — the pre-composite beauty before BG layering.\n"
               "Useful for adjusting fire brightness in comp.");
     Bool_knob(f,&_aovShadow,"aov_shadow","Shadow");
-    Tooltip(f,"Outputs shadow transmittance as the vdb_shadow layer.\n"
-              "1.0 = fully lit, 0.0 = fully occluded.\n"
-              "Greyscale across R, G, B. Useful for shadow manipulation.");
+    Tooltip(f,"Outputs per-light shadow transmittance as vdb_shadow.\n"
+              "1.0 = fully lit, 0.0 = fully occluded by self-shadow.\n"
+              "Density-weighted average across the primary ray.");
+    Bool_knob(f,&_aovLights,"aov_lights","Per-light");
+    Tooltip(f,"Outputs up to 4 separate light contribution layers.\n"
+              "vdb_light0, vdb_light1, vdb_light2, vdb_light3.\n"
+              "Each layer contains the scatter contribution from that light only.\n"
+              "Lights beyond index 3 are merged into vdb_light3.\n"
+              "Useful for relighting in comp — multiply each layer by a grade.");
     Bool_knob(f,&_aovDepth,"aov_depth","Depth");
     Tooltip(f,"Outputs first-hit depth as the vdb_depth layer.\n"
               "Camera distance to the first significant density sample.\n"
               "Single channel (red). Useful for depth-of-field or fog cards.");
+    Bool_knob(f,&_aovMotion,"aov_motion","Motion vectors");
+    Tooltip(f,"Outputs screen-space motion vectors as vdb_motion (RG = XY pixels/frame).\n"
+              "Requires a velocity grid to be set in the Grids tab.\n"
+              "Used as input to TAA denoisers and motion-blur nodes in comp.\n"
+              "Vector is the 2D pixel displacement from this frame to the next.");
+    Divider(f,"Denoiser inputs");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "These passes feed OIDN or NLM denoisers as auxiliary buffers.<br>"
+        "Enable alongside beauty and connect to a Denoise node downstream."
+        "</font>");
+    Bool_knob(f,&_aovAlbedo,"aov_albedo","Albedo");
+    Tooltip(f,"Outputs unlit scatter albedo as vdb_albedo (RGB).\n"
+              "Cd grid colour when loaded, otherwise white scaled by density.\n"
+              "OIDN uses this to separate lighting from material colour.");
+    Bool_knob(f,&_aovNormal,"aov_normal","Normal");
+    Tooltip(f,"Outputs density-gradient world normals as vdb_normal (RGB).\n"
+              "Computed as the normalised central-difference density gradient.\n"
+              "OIDN uses this to preserve volume edges during denoising.\n"
+              "Most useful on clouds and dense smoke — noisy in thin volumes.");
 
     Divider(f,"Deep Output");
     Text_knob(f,
@@ -798,6 +855,21 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Full = 100% resolution.\n"
               "3/4, 1/2, 1/4 = progressively lower resolution.\n"
               "Set back to Full before final render.");
+
+    Bool_knob(f,&_renderRegionEnable,"render_region_enable","Render Region");
+    Tooltip(f,"Restrict rendering to a sub-region of the frame.\n"
+              "Pixels outside the region are passed through from BG or set to black.\n"
+              "Useful for iterating on a specific part of a large render without\n"
+              "waiting for the full frame.\n"
+              "Region is defined in normalised 0-1 image coordinates.");
+    Double_knob(f,&_rrX,"rr_x","Region X");SetRange(f,0,1);
+    Tooltip(f,"Left edge of the render region (0=left, 1=right).");
+    Double_knob(f,&_rrY,"rr_y","Region Y");SetRange(f,0,1);
+    Tooltip(f,"Bottom edge of the render region (0=bottom, 1=top).");
+    Double_knob(f,&_rrW,"rr_w","Region W");SetRange(f,0,1);
+    Tooltip(f,"Width of the render region as a fraction of frame width.");
+    Double_knob(f,&_rrH,"rr_h","Region H");SetRange(f,0,1);
+    Tooltip(f,"Height of the render region as a fraction of frame height.");
 
     Divider(f,"Shadow Performance");
     Text_knob(f,
@@ -1416,11 +1488,16 @@ void VDBRenderIop::discoverGrids() {
 void VDBRenderIop::append(Hash& hash) {
     hash.append(outputContext().frame());hash.append(_frameOffset);hash.append(_colorScheme);
     hash.append(_emissionIntensity);hash.append(_flameIntensity);hash.append(_rampIntensity);hash.append(_lightIntensity);
+    hash.append(_emissionRampEnable);
+    for(int i=0;i<3;++i){hash.append(_emissionRampLow[i]);hash.append(_emissionRampHigh[i]);}
     hash.append(_anisotropy);hash.append(_shadowDensity);hash.append(_ambientIntensity);
     hash.append(_multiBounces);hash.append(_bounceRays);
     hash.append(_envIntensity);hash.append(_envDiffuse);hash.append(_envRotate);
     hash.append(_densityMix);hash.append(_tempMix);hash.append(_flameMix);
+    if(_vdbFilePath2)hash.append(_vdbFilePath2);
+    hash.append(_densityMix2);hash.append(_grid2Enable);
     hash.append(_adaptiveStep);hash.append(_proxyMode);hash.append(_useFallbackLight);
+    hash.append(_renderRegionEnable);hash.append(_rrX);hash.append(_rrY);hash.append(_rrW);hash.append(_rrH);
     hash.append(_skyPreset);hash.append(_studioPreset);hash.append(_skyMix);hash.append(_studioMix);
     hash.append(_sunElevation);hash.append(_sunAzimuth);
     hash.append(_sunIntensity);hash.append(_skyIntensity);hash.append(_turbidity);hash.append(_groundBounce);
@@ -1428,6 +1505,7 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_studioKeyIntensity);hash.append(_studioFillRatio);hash.append(_studioRimIntensity);
     hash.append(_motionBlur);hash.append(_shutterOpen);hash.append(_shutterClose);hash.append(_motionSamples);
     hash.append(_aovDensity);hash.append(_aovEmission);hash.append(_aovShadow);hash.append(_aovDepth);
+    hash.append(_aovLights);hash.append(_aovMotion);hash.append(_aovAlbedo);hash.append(_aovNormal);
     hash.append(_gForward);hash.append(_gBackward);hash.append(_lobeMix);
     hash.append(_powderStrength);hash.append(_gradientMix);hash.append(_jitter);
     hash.append(_msApprox);
@@ -1749,6 +1827,28 @@ void VDBRenderIop::_validate(bool for_real) {
     if(_aovEmission){outChans+=channel("vdb_emission.red");outChans+=channel("vdb_emission.green");outChans+=channel("vdb_emission.blue");}
     if(_aovShadow){outChans+=channel("vdb_shadow.red");outChans+=channel("vdb_shadow.green");outChans+=channel("vdb_shadow.blue");}
     if(_aovDepth){outChans+=channel("vdb_depth.red");}
+    if(_aovMotion){
+        outChans+=channel("vdb_motion.red");   // screen X (pixels)
+        outChans+=channel("vdb_motion.green"); // screen Y (pixels)
+    }
+    if(_aovAlbedo){
+        outChans+=channel("vdb_albedo.red");
+        outChans+=channel("vdb_albedo.green");
+        outChans+=channel("vdb_albedo.blue");
+    }
+    if(_aovNormal){
+        outChans+=channel("vdb_normal.red");
+        outChans+=channel("vdb_normal.green");
+        outChans+=channel("vdb_normal.blue");
+    }
+    if(_aovLights){
+        for(int li=0;li<kMaxLightAOVs;++li){
+            char n[32]; std::snprintf(n,sizeof(n),"vdb_light%d",li);
+            outChans+=channel((std::string(n)+".red").c_str());
+            outChans+=channel((std::string(n)+".green").c_str());
+            outChans+=channel((std::string(n)+".blue").c_str());
+        }
+    }
     info_.channels(outChans);info_.turn_on(outChans);
     set_out_channels(outChans);
     // Deep info — MUST be set on both validate passes
@@ -1920,8 +2020,7 @@ void VDBRenderIop::_validate(bool for_real) {
             _bboxMin=_bboxMax=corners[0];
             for(int i=1;i<8;++i)for(int a=0;a<3;++a){_bboxMin[a]=std::min(_bboxMin[a],corners[i][a]);_bboxMax[a]=std::max(_bboxMax[a],corners[i][a]);}
             _gridValid=true;_loadedPath=path2;_loadedGrid=grid;_loadedFrame=curFrame;
-            _shadowCacheDirty=true; // [V3.1] animated VDB — rebuild cache each frame
-            // Build VolumeRayIntersector for HDDA empty-space skipping
+            _shadowCacheDirty=true;
             _volRI.reset();
             openvdb::FloatGrid::Ptr riGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
             if(riGrid){try{_volRI=std::make_unique<VRI>(*riGrid);}catch(...){}}
@@ -1932,7 +2031,36 @@ void VDBRenderIop::_validate(bool for_real) {
     } // close else from isNVDB check
 #endif
     }
-}
+
+    // ── Layer 2 VDB load ─────────────────────────────────────────────────────
+    _grid2Valid = false;
+    _floatGrid2.reset();
+    if (_grid2Enable && _vdbFilePath2 && std::strlen(_vdbFilePath2) > 0) {
+        try {
+            openvdb::io::File f2(_vdbFilePath2);
+            f2.open(false);
+            std::string g2name = (_gridName2 && std::strlen(_gridName2) > 0)
+                ? _gridName2
+                : (_gridName && std::strlen(_gridName) > 0 ? _gridName : "density");
+            openvdb::GridBase::Ptr bg2;
+            // Try the named grid first, then iterate for first FloatGrid
+            try { bg2 = f2.readGrid(g2name); } catch(...) {}
+            if (!bg2) {
+                for (auto it = f2.beginName(); it != f2.endName(); ++it) {
+                    try {
+                        auto g = f2.readGrid(*it);
+                        if (g && g->isType<openvdb::FloatGrid>()) { bg2 = g; break; }
+                    } catch(...) {}
+                }
+            }
+            if (bg2) {
+                _floatGrid2 = openvdb::gridPtrCast<openvdb::FloatGrid>(bg2);
+                if (_floatGrid2) _grid2Valid = true;
+            }
+            f2.close();
+        } catch(...) { /* silent — layer 2 is optional */ }
+    }
+}   // end _validate
 
 // ═══ [V3] Transmittance cache ═════════════════════════════════════════════════
 // Sweeps the voxel grid once per directional light using a dominant-axis
@@ -2183,6 +2311,14 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
     Channel chShG=_aovShadow?channel("vdb_shadow.green"):Chan_Black;
     Channel chShB=_aovShadow?channel("vdb_shadow.blue"):Chan_Black;
     Channel chDpR=_aovDepth?channel("vdb_depth.red"):Chan_Black;
+    Channel chMvX=_aovMotion?channel("vdb_motion.red"):Chan_Black;
+    Channel chMvY=_aovMotion?channel("vdb_motion.green"):Chan_Black;
+    Channel chAlR=_aovAlbedo?channel("vdb_albedo.red"):Chan_Black;
+    Channel chAlG=_aovAlbedo?channel("vdb_albedo.green"):Chan_Black;
+    Channel chAlB=_aovAlbedo?channel("vdb_albedo.blue"):Chan_Black;
+    Channel chNrR=_aovNormal?channel("vdb_normal.red"):Chan_Black;
+    Channel chNrG=_aovNormal?channel("vdb_normal.green"):Chan_Black;
+    Channel chNrB=_aovNormal?channel("vdb_normal.blue"):Chan_Black;
 
     float*aovDenR=(_aovDensity&&channels.contains(chDenR))?row.writable(chDenR):nullptr;
     float*aovDenG=(_aovDensity&&channels.contains(chDenG))?row.writable(chDenG):nullptr;
@@ -2194,6 +2330,30 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
     float*aovShG=(_aovShadow&&channels.contains(chShG))?row.writable(chShG):nullptr;
     float*aovShB=(_aovShadow&&channels.contains(chShB))?row.writable(chShB):nullptr;
     float*aovDpP=(_aovDepth&&channels.contains(chDpR))?row.writable(chDpR):nullptr;
+    float*aovMvX=(_aovMotion&&channels.contains(chMvX))?row.writable(chMvX):nullptr;
+    float*aovMvY=(_aovMotion&&channels.contains(chMvY))?row.writable(chMvY):nullptr;
+    float*aovAlR=(_aovAlbedo&&channels.contains(chAlR))?row.writable(chAlR):nullptr;
+    float*aovAlG=(_aovAlbedo&&channels.contains(chAlG))?row.writable(chAlG):nullptr;
+    float*aovAlB=(_aovAlbedo&&channels.contains(chAlB))?row.writable(chAlB):nullptr;
+    float*aovNrR=(_aovNormal&&channels.contains(chNrR))?row.writable(chNrR):nullptr;
+    float*aovNrG=(_aovNormal&&channels.contains(chNrG))?row.writable(chNrG):nullptr;
+    float*aovNrB=(_aovNormal&&channels.contains(chNrB))?row.writable(chNrB):nullptr;
+
+    // Per-light AOV row pointers — up to kMaxLightAOVs lights
+    float* aovLtR[kMaxLightAOVs]={nullptr,nullptr,nullptr,nullptr};
+    float* aovLtG[kMaxLightAOVs]={nullptr,nullptr,nullptr,nullptr};
+    float* aovLtB[kMaxLightAOVs]={nullptr,nullptr,nullptr,nullptr};
+    if (_aovLights) {
+        for (int li=0;li<kMaxLightAOVs;++li) {
+            char n[32]; std::snprintf(n,sizeof(n),"vdb_light%d",li);
+            Channel cR=channel((std::string(n)+".red").c_str());
+            Channel cG=channel((std::string(n)+".green").c_str());
+            Channel cB=channel((std::string(n)+".blue").c_str());
+            if(channels.contains(cR)) aovLtR[li]=row.writable(cR);
+            if(channels.contains(cG)) aovLtG[li]=row.writable(cG);
+            if(channels.contains(cB)) aovLtB[li]=row.writable(cB);
+        }
+    }
 
     const float*bgR=hasBg?bgRow[Chan_Red]:nullptr;
     const float*bgG=hasBg?bgRow[Chan_Green]:nullptr;
@@ -2208,6 +2368,27 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         // Proxy: map output pixel to effective resolution
         double px=(pxScale<1.0)?((int)(ix*pxScale)+0.5)/pxScale:ix+0.5;
         double py=(pxScale<1.0)?((int)(y*pxScale)+0.5)/pxScale:y+0.5;
+
+        // Render region: skip pixels outside the user-defined sub-region
+        if (_renderRegionEnable) {
+            const double nX = px / W, nY = py / H;
+            if (nX < _rrX || nX > _rrX+_rrW || nY < _rrY || nY > _rrY+_rrH) {
+                if(hasBg){rO[ix]=bgR[ix];gO[ix]=bgG[ix];bO[ix]=bgB[ix];aO[ix]=bgA[ix];}
+                else{rO[ix]=0;gO[ix]=0;bO[ix]=0;aO[ix]=0;}
+                if(aovDenR){aovDenR[ix]=0;aovDenG[ix]=0;aovDenB[ix]=0;}
+                if(aovEmR){aovEmR[ix]=0;aovEmG[ix]=0;aovEmB[ix]=0;}
+                if(aovShR){aovShR[ix]=0;aovShG[ix]=0;aovShB[ix]=0;}
+                if(aovDpP)aovDpP[ix]=0;
+                if(aovMvX){aovMvX[ix]=0;aovMvY[ix]=0;}
+                if(aovAlR){aovAlR[ix]=0;aovAlG[ix]=0;aovAlB[ix]=0;}
+                if(aovNrR){aovNrR[ix]=0;aovNrG[ix]=0;aovNrB[ix]=0;}
+                if(_aovLights){for(int li=0;li<kMaxLightAOVs;++li){
+                    if(aovLtR[li])aovLtR[li][ix]=0;
+                    if(aovLtG[li])aovLtG[li][ix]=0;
+                    if(aovLtB[li])aovLtB[li][ix]=0;}}
+                continue;
+            }
+        }
         double ndcX=px/(double)W*2-1,ndcY=py/(double)H*2-1;
         double rcx=ndcX*halfW,rcy=ndcY*halfH,rcz=-1;
         double rdx=_camRot[0][0]*rcx+_camRot[1][0]*rcy+_camRot[2][0]*rcz;
@@ -2237,6 +2418,13 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
              if(aovEmR){aovEmR[ix]=0;aovEmG[ix]=0;aovEmB[ix]=0;}
              if(aovShR){aovShR[ix]=0;aovShG[ix]=0;aovShB[ix]=0;}
              if(aovDpP)aovDpP[ix]=0;
+             if(aovMvX){aovMvX[ix]=0;aovMvY[ix]=0;}
+             if(aovAlR){aovAlR[ix]=0;aovAlG[ix]=0;aovAlB[ix]=0;}
+             if(aovNrR){aovNrR[ix]=0;aovNrG[ix]=0;aovNrB[ix]=0;}
+             if(_aovLights){for(int li=0;li<kMaxLightAOVs;++li){
+                 if(aovLtR[li])aovLtR[li][ix]=0;
+                 if(aovLtG[li])aovLtG[li][ix]=0;
+                 if(aovLtB[li])aovLtB[li][ix]=0;}}
              continue;
          }
         }
@@ -2244,6 +2432,7 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         // Accumulate across motion blur time samples AND render samples
         float R=0,G=0,B=0,A=0;
         float emAccR=0,emAccG=0,emAccB=0;
+        float shAccR=0,shAccG=0,shAccB=0;
 
         const int nRenderSamples = std::max(1, _renderSamples);
 
@@ -2271,9 +2460,14 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
                 mO=rayO+openvdb::Vec3d(vel[0],vel[1],vel[2])*tSample;
             }
 
-            float sR=0,sG=0,sB=0,sA=0,sEmR=0,sEmG=0,sEmB=0;
-            if(scheme==kLit){marchRay(ctx,mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
-            else if(scheme==kExplosion){marchRayExplosion(ctx,mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
+            float sR=0,sG=0,sB=0,sA=0,sEmR=0,sEmG=0,sEmB=0,sShR=0,sShG=0,sShB=0;
+            // Reset per-light AOV accumulators in ctx for this sample
+            if(_aovLights){
+                for(int li=0;li<kMaxLightAOVs;++li)
+                    ctx.lightAovR[li]=ctx.lightAovG[li]=ctx.lightAovB[li]=0.0f;
+            }
+            if(scheme==kLit){marchRay(ctx,mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB,sShR,sShG,sShB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
+            else if(scheme==kExplosion){marchRayExplosion(ctx,mO,rayD,sR,sG,sB,sA,sEmR,sEmG,sEmB,sShR,sShG,sShB);sR*=ri;sG*=ri;sB*=ri;sEmR*=ri;sEmG*=ri;sEmB*=ri;}
             else{float den=0,alpha=0;marchRayDensity(ctx,mO,rayD,den,alpha);
                 // Vec3 colour grid override
                 if(_hasColorGrid&&ctx.colorAcc&&alpha>1e-6f){
@@ -2287,12 +2481,13 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
             }
             R+=sR;G+=sG;B+=sB;A+=sA;
             emAccR+=sEmR;emAccG+=sEmG;emAccB+=sEmB;
+            shAccR+=sShR;shAccG+=sShG;shAccB+=sShB;
         }
         } // end render samples loop
 
         // Average over motion blur × render samples
         const int totalSamples = nTimeSamples * nRenderSamples;
-        if(totalSamples>1){float inv=1.0f/totalSamples;R*=inv;G*=inv;B*=inv;A*=inv;emAccR*=inv;emAccG*=inv;emAccB*=inv;}
+        if(totalSamples>1){float inv=1.0f/totalSamples;R*=inv;G*=inv;B*=inv;A*=inv;emAccR*=inv;emAccG*=inv;emAccB*=inv;shAccR*=inv;shAccG*=inv;shAccB*=inv;}
 
         // Composite volume OVER background
         if(hasBg){
@@ -2306,7 +2501,7 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         // AOV writes
         if(aovDenR){aovDenR[ix]=A;aovDenG[ix]=A;aovDenB[ix]=A;}
         if(aovEmR){aovEmR[ix]=emAccR;aovEmG[ix]=emAccG;aovEmB[ix]=emAccB;}
-        if(aovShR){float sh=(A>1e-6f)?(1.0f-A):0.0f;aovShR[ix]=sh;aovShG[ix]=sh;aovShB[ix]=sh;}
+        if(aovShR){aovShR[ix]=shAccR;aovShG[ix]=shAccG;aovShB[ix]=shAccB;}
         if(aovDpP){
             // Compute depth: AABB ray intersection for first-hit distance
             float depth=0;
@@ -2325,7 +2520,72 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
             }
             aovDpP[ix]=depth;
         }
-    }
+        // ── Motion vector AOV ─────────────────────────────────────────────
+        // Projects world-space velocity into screen-space pixels/frame.
+        // Samples velocity at the primary ray origin (approx. volume centroid).
+        if ((aovMvX||aovMvY) && _hasVelGrid && ctx.velAcc && A > 1e-6f) {
+            const auto velIP = _velGrid->transform().worldToIndex(rayO);
+            const openvdb::Vec3s vel = openvdb::tools::BoxSampler::sample(*ctx.velAcc, velIP);
+            // Transform velocity from world to camera space (ignore translation)
+            const double vcx = _camRot[0][0]*vel[0]+_camRot[1][0]*vel[1]+_camRot[2][0]*vel[2];
+            const double vcy = _camRot[0][1]*vel[0]+_camRot[1][1]*vel[1]+_camRot[2][1]*vel[2];
+            const double vcz = _camRot[0][2]*vel[0]+_camRot[1][2]*vel[1]+_camRot[2][2]*vel[2];
+            // Project into NDC then pixels (perspective divide by -z)
+            const double invZ = (std::abs(vcz) > 1e-8) ? 1.0 / -vcz : 0.0;
+            const double ndcVx = vcx * invZ / (2.0 * _halfW);
+            const double ndcVy = vcy * invZ / (2.0 * _halfW) * ((double)H/(double)W);
+            if(aovMvX) aovMvX[ix] = (float)(ndcVx * W * 0.5);
+            if(aovMvY) aovMvY[ix] = (float)(ndcVy * H * 0.5);
+        } else {
+            if(aovMvX) aovMvX[ix]=0; if(aovMvY) aovMvY[ix]=0;
+        }
+
+        // ── Albedo AOV ────────────────────────────────────────────────────
+        // Unlit per-voxel albedo for denoiser. Uses Cd grid when loaded,
+        // otherwise density-normalised white. Density-weighted average along ray.
+        if (aovAlR) {
+            if (A > 1e-6f) {
+                if (_hasColorGrid && ctx.colorAcc) {
+                    // Sample Cd at ray origin as representative albedo
+                    const auto iPC = _colorGrid->transform().worldToIndex(rayO);
+                    const openvdb::Vec3s cv = openvdb::tools::BoxSampler::sample(*ctx.colorAcc, iPC);
+                    aovAlR[ix]=std::max(0.f,cv[0]);
+                    aovAlG[ix]=std::max(0.f,cv[1]);
+                    aovAlB[ix]=std::max(0.f,cv[2]);
+                } else {
+                    aovAlR[ix]=1.f; aovAlG[ix]=1.f; aovAlB[ix]=1.f;
+                }
+            } else { aovAlR[ix]=0; aovAlG[ix]=0; aovAlB[ix]=0; }
+        }
+
+        // ── Normal AOV ────────────────────────────────────────────────────
+        // Density-gradient world normal, remapped [−1,1]→[0,1] for EXR.
+        // Meaningful on cloud/smoke surfaces; noisy in thin volumes.
+        if (aovNrR) {
+            if (A > 1e-6f && _floatGrid) {
+                const auto iP2 = _floatGrid->transform().worldToIndex(rayO);
+                float nx = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(1,0,0))
+                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(1,0,0));
+                float ny = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(0,1,0))
+                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(0,1,0));
+                float nz = openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2+openvdb::Vec3d(0,0,1))
+                         - openvdb::tools::BoxSampler::sample(ctx.densAcc, iP2-openvdb::Vec3d(0,0,1));
+                const float nl = std::sqrt(nx*nx+ny*ny+nz*nz);
+                if (nl > 1e-6f) { nx/=nl; ny/=nl; nz/=nl; }
+                aovNrR[ix]=nx*0.5f+0.5f; aovNrG[ix]=ny*0.5f+0.5f; aovNrB[ix]=nz*0.5f+0.5f;
+            } else { aovNrR[ix]=0.5f; aovNrG[ix]=0.5f; aovNrB[ix]=0.5f; }
+        }
+
+        // Per-light AOVs
+        if(_aovLights){
+            const float inv=(totalSamples>1)?1.0f/totalSamples:1.0f;
+            for(int li=0;li<kMaxLightAOVs;++li){
+                if(aovLtR[li])aovLtR[li][ix]=ctx.lightAovR[li]*ri*inv;
+                if(aovLtG[li])aovLtG[li][ix]=ctx.lightAovG[li]*ri*inv;
+                if(aovLtB[li])aovLtB[li][ix]=ctx.lightAovB[li]*ri*inv;
+            }
+        }
+    }  // end for(int ix=x;ix<r;++ix)
 }
 
 // ═══ Environment Map ═══
@@ -2829,6 +3089,7 @@ VDBRenderIop::MarchCtx VDBRenderIop::makeMarchCtx() const {
     if (_hasEnvSH)
         std::memcpy(c.envSH, _envSH, sizeof(_envSH));
     c.useReSTIR = _useReSTIR;
+    c.aovLights = _aovLights;
 
     // ── Grid accessors ──
     if (_hasTempGrid  && _tempGrid)  c.tempAcc  = std::make_unique<openvdb::FloatGrid::ConstAccessor>(_tempGrid->getConstAccessor());
@@ -2872,9 +3133,10 @@ void VDBRenderIop::marchRay(
         const openvdb::Vec3d&  dir,
         float& outR, float& outG, float& outB, float& outA,
         float& outEmR, float& outEmG, float& outEmB,
+        float& outShR, float& outShG, float& outShB,
         bool   explosionMode) const
 {
-    outR=outG=outB=outA=outEmR=outEmG=outEmB=0.0f;
+    outR=outG=outB=outA=outEmR=outEmG=outEmB=outShR=outShG=outShB=0.0f;
 
     // Grid selection: explosion can work on temp/flame without a density grid.
     openvdb::FloatGrid::Ptr xfGrid = _floatGrid
@@ -2896,6 +3158,8 @@ void VDBRenderIop::marchRay(
     double TR = 1.0, TG = 1.0, TB = 1.0;
     double aR=0, aG=0, aB=0;   // accumulated scatter + emission
     double eR=0, eG=0, eB=0;   // emission AOV accumulator
+    double shAccR=0, shAccG=0, shAccB=0;  // shadow AOV: accumulated self-shadow per-channel
+    double shWeight=0;                     // density-weighted sample count
 
     auto* tAcc  = ctx.tempAcc.get();
     auto* fAcc  = ctx.flameAcc.get();
@@ -2923,9 +3187,17 @@ void VDBRenderIop::marchRay(
                 float tv = openvdb::tools::BoxSampler::sample(*tAcc, iP) * (float)_tempMix;
                 if (tv > 0.001f) {
                     double normT = std::clamp((double)tv, _tempMin, _tempMax);
-                    Color3 bb    = blackbody(normT);
                     double tS    = std::clamp((tv - _tempMin) / (_tempMax - _tempMin + 1e-6), 0.0, 1.0);
                     double em    = _emissionIntensity * tS * step;
+                    // Emission colour: blackbody (default) or custom ramp
+                    Color3 bb;
+                    if (_emissionRampEnable) {
+                        bb.r = (float)(_emissionRampLow[0] + tS * (_emissionRampHigh[0] - _emissionRampLow[0]));
+                        bb.g = (float)(_emissionRampLow[1] + tS * (_emissionRampHigh[1] - _emissionRampLow[1]));
+                        bb.b = (float)(_emissionRampLow[2] + tS * (_emissionRampHigh[2] - _emissionRampLow[2]));
+                    } else {
+                        bb = blackbody(normT);
+                    }
                     // Per-channel: emission attenuated by primary-ray transmittance
                     double er=bb.r*em, eg=bb.g*em, eb=bb.b*em;
                     aR += er*TR;  aG += eg*TG;  aB += eb*TB;
@@ -2989,16 +3261,41 @@ void VDBRenderIop::marchRay(
         const double albedo = std::min(scat / (ext + 1e-8), 1.0);
 
         // ── [V3.1] Per-voxel scatter colour from Cd grid ──────────────────
-        // Cd modulates the scatter coefficient per RGB channel in Lit mode.
-        // This gives heterogeneous colour variation within the volume without
-        // changing density or extinction — physically: per-voxel albedo tint.
-        // When no Cd grid is loaded: cdR=cdG=cdB=1 (white, no effect).
         double cdR = 1.0, cdG = 1.0, cdB = 1.0;
         if (ctx.colorAcc) {
             const openvdb::Vec3s cv = openvdb::tools::BoxSampler::sample(*ctx.colorAcc, iP);
             cdR = std::max(0.0f, cv[0]);
             cdG = std::max(0.0f, cv[1]);
             cdB = std::max(0.0f, cv[2]);
+        }
+
+        // ── [V3.1] Temperature-driven scatter tint ────────────────────────
+        // Hot regions shift scatter toward blue-white (high temp);
+        // cool regions stay at the unlit scatter colour.
+        // Only active when a temperature grid is loaded and temp > tempMin.
+        if (tAcc) {
+            float tv2 = openvdb::tools::BoxSampler::sample(*tAcc, iP) * (float)_tempMix;
+            if (tv2 > (float)_tempMin * 0.001f) {
+                double tS2 = std::clamp((tv2 - _tempMin) / (_tempMax - _tempMin + 1e-6), 0.0, 1.0);
+                // Lerp toward a hot colour — use the emission ramp colour if enabled,
+                // otherwise use blackbody at that temperature (normalised to max)
+                Color3 hotCol;
+                if (_emissionRampEnable) {
+                    hotCol.r = (float)(_emissionRampLow[0] + tS2*(_emissionRampHigh[0]-_emissionRampLow[0]));
+                    hotCol.g = (float)(_emissionRampLow[1] + tS2*(_emissionRampHigh[1]-_emissionRampLow[1]));
+                    hotCol.b = (float)(_emissionRampLow[2] + tS2*(_emissionRampHigh[2]-_emissionRampLow[2]));
+                } else {
+                    hotCol = blackbody(_tempMin + tS2 * (_tempMax - _tempMin));
+                    // Normalise so peak = 1 (we only want hue, not brightness)
+                    float pk = std::max({hotCol.r, hotCol.g, hotCol.b, 1e-6f});
+                    hotCol.r/=pk; hotCol.g/=pk; hotCol.b/=pk;
+                }
+                // Blend: low temp = white (neutral), high temp = hotCol
+                const double blend = tS2 * 0.4; // max 40% tint to not overpower Cd
+                cdR *= (float)(1.0 - blend + blend * hotCol.r);
+                cdG *= (float)(1.0 - blend + blend * hotCol.g);
+                cdB *= (float)(1.0 - blend + blend * hotCol.b);
+            }
         }
 
         // ══ GRADIENT NORMAL (optional, gradMix > 0) ══════════════════════
@@ -3072,11 +3369,24 @@ void VDBRenderIop::marchRay(
                 (int)(&lt - _lights.data()),
                 _bboxMin, _bboxMax, nSh, shStep);
 
+            // ── Shadow AOV: accumulate density-weighted shadow per channel ──
+            shAccR += lT * lt.color[0] * density * step;
+            shAccG += lT * lt.color[1] * density * step;
+            shAccB += lT * lt.color[2] * density * step;
+            shWeight += density * step;
+
             // ── Scatter accumulation (per-channel chromatic transmittance × Cd albedo) ──
             const double base = ss * phS * lT * step;
             aR += base * TR * lt.color[0] * cdR;
             aG += base * TG * lt.color[1] * cdG;
             aB += base * TB * lt.color[2] * cdB;
+            // Per-light AOV accumulation
+            if (ctx.aovLights) {
+                const int li = std::min((int)(&lt - _lights.data()), kMaxLightAOVs - 1);
+                ctx.lightAovR[li] += (float)(base * TR * lt.color[0] * cdR);
+                ctx.lightAovG[li] += (float)(base * TG * lt.color[1] * cdG);
+                ctx.lightAovB[li] += (float)(base * TB * lt.color[2] * cdB);
+            }
             // Accumulate single-scatter for MS estimate (T-free; MS adds its own T)
             stepR += base * lt.color[0] * cdR;
             stepG += base * lt.color[1] * cdG;
@@ -3294,8 +3604,6 @@ void VDBRenderIop::marchRay(
         }
 
         // ══ PER-CHANNEL TRANSMITTANCE UPDATE ════════════════════════════
-        // Chromatic: use per-channel σt (ext_r/g/b).
-        // Non-chromatic: all channels use base extinction (identical result to old code).
         if (ctx.chromatic) {
             TR *= std::exp(-density * ctx.extR * step);
             TG *= std::exp(-density * ctx.extG * step);
@@ -3303,6 +3611,45 @@ void VDBRenderIop::marchRay(
         } else {
             const double tf = std::exp(-density * ext * step);
             TR *= tf;  TG *= tf;  TB *= tf;
+        }
+
+        // ── [V3.1] Layer 2 density accumulation ──────────────────────────
+        // Sample the secondary VDB at the same world position.
+        // Adds to extinction and scatter using the same lighting pipeline.
+        if (_grid2Enable && _grid2Valid && _floatGrid2) {
+            const auto& xf2 = _floatGrid2->transform();
+            const auto  iP2 = xf2.worldToIndex(wP);
+            auto acc2 = _floatGrid2->getConstAccessor();
+            float d2 = acc2.getValue(openvdb::Coord(
+                (int)std::floor(iP2[0]),(int)std::floor(iP2[1]),(int)std::floor(iP2[2])))
+                * (float)_densityMix2;
+            if (d2 > 1e-6f) {
+                const double ss2 = d2 * scat;
+                // Direct lights
+                for (const auto& lt : _lights) {
+                    openvdb::Vec3d lD2;
+                    if (lt.isPoint) {
+                        lD2=openvdb::Vec3d(lt.pos[0]-wP[0],lt.pos[1]-wP[1],lt.pos[2]-wP[2]);
+                        double ll=lD2.length(); if(ll>1e-8) lD2/=ll; else continue;
+                    } else { lD2=openvdb::Vec3d(lt.dir[0],lt.dir[1],lt.dir[2]); }
+                    const double cosT2=-(dir[0]*lD2[0]+dir[1]*lD2[1]+dir[2]*lD2[2]);
+                    double ph2;
+                    if(ctx.phaseMode==1) ph2=miePhaseS(cosT2,ctx.mieDropletD);
+                    else ph2=ctx.lobeMix*hgRaw(cosT2,ctx.gFwd)+(1.0-ctx.lobeMix)*hgRaw(cosT2,ctx.gBck);
+                    ph2 *= (1.0-(1.0-std::exp(-d2*ext*ctx.powder)));
+                    const double lT2=evalShadowTransmittance(ctx,xf,wP,lD2,ext,_shadowDensity,
+                        (int)(&lt-_lights.data()),_bboxMin,_bboxMax,nSh,shStep);
+                    const double base2=ss2*ph2*lT2*step;
+                    aR+=base2*TR*lt.color[0]; aG+=base2*TG*lt.color[1]; aB+=base2*TB*lt.color[2];
+                }
+                if(_ambientIntensity>0){
+                    const double amb2=ss2*_ambientIntensity*step;
+                    aR+=amb2*TR; aG+=amb2*TG; aB+=amb2*TB;
+                }
+                // Extinction from layer 2
+                const double tf2=std::exp(-(double)d2*ext*step);
+                TR*=tf2; TG*=tf2; TB*=tf2;
+            }
         }
     };  // end shadeSample lambda
 
@@ -3370,6 +3717,13 @@ void VDBRenderIop::marchRay(
     outEmR = (float)eR;
     outEmG = (float)eG;
     outEmB = (float)eB;
+    // Shadow AOV: per-channel self-shadow (0=fully shadowed, 1=fully lit)
+    // Normalised by density weight so it reads as a mask not an energy value
+    if (shWeight > 1e-8) {
+        outShR = (float)std::clamp(shAccR / shWeight, 0.0, 1.0);
+        outShG = (float)std::clamp(shAccG / shWeight, 0.0, 1.0);
+        outShB = (float)std::clamp(shAccB / shWeight, 0.0, 1.0);
+    }
 }
 
 
@@ -3378,9 +3732,10 @@ void VDBRenderIop::marchRay(
 void VDBRenderIop::marchRayExplosion(
         MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
         float& R, float& G, float& B, float& A,
-        float& emR, float& emG, float& emB) const
+        float& emR, float& emG, float& emB,
+        float& shR, float& shG, float& shB) const
 {
-    marchRay(ctx, o, d, R, G, B, A, emR, emG, emB, /*explosionMode=*/true);
+    marchRay(ctx, o, d, R, G, B, A, emR, emG, emB, shR, shG, shB, /*explosionMode=*/true);
 }
 
 // ═══ marchRayDensity — ramp modes (HDDA + trilinear) ═══

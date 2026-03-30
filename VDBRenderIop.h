@@ -77,6 +77,10 @@ public:
 private:
     // ── File ──
     const char* _vdbFilePath   = "";
+    const char* _vdbFilePath2  = "";   // second VDB layer
+    const char* _gridName2     = "";   // density grid name for layer 2
+    double      _densityMix2   = 1.0;  // density mix for layer 2
+    bool        _grid2Enable   = false; // enable/disable layer 2
     bool   _autoSequence       = false;
     const char* _origFilePath  = "";
     const char* _gridName      = "density";
@@ -96,6 +100,9 @@ private:
     double _tempMin           = 500.0;
     double _tempMax           = 6500.0;
     double _emissionIntensity = 2.0;
+    bool   _emissionRampEnable = false;  // use custom ramp instead of blackbody
+    double _emissionRampLow[3]  = {0.0, 0.0, 0.0};  // colour at temp=0
+    double _emissionRampHigh[3] = {1.0, 1.0, 1.0};  // colour at temp=1
     double _flameIntensity    = 5.0;
     double _rampIntensity     = 1.0;
     double _gradStart[3]      = {0,0,0};
@@ -197,6 +204,8 @@ private:
     int    _qualityPreset     = 0;
     bool   _adaptiveStep      = true;
     int    _proxyMode         = 0;
+    bool   _renderRegionEnable = false;
+    double _rrX = 0.0, _rrY = 0.0, _rrW = 1.0, _rrH = 1.0; // normalised 0-1
 
     // ── Motion blur ──
     const char* _velGridName  = "";
@@ -211,6 +220,11 @@ private:
     bool   _aovEmission       = false;
     bool   _aovShadow         = false;
     bool   _aovDepth          = false;
+    bool   _aovLights         = false;
+    bool   _aovMotion         = false;   // screen-space motion vector AOV
+    bool   _aovAlbedo         = false;   // unlit scatter albedo (for denoiser)
+    bool   _aovNormal         = false;   // density gradient normal (for denoiser)
+    static constexpr int kMaxLightAOVs = 4;
 
     // ── Vec3 colour grid ──
     const char* _colorGridName = "";
@@ -227,6 +241,8 @@ private:
 
     // ── Grid state ──
     openvdb::FloatGrid::Ptr _floatGrid, _tempGrid, _flameGrid;
+    openvdb::FloatGrid::Ptr _floatGrid2;    // second VDB layer density grid
+    bool _grid2Valid = false;
     openvdb::Vec3SGrid::Ptr _velGrid;
     openvdb::Vec3d _bboxMin, _bboxMax;
     bool _gridValid=false, _hasTempGrid=false, _hasFlameGrid=false;
@@ -275,9 +291,10 @@ private:
     int    _envVirtualLightBase = 0;        // index into _lights where virtual lights start
 
     // ── Point cloud ──
-    struct DensityPoint { float x,y,z,density; };
+    struct DensityPoint { float x,y,z,density; float r,g,b; };  // r/g/b = pre-lit colour
     std::vector<DensityPoint> _previewPoints;
     float _maxDensity=1.0f;
+    bool  _viewportLit=true;   // knob: use render lighting in viewport
     int _cachedPointDensity=-1; std::string _cachedPointsPath;
     int _cachedPointsFrame=-1; bool _cachedHasXform=false;
     double _cachedVolFwd[4][4]={};
@@ -453,6 +470,14 @@ private:
         // -1 = no cache entry for that dir (falls back to HDDA).
         int envDirCacheIdx[6] = {-1,-1,-1,-1,-1,-1};
 
+        // ── [V3.1] Per-light AOV accumulators ──
+        // One RGB accumulator per light, up to kMaxLightAOVs.
+        // Filled in shadeSample, returned through marchRay output params.
+        bool  aovLights = false;
+        float lightAovR[4] = {0,0,0,0};
+        float lightAovG[4] = {0,0,0,0};
+        float lightAovB[4] = {0,0,0,0};
+
 #ifdef VDBRENDER_HAS_NEURAL
         const neural::NeuralDecoder* neuralDec = nullptr;
         bool neuralMode = false;
@@ -492,12 +517,14 @@ private:
     void marchRay(MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
                   float& R, float& G, float& B, float& A,
                   float& emR, float& emG, float& emB,
+                  float& shR, float& shG, float& shB,
                   bool explosionMode = false) const;
 
     // marchRayExplosion: thin wrapper — calls marchRay(explosionMode=true).
     void marchRayExplosion(MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
                            float& R, float& G, float& B, float& A,
-                           float& emR, float& emG, float& emB) const;
+                           float& emR, float& emG, float& emB,
+                           float& shR, float& shG, float& shB) const;
 
     void marchRayDensity(MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
                          float& den, float& alpha) const;
