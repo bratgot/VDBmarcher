@@ -10,6 +10,14 @@
 #include <openvdb/tools/Interpolation.h>
 #include <openvdb/tools/RayIntersector.h>
 #include <openvdb/math/Ray.h>
+
+// Optional CUDA GPU ray march
+#ifdef VDBRENDER_HAS_CUDA
+#include "GpuGridCache.h"
+#include "VDBRenderKernel.cuh"
+#include <cuda_runtime.h>
+#include <atomic>
+#endif
 #include <openvdb/points/PointDataGrid.h>
 #include <openvdb/points/PointAttribute.h>
 #include <openvdb/points/PointCount.h>
@@ -56,6 +64,7 @@ public:
 
     void _validate(bool for_real) override;
     void _open() override;
+    void _close() override;
 
     void _request(int x, int y, int r, int t, DD::Image::ChannelMask, int count) override;
     void engine(int y, int x, int r, DD::Image::ChannelMask, DD::Image::Row&) override;
@@ -258,6 +267,15 @@ private:
     openvdb::Vec3SGrid::Ptr _velGrid;
     openvdb::Vec3d _bboxMin, _bboxMax;
     bool _gridValid=false, _hasTempGrid=false, _hasFlameGrid=false;
+
+#ifdef VDBRENDER_HAS_CUDA
+    // ── GPU state (Step 1: density-only) ──────────────────────────────────
+    bool               _cudaEnable   = false; // knob: use GPU render
+    GpuFloatGrid       _gpuDensGrid;          // NanoVDB density grid on device
+    GpuOutputBuffer    _gpuOut;               // W×H×4 RGBA pinned output
+    cudaStream_t       _cudaStream   = nullptr;
+    std::atomic<bool>  _gpuRendered  {false}; // true after kernel + download
+#endif
     bool _hasVelGrid=false;
     int  _loadedFrame=-1;
 
