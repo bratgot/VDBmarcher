@@ -1,36 +1,28 @@
-# Build
+# Build output
 build/
-out/
-cmake-build-*/
+build_*/
+dist/
+# Python cache
+__pycache__/
+*.pyc
+# Nuke plugin binaries (source only in repo)
 *.dll
-*.lib
-*.obj
-*.pdb
-*.exp
-*.ilk
-
-# IDE
-.vs/
-.vscode/
-*.user
-*.suo
-CMakeSettings.json
-
+*.exe
+# Large media
+*.png
+*.zip
 # vcpkg
 vcpkg_installed/
-
 # OS
 Thumbs.db
 Desktop.ini
 .DS_Store
-
 # NanoVDB headers (not needed for OpenVDB build)
 nanovdb/
-build/ 
-build_neural/ 
-*.tar.gz 
-files.zip 
-
+build/
+build_neural/
+*.tar.gz
+files.zip
 # Linux build
 build_linux_nuke*/
 .deps/
