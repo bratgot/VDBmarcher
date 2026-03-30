@@ -811,6 +811,33 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Half = recommended for production, 8x less memory.\n"
               "Quarter = fastest build, slight shadow softening.");
 
+    Divider(f,"Denoiser");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Intel OIDN post-process denoiser. Renders all samples first,<br>"
+        "then denoises the full frame. Enable Albedo and Normal AOVs<br>"
+        "in the Output tab for best quality."
+#ifndef VDBRENDER_HAS_OIDN
+        "<br><font color='#c66'><b>Not compiled in</b> — build with -DVDBRENDER_OIDN=ON</font>"
+#endif
+        "</font>");
+    Bool_knob(f,&_denoiseEnable,"denoise_enable","Denoise");
+    Tooltip(f,"Run Intel Open Image Denoise after rendering.\n"
+              "Buffers the full frame then denoises in _close().\n"
+              "Enable Albedo and Normal in Output > AOVs for best quality.\n"
+              "HDR-aware — safe with any lighting intensity.");
+    static const char*dqP[]={"Fast","Balanced","High",nullptr};
+    Enumeration_knob(f,&_denoiseQuality,dqP,"denoise_quality","Quality");
+    Tooltip(f,"OIDN filter quality preset.\n"
+              "Fast = smallest model, lowest latency.\n"
+              "Balanced = good quality/speed trade-off (recommended).\n"
+              "High = largest model, best quality, slower.");
+    Bool_knob(f,&_denoisePrefilter,"denoise_prefilter","Pre-filter auxiliaries");
+    Tooltip(f,"Pre-denoise the albedo and normal buffers before using them as\n"
+              "guidance for the beauty pass.\n"
+              "Improves quality when albedo/normal are noisy (low-sample renders).\n"
+              "Adds one extra OIDN pass per auxiliary buffer.");
+
     Divider(f,"3D Viewport");
     Text_knob(f,
         "<font size='-1' color='#777'>"
@@ -1546,6 +1573,7 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_motionBlur);hash.append(_shutterOpen);hash.append(_shutterClose);hash.append(_motionSamples);
     hash.append(_aovDensity);hash.append(_aovEmission);hash.append(_aovShadow);hash.append(_aovDepth);
     hash.append(_aovLights);hash.append(_aovMotion);hash.append(_aovAlbedo);hash.append(_aovNormal);
+    hash.append(_denoiseEnable);hash.append(_denoiseQuality);hash.append(_denoisePrefilter);
     hash.append(_gForward);hash.append(_gBackward);hash.append(_lobeMix);
     hash.append(_powderStrength);hash.append(_gradientMix);hash.append(_jitter);
     hash.append(_msApprox);
@@ -2304,17 +2332,111 @@ void VDBRenderIop::_open() {
     if(_envDirty&&_envIop){
         cacheEnvMap(_envIop);
         _envDirty=false;
-        // Virtual lights were just appended to _lights — force shadow cache rebuild
         _shadowCacheDirty=true;
     }
-    // [V3] Build transmittance caches for directional lights (including virtual env lights)
     if (_useShadowCache && _shadowCacheDirty) {
         buildShadowCaches();
         _shadowCacheDirty = false;
     }
+
+    // ── OIDN: allocate full-frame buffers ────────────────────────────────
+    _denoiseReady = false;
+    _rowsWritten.store(0);
+    if (_denoiseEnable) {
+        const int W = info_.format().width();
+        const int H = info_.format().height();
+        _denoiseW = W; _denoiseH = H;
+        _rawBuf     .assign((size_t)W * H * 4, 0.f);
+        _denoisedBuf.assign((size_t)W * H * 4, 0.f);
+        _albedoBuf = _aovAlbedo ? std::vector<float>((size_t)W*H*3, 0.f) : std::vector<float>{};
+        _normalBuf = _aovNormal ? std::vector<float>((size_t)W*H*3, 0.f) : std::vector<float>{};
+    } else {
+        _rawBuf.clear(); _denoisedBuf.clear();
+        _albedoBuf.clear(); _normalBuf.clear();
+    }
+}
+
+// _close runs once on the main thread after all engine rows are done
+void VDBRenderIop::_close() {
+#ifdef VDBRENDER_HAS_OIDN
+    if (_denoiseEnable && !_denoiseReady && _denoiseW > 0 && _denoiseH > 0) {
+        std::lock_guard<std::mutex> lk(_denoiseMutex);
+        if (_denoiseReady) { Iop::_close(); return; } // double-check
+
+        const int W = _denoiseW, H = _denoiseH;
+        try {
+            oidn::DeviceRef dev = oidn::newDevice();
+            dev.commit();
+
+            // Optional: pre-filter auxiliaries for noisy renders
+            auto prefilter = [&](std::vector<float>& buf, const char* name) {
+                if (buf.empty()) return;
+                auto f = dev.newFilter("RT");
+                f.setImage("color",  buf.data(), oidn::Format::Float3, W, H);
+                f.setImage("output", buf.data(), oidn::Format::Float3, W, H);
+                f.set("hdr", false);
+                f.commit(); f.execute();
+            };
+            if (_denoisePrefilter) {
+                prefilter(_albedoBuf, "albedo");
+                prefilter(_normalBuf, "normal");
+            }
+
+            // Main beauty filter
+            oidn::FilterRef filter = dev.newFilter("RT");
+            filter.setImage("color",  _rawBuf.data(),      oidn::Format::Float3, W, H, 0, 4*sizeof(float));
+            filter.setImage("output", _denoisedBuf.data(), oidn::Format::Float3, W, H, 0, 4*sizeof(float));
+            if (!_albedoBuf.empty())
+                filter.setImage("albedo", _albedoBuf.data(), oidn::Format::Float3, W, H);
+            if (!_normalBuf.empty())
+                filter.setImage("normal", _normalBuf.data(), oidn::Format::Float3, W, H);
+            filter.set("hdr", true);
+            // Copy alpha channel straight through (OIDN only denoises RGB)
+            const int npx = W * H;
+            for (int i = 0; i < npx; ++i)
+                _denoisedBuf[i*4+3] = _rawBuf[i*4+3];
+
+            // Quality preset
+            static const oidn::Quality kQ[] = {
+                oidn::Quality::Fast, oidn::Quality::Balanced, oidn::Quality::High };
+            filter.set("quality", kQ[std::clamp(_denoiseQuality, 0, 2)]);
+            filter.commit();
+            filter.execute();
+
+            const char* err = nullptr;
+            if (dev.getError(err) != oidn::Error::None)
+                error("OIDN: %s", err ? err : "unknown error");
+            else
+                _denoiseReady = true;
+
+        } catch (const std::exception& e) {
+            error("OIDN exception: %s", e.what());
+        }
+
+        if (_denoiseReady)
+            asapUpdate(); // ask Nuke to re-request all rows from cache
+    }
+#endif
+    Iop::_close();
 }
 
 void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
+    // ── OIDN second pass: serve denoised result from cache ────────────────
+    if (_denoiseEnable && _denoiseReady && _denoiseW > 0 && y < _denoiseH) {
+        const int W = _denoiseW;
+        float* rO=row.writable(Chan_Red);
+        float* gO=row.writable(Chan_Green);
+        float* bO=row.writable(Chan_Blue);
+        float* aO=row.writable(Chan_Alpha);
+        for (int ix=x; ix<r && ix<W; ++ix) {
+            rO[ix]=_denoisedBuf[(y*W+ix)*4+0];
+            gO[ix]=_denoisedBuf[(y*W+ix)*4+1];
+            bO[ix]=_denoisedBuf[(y*W+ix)*4+2];
+            aO[ix]=_denoisedBuf[(y*W+ix)*4+3];
+        }
+        return;
+    }
+
     // Proxy scaling — map pixel coords to lower-res render
     static const double kProxyScales[]={1.0, 0.75, 0.5, 0.25};
     double pxScale=kProxyScales[std::clamp(_proxyMode,0,3)];
@@ -2643,6 +2765,31 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
     // composites particles over the already-written volume pixels
     if (_hasPointGrid)
         renderPoints(y, x, r, ctx, rO, gO, bO, aO);
+
+    // ── OIDN first pass: copy rendered row into full-frame buffer ─────────
+    if (_denoiseEnable && !_rawBuf.empty() && y < _denoiseH) {
+        const int W = _denoiseW;
+        for (int ix=x; ix<r && ix<W; ++ix) {
+            _rawBuf[(y*W+ix)*4+0] = rO[ix];
+            _rawBuf[(y*W+ix)*4+1] = gO[ix];
+            _rawBuf[(y*W+ix)*4+2] = bO[ix];
+            _rawBuf[(y*W+ix)*4+3] = aO[ix];
+            if (!_albedoBuf.empty() && aovAlR && ix < r) {
+                _albedoBuf[(y*W+ix)*3+0] = aovAlR[ix];
+                _albedoBuf[(y*W+ix)*3+1] = aovAlG[ix];
+                _albedoBuf[(y*W+ix)*3+2] = aovAlB[ix];
+            }
+            if (!_normalBuf.empty() && aovNrR && ix < r) {
+                _normalBuf[(y*W+ix)*3+0] = aovNrR[ix];
+                _normalBuf[(y*W+ix)*3+1] = aovNrG[ix];
+                _normalBuf[(y*W+ix)*3+2] = aovNrB[ix];
+            }
+        }
+        // When every row is written, trigger OIDN execute
+        if (_rowsWritten.fetch_add(1) + 1 == _denoiseH) {
+            _close();
+        }
+    }
 }
 
 // ═══ Environment Map ═══
