@@ -120,11 +120,6 @@ VDBRenderIop::VDBRenderIop(Node*node):Iop(node) {
 
 void VDBRenderIop::knobs(Knob_Callback f)
 {
-    // ═══════════════════════════════════════════════════
-    //  TAB: VDBRender
-    // ═══════════════════════════════════════════════════
-    Tab_knob(f,"Volume");
-
     Text_knob(f,
         "<font size='+2'><b>VDBRender</b></font>"
         " <font color='#888' size='-1'>v3.1</font><br>"
@@ -133,6 +128,8 @@ void VDBRenderIop::knobs(Knob_Callback f)
         " + NeuralVDB"
 #endif
         "</font>");
+
+    BeginGroup(f,"grp_grids","Grids");
 
     File_knob(f,&_vdbFilePath,"file","VDB File");
     Tooltip(f,"Path to your .vdb file from Houdini, Ember, or other VDB exporters.\n"
@@ -148,8 +145,6 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Format_knob(f,&_formats,"format","Format");
     Tooltip(f,"Output resolution when no background plate is connected.\n"
               "If a BG is connected to input 0, its format is used instead.");
-
-    BeginGroup(f,"grp_grids","Grids");
     Text_knob(f,
         "<font size='-1' color='#777'>"
         "Set the grid names from your VDB file, or click Discover Grids<br>"
@@ -225,11 +220,31 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Density multiplier for the second layer.\n"
               "Use lower values (0.1–0.5) for thin background haze.");
     EndGroup(f);
+
+    BeginClosedGroup(f,"grp_points","Point Cloud");
     Text_knob(f,
         "<font size='-1' color='#777'>"
-        "Scene Presets configure all shading values for common volume types.<br>"
-        "Switch to Custom to fine-tune individual settings."
+        "Renders an OpenVDB PointDataGrid as a particle point cloud.<br>"
+        "Particles are splatted with a Gaussian kernel, lit using the<br>"
+        "same lights as the volume. Cd and pscale attributes auto-detected."
         "</font>");
+    String_knob(f,&_pointGridName,"point_grid","Point Grid");
+    Tooltip(f,"Name of the PointDataGrid in the VDB file.\n"
+              "Common names: points, particles, scatter\n"
+              "Leave empty to disable point cloud rendering.\n"
+              "Attributes used: P (required), pscale (radius), Cd (colour).");
+    Double_knob(f,&_pointRadius,"point_radius","Default Radius");SetRange(f,0.001,2);
+    Tooltip(f,"World-space particle radius when no pscale attribute is present.\n"
+              "Start at 5-10% of your typical voxel size.\n"
+              "Particles with pscale attribute use that value instead.");
+    Double_knob(f,&_pointIntensity,"point_intensity","Intensity");SetRange(f,0,5);
+    Tooltip(f,"Brightness multiplier for all particle splats.\n"
+              "1 = natural. Higher for bright sparks or emissive particles.");
+    Bool_knob(f,&_pointLit,"point_lit","Lit");
+    Tooltip(f,"Apply directional lights and shadow rays to each particle.\n"
+              "Uses the same shadow cache and light list as the volume.\n"
+              "Turn off for emissive particles (sparks, sprites, glow).");
+    EndGroup(f);
     static const char*presets[]={"Custom","Thin Smoke","Dense Smoke","Fog / Mist",
         "Cumulus Cloud","Fire","Explosion","Pyroclastic","Dust Storm","Steam",nullptr};
     Enumeration_knob(f,&_scenePreset,presets,"scene_preset","Scene Preset");
@@ -249,13 +264,58 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"Master brightness for all render modes.\n"
               "Multiplies the final RGB output.\n"
               "Does not affect alpha/opacity.");
+
+    BeginClosedGroup(f,"grp_techref","Technical Reference");
+    Text_knob(f,
+        "<font size='-1' color='#bbb'>"
+        "<b>Renderer</b> — Beer-Lambert ray march with HDDA empty-space<br>"
+        "skipping, trilinear BoxSampler, adaptive step size,<br>"
+        "transmittance shadow cache, per-channel chromatic extinction."
+        "</font><br><br>"
+        "<font size='-1' color='#bbb'>"
+        "<b>Phase</b> — Dual-lobe Henyey-Greenstein + Approximate Mie<br>"
+        "(Jendersie &amp; d'Eon 2023). <b>MS</b> — Analytical infinite-bounce<br>"
+        "approximation (Wrenninge 2015). <b>Powder</b> — Schneider &amp; Vos 2015."
+        "</font><br><br>"
+        "<font size='-1' color='#bbb'>"
+        "<b>Lighting</b> — Nuke scene lights · Sun/sky (Preetham) · Studio rig<br>"
+        "· Env map with SH projection + ReSTIR importance sampling<br>"
+        "· Virtual directional lights extracted from HDRI peaks."
+        "</font><br><br>"
+        "<font size='-1' color='#bbb'>"
+        "<b>Blackbody</b> — Planckian locus 1000K–10000K. <b>Emission ramp</b><br>"
+        "— custom cool/hot colour ramp override. <b>Motion blur</b> — velocity<br>"
+        "grid ray-origin offset across shutter interval (multi-sample)."
+        "</font><br><br>"
+        "<font size='-1' color='#bbb'>"
+        "<b>Grids:</b> density · temperature · flame · velocity · Cd<br>"
+        "· Layer 2 density · PointDataGrid particles (EWA Gaussian splat)<br>"
+        "<b>AOVs:</b> density · emission · shadow · depth · per-light (×4)<br>"
+        "· motion vectors · albedo · normal (denoiser auxiliary)"
+        "</font><br><br>"
+        "<font size='-1' color='#888'>"
+        "Museth (2013) · Henyey/Greenstein (1941) · Preetham+ (1999)<br>"
+        "Schneider &amp; Vos (HZD 2015) · Wrenninge+ (SIGGRAPH 2017)<br>"
+        "Jendersie &amp; d'Eon (SIGGRAPH 2023) · Novak+ (2018)"
+        "</font>");
     EndGroup(f);
+    Text_knob(f,
+        "<font size='-1' color='#666'>"
+        "<b>Created by Marten Blumen</b> · "
+        "github.com/bratgot/VDBmarcher<br>"
+        "OpenVDB 12 · C++20 · Nuke 17"
+        "</font>");
+
+    // ═══════════════════════════════════════════════════
+    //  TAB: Shading
+    // ═══════════════════════════════════════════════════
+    Tab_knob(f,"Shading");
 
     BeginClosedGroup(f,"grp_shading","Shading");
     Text_knob(f,
         "<font size='-1' color='#777'>"
         "Extinction controls opacity. Scattering controls brightness under lighting.<br>"
-        "Phase function and scatter quality are set in the Shading V2 tab."
+        "Phase function and scatter quality are set in the Shading tab."
         "</font>");
     Double_knob(f,&_extinction,"extinction","Extinction");SetRange(f,0,100);
     Tooltip(f,"How quickly light is absorbed per unit density.\n"
@@ -311,49 +371,6 @@ void VDBRenderIop::knobs(Knob_Callback f)
     Tooltip(f,"High density colour for the Custom Gradient render mode.\n"
               "This is the colour at peak density (opaque end).");
     EndGroup(f);
-
-    BeginClosedGroup(f,"grp_info","Technical Reference");
-    Text_knob(f,
-        "<font size='-1' color='#bbb'>"
-        "<b>Radiative Transfer</b> — Beer-Lambert transmittance<br>"
-        "with HDDA empty-space skipping and trilinear<br>"
-        "BoxSampler interpolation."
-        "</font><br><br>"
-        "<font size='-1' color='#bbb'>"
-        "<b>Phase</b> — Dual-lobe Henyey-Greenstein (Shading V2).<br>"
-        "<b>Scatter</b> — Analytical MS approximation (Wrenninge 2015).<br>"
-        "<b>Powder</b> — Interior brightening (Schneider &amp; Vos 2015)."
-        "</font><br><br>"
-        "<font size='-1' color='#bbb'>"
-        "<b>Blackbody</b> — Planckian locus, 1000K red to<br>"
-        "10000K blue-white. <b>Motion Blur</b> — velocity grid<br>"
-        "ray origin offset across shutter interval."
-        "</font><br><br>"
-        "<font size='-1' color='#bbb'>"
-        "<b>Grids:</b> density (float) · temperature (float)<br>"
-        "· flame (float) · vel (vec3) · Cd (vec3)"
-        "</font><br><br>"
-        "<font size='-1' color='#888'>"
-        "Museth (2013) · Henyey/Greenstein (1941)<br>"
-        "· Fong+ (2017) · Novak+ (2018)"
-        "</font>");
-    EndGroup(f);
-
-    Divider(f,"");
-    Text_knob(f,
-        "<font size='-1' color='#666'>"
-        "<b>Created by Marten Blumen</b> · "
-        "github.com/bratgot/VDBmarcher<br>"
-        "OpenVDB 12 · C++20 · Nuke 17"
-        "</font>");
-
-    // ═══════════════════════════════════════════════════
-    //  TAB: Output
-    // ═══════════════════════════════════════════════════
-    // ═══════════════════════════════════════════════════
-    //  TAB: Shading V2
-    // ═══════════════════════════════════════════════════
-    Tab_knob(f,"Shading V2");
 
     Text_knob(f,
         "<font size='-1' color='#777'>"
@@ -469,103 +486,6 @@ void VDBRenderIop::knobs(Knob_Callback f)
                "0.5 = natural. 1 = all octaves equal weight (very rough).");
     EndGroup(f);
 
-    Tab_knob(f,"Output");
-
-    Divider(f,"AOV Passes");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "Enable extra output layers for compositing. Each pass<br>"
-        "appears as a separate layer in the channel viewer.<br>"
-        "Access them with Shuffle or Copy nodes downstream."
-        "</font>");
-    Bool_knob(f,&_aovDensity,"aov_density","Density");
-    Tooltip(f,"Outputs integrated volume density as the vdb_density layer.\n"
-              "Greyscale value written to R, G, B channels.\n"
-              "Equivalent to the beauty alpha — useful for holdout mattes.");
-    Bool_knob(f,&_aovEmission,"aov_emission","Emission");
-    Tooltip(f,"Outputs emission contribution as the vdb_emission layer.\n"
-              "Full colour RGB — the pre-composite beauty before BG layering.\n"
-              "Useful for adjusting fire brightness in comp.");
-    Bool_knob(f,&_aovShadow,"aov_shadow","Shadow");
-    Tooltip(f,"Outputs per-light shadow transmittance as vdb_shadow.\n"
-              "1.0 = fully lit, 0.0 = fully occluded by self-shadow.\n"
-              "Density-weighted average across the primary ray.");
-    Bool_knob(f,&_aovLights,"aov_lights","Per-light");
-    Tooltip(f,"Outputs up to 4 separate light contribution layers.\n"
-              "vdb_light0, vdb_light1, vdb_light2, vdb_light3.\n"
-              "Each layer contains the scatter contribution from that light only.\n"
-              "Lights beyond index 3 are merged into vdb_light3.\n"
-              "Useful for relighting in comp — multiply each layer by a grade.");
-    Bool_knob(f,&_aovDepth,"aov_depth","Depth");
-    Tooltip(f,"Outputs first-hit depth as the vdb_depth layer.\n"
-              "Camera distance to the first significant density sample.\n"
-              "Single channel (red). Useful for depth-of-field or fog cards.");
-    Bool_knob(f,&_aovMotion,"aov_motion","Motion vectors");
-    Tooltip(f,"Outputs screen-space motion vectors as vdb_motion (RG = XY pixels/frame).\n"
-              "Requires a velocity grid to be set in the Grids tab.\n"
-              "Used as input to TAA denoisers and motion-blur nodes in comp.\n"
-              "Vector is the 2D pixel displacement from this frame to the next.");
-    Divider(f,"Denoiser inputs");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "These passes feed OIDN or NLM denoisers as auxiliary buffers.<br>"
-        "Enable alongside beauty and connect to a Denoise node downstream."
-        "</font>");
-    Bool_knob(f,&_aovAlbedo,"aov_albedo","Albedo");
-    Tooltip(f,"Outputs unlit scatter albedo as vdb_albedo (RGB).\n"
-              "Cd grid colour when loaded, otherwise white scaled by density.\n"
-              "OIDN uses this to separate lighting from material colour.");
-    Bool_knob(f,&_aovNormal,"aov_normal","Normal");
-    Tooltip(f,"Outputs density-gradient world normals as vdb_normal (RGB).\n"
-              "Computed as the normalised central-difference density gradient.\n"
-              "OIDN uses this to preserve volume edges during denoising.\n"
-              "Most useful on clouds and dense smoke — noisy in thin volumes.");
-
-    Divider(f,"Deep Output");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "Deep output generates depth-sorted RGBA slabs for compositing<br>"
-        "with CG renders. Connect to DeepMerge for multi-volume or<br>"
-        "volume-over-geometry setups."
-        "</font>");
-    Int_knob(f,&_deepSamples,"deep_samples","Deep Samples");
-    Tooltip(f,"Maximum number of depth slabs per pixel.\n"
-              "16 = fast preview. 64 = smooth gradients.\n"
-              "128 = final quality for deep compositing.");
-
-    Divider(f,"Motion Blur");
-    Text_knob(f,
-        "<font size='-1' color='#777'>"
-        "Velocity-based motion blur. Set the Velocity grid name<br>"
-        "in the VDBRender tab, then enable and configure here."
-        "</font>");
-    Bool_knob(f,&_motionBlur,"motion_blur","Enable");
-    Tooltip(f,"Enable velocity-based motion blur.\n"
-              "Requires a velocity grid (vel/v) to be set in the VDBRender tab.\n"
-              "Offsets the ray origin across the shutter interval.");
-    static const char*shutP[]={"Start (0 to 1)","Centre (-0.5 to 0.5)","End (-1 to 0)","Custom",nullptr};
-    Enumeration_knob(f,&_shutterPreset,shutP,"shutter_preset","Shutter");
-    Tooltip(f,"Quick shutter presets:\n"
-              "Start — blur trails behind the motion direction\n"
-              "Centre — blur centred on the current frame\n"
-              "End — blur leads ahead of the motion direction\n"
-              "Custom — set Open and Close manually below.");
-    Double_knob(f,&_shutterOpen,"shutter_open","Open");SetRange(f,-1,0);
-    Tooltip(f,"Shutter opening time relative to the current frame.\n"
-              "-0.5 = half frame before. -1.0 = one full frame before.\n"
-              "Set by the Shutter preset, or use Custom to edit.");
-    Double_knob(f,&_shutterClose,"shutter_close","Close");SetRange(f,0,1);
-    Tooltip(f,"Shutter closing time relative to the current frame.\n"
-              "0.5 = half frame after. 1.0 = one full frame after.\n"
-              "Set by the Shutter preset, or use Custom to edit.");
-    Int_knob(f,&_motionSamples,"motion_samples","Samples");
-    Tooltip(f,"Number of time samples across the shutter interval.\n"
-              "2 = fast linear blur. 3 = good quality.\n"
-              "5 = very smooth. More = slower render.");
-
-    // ═══════════════════════════════════════════════════
-    //  TAB: Lighting
-    // ═══════════════════════════════════════════════════
     Tab_knob(f,"Lighting");
 
     Text_knob(f,
@@ -928,6 +848,103 @@ void VDBRenderIop::knobs(Knob_Callback f)
               "Rebuilds automatically when lights or VDB change.\n"
               "Turn off for a faster unlit density-coloured preview.");
 
+    Tab_knob(f,"Output");
+
+    Divider(f,"AOV Passes");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Enable extra output layers for compositing. Each pass<br>"
+        "appears as a separate layer in the channel viewer.<br>"
+        "Access them with Shuffle or Copy nodes downstream."
+        "</font>");
+    Bool_knob(f,&_aovDensity,"aov_density","Density");
+    Tooltip(f,"Outputs integrated volume density as the vdb_density layer.\n"
+              "Greyscale value written to R, G, B channels.\n"
+              "Equivalent to the beauty alpha — useful for holdout mattes.");
+    Bool_knob(f,&_aovEmission,"aov_emission","Emission");
+    Tooltip(f,"Outputs emission contribution as the vdb_emission layer.\n"
+              "Full colour RGB — the pre-composite beauty before BG layering.\n"
+              "Useful for adjusting fire brightness in comp.");
+    Bool_knob(f,&_aovShadow,"aov_shadow","Shadow");
+    Tooltip(f,"Outputs per-light shadow transmittance as vdb_shadow.\n"
+              "1.0 = fully lit, 0.0 = fully occluded by self-shadow.\n"
+              "Density-weighted average across the primary ray.");
+    Bool_knob(f,&_aovLights,"aov_lights","Per-light");
+    Tooltip(f,"Outputs up to 4 separate light contribution layers.\n"
+              "vdb_light0, vdb_light1, vdb_light2, vdb_light3.\n"
+              "Each layer contains the scatter contribution from that light only.\n"
+              "Lights beyond index 3 are merged into vdb_light3.\n"
+              "Useful for relighting in comp — multiply each layer by a grade.");
+    Bool_knob(f,&_aovDepth,"aov_depth","Depth");
+    Tooltip(f,"Outputs first-hit depth as the vdb_depth layer.\n"
+              "Camera distance to the first significant density sample.\n"
+              "Single channel (red). Useful for depth-of-field or fog cards.");
+    Bool_knob(f,&_aovMotion,"aov_motion","Motion vectors");
+    Tooltip(f,"Outputs screen-space motion vectors as vdb_motion (RG = XY pixels/frame).\n"
+              "Requires a velocity grid to be set in the Grids tab.\n"
+              "Used as input to TAA denoisers and motion-blur nodes in comp.\n"
+              "Vector is the 2D pixel displacement from this frame to the next.");
+    Divider(f,"Denoiser inputs");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "These passes feed OIDN or NLM denoisers as auxiliary buffers.<br>"
+        "Enable alongside beauty and connect to a Denoise node downstream."
+        "</font>");
+    Bool_knob(f,&_aovAlbedo,"aov_albedo","Albedo");
+    Tooltip(f,"Outputs unlit scatter albedo as vdb_albedo (RGB).\n"
+              "Cd grid colour when loaded, otherwise white scaled by density.\n"
+              "OIDN uses this to separate lighting from material colour.");
+    Bool_knob(f,&_aovNormal,"aov_normal","Normal");
+    Tooltip(f,"Outputs density-gradient world normals as vdb_normal (RGB).\n"
+              "Computed as the normalised central-difference density gradient.\n"
+              "OIDN uses this to preserve volume edges during denoising.\n"
+              "Most useful on clouds and dense smoke — noisy in thin volumes.");
+
+    Divider(f,"Deep Output");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Deep output generates depth-sorted RGBA slabs for compositing<br>"
+        "with CG renders. Connect to DeepMerge for multi-volume or<br>"
+        "volume-over-geometry setups."
+        "</font>");
+    Int_knob(f,&_deepSamples,"deep_samples","Deep Samples");
+    Tooltip(f,"Maximum number of depth slabs per pixel.\n"
+              "16 = fast preview. 64 = smooth gradients.\n"
+              "128 = final quality for deep compositing.");
+
+    Divider(f,"Motion Blur");
+    Text_knob(f,
+        "<font size='-1' color='#777'>"
+        "Velocity-based motion blur. Set the Velocity grid name<br>"
+        "in the VDBRender tab, then enable and configure here."
+        "</font>");
+    Bool_knob(f,&_motionBlur,"motion_blur","Enable");
+    Tooltip(f,"Enable velocity-based motion blur.\n"
+              "Requires a velocity grid (vel/v) to be set in the VDBRender tab.\n"
+              "Offsets the ray origin across the shutter interval.");
+    static const char*shutP[]={"Start (0 to 1)","Centre (-0.5 to 0.5)","End (-1 to 0)","Custom",nullptr};
+    Enumeration_knob(f,&_shutterPreset,shutP,"shutter_preset","Shutter");
+    Tooltip(f,"Quick shutter presets:\n"
+              "Start — blur trails behind the motion direction\n"
+              "Centre — blur centred on the current frame\n"
+              "End — blur leads ahead of the motion direction\n"
+              "Custom — set Open and Close manually below.");
+    Double_knob(f,&_shutterOpen,"shutter_open","Open");SetRange(f,-1,0);
+    Tooltip(f,"Shutter opening time relative to the current frame.\n"
+              "-0.5 = half frame before. -1.0 = one full frame before.\n"
+              "Set by the Shutter preset, or use Custom to edit.");
+    Double_knob(f,&_shutterClose,"shutter_close","Close");SetRange(f,0,1);
+    Tooltip(f,"Shutter closing time relative to the current frame.\n"
+              "0.5 = half frame after. 1.0 = one full frame after.\n"
+              "Set by the Shutter preset, or use Custom to edit.");
+    Int_knob(f,&_motionSamples,"motion_samples","Samples");
+    Tooltip(f,"Number of time samples across the shutter interval.\n"
+              "2 = fast linear blur. 3 = good quality.\n"
+              "5 = very smooth. More = slower render.");
+
+    // ═══════════════════════════════════════════════════
+    //  TAB: Lighting
+    // ═══════════════════════════════════════════════════
 #ifdef VDBRENDER_HAS_NEURAL
     // ═══════════════════════════════════════════════════
     //  TAB: Neural
@@ -1445,13 +1462,21 @@ void VDBRenderIop::discoverGrids() {
         static const char*flmN[]={"flame","flames","fire","fuel","burn","incandescence","emission",nullptr};
         static const char*velN[]={"vel","v","velocity","motion",nullptr};
         static const char*colN[]={"Cd","color","colour","rgb","albedo",nullptr};
+        static const char*ptN[] ={"points","particles","scatter","pts","part",nullptr};
         auto match=[](const std::string&n,const char**l){for(int i=0;l[i];++i)if(n==l[i])return true;return false;};
         struct GI{std::string name,type,cat;};
-        std::vector<GI> grids;std::string bestD,bestT,bestF,bestV,bestC;
+        std::vector<GI> grids;std::string bestD,bestT,bestF,bestV,bestC,bestP;
         for(auto it=file.beginName();it!=file.endName();++it){
             std::string n=it.gridName();auto g=file.readGridMetadata(n);std::string ty=g->valueType();
+            // PointDataGrid has type "ptdataidx32" or similar — check grid class too
+            const bool isPointGrid = (g->getGridClass() == openvdb::GRID_UNKNOWN &&
+                                      (ty.find("ptdata") != std::string::npos ||
+                                       ty.find("uint32") != std::string::npos ||
+                                       n.find("point") != std::string::npos ||
+                                       n.find("particle") != std::string::npos));
             std::string cat="other";
-            if(match(n,denN))cat="density";else if(match(n,tmpN))cat="temperature";
+            if(isPointGrid)cat="points";
+            else if(match(n,denN))cat="density";else if(match(n,tmpN))cat="temperature";
             else if(match(n,flmN))cat="flames";else if(match(n,velN))cat="velocity";
             else if(match(n,colN))cat="colour";
             grids.push_back({n,ty,cat});
@@ -1460,6 +1485,17 @@ void VDBRenderIop::discoverGrids() {
             if(bestF.empty()&&cat=="flames"&&ty=="float")bestF=n;
             if(bestV.empty()&&cat=="velocity"&&(ty=="vec3s"||ty=="vec3f"))bestV=n;
             if(bestC.empty()&&cat=="colour"&&(ty=="vec3s"||ty=="vec3f"))bestC=n;
+            if(bestP.empty()&&cat=="points")bestP=n;
+            // Also pick up point grids not matched by name heuristic above
+            // by trying to cast: expensive but only runs on button click
+            if(bestP.empty()&&cat=="other"){
+                try{
+                    auto fullG=file.readGrid(n);
+                    if(fullG&&fullG->isType<openvdb::points::PointDataGrid>()){
+                        bestP=n; grids.back().cat="points"; grids.back().type="PointDataGrid";
+                    }
+                }catch(...){}
+            }
         }
         file.close();
         if(!bestD.empty())knob("grid_name")->set_text(bestD.c_str());
@@ -1467,6 +1503,7 @@ void VDBRenderIop::discoverGrids() {
         if(!bestF.empty())knob("flame_grid")->set_text(bestF.c_str());
         if(!bestV.empty())knob("vel_grid")->set_text(bestV.c_str());
         if(!bestC.empty())knob("color_grid")->set_text(bestC.c_str());
+        if(!bestP.empty())knob("point_grid")->set_text(bestP.c_str());
         // Auto-set mode
         if(!bestT.empty()||!bestF.empty()){knob("color_scheme")->set_value(6);knob("emission_intensity")->set_value(2.0);}
         std::string msg;
@@ -1477,6 +1514,7 @@ void VDBRenderIop::discoverGrids() {
         if(!bestF.empty())msg+="Flames: "+bestF+"\\n";
         if(!bestV.empty())msg+="Velocity: "+bestV+"\\n";
         if(!bestC.empty())msg+="Colour: "+bestC+"\\n";
+        if(!bestP.empty())msg+="Points: "+bestP+"\\n";
         if(!bestT.empty()||!bestF.empty())msg+="\\nRender mode set to Explosion.";
         script_command(("nuke.message('"+msg+"')").c_str());
         _gridValid=false;_previewPoints.clear();
@@ -1496,6 +1534,8 @@ void VDBRenderIop::append(Hash& hash) {
     hash.append(_densityMix);hash.append(_tempMix);hash.append(_flameMix);
     if(_vdbFilePath2)hash.append(_vdbFilePath2);
     hash.append(_densityMix2);hash.append(_grid2Enable);
+    if(_pointGridName)hash.append(_pointGridName);
+    hash.append(_pointRadius);hash.append(_pointIntensity);hash.append(_pointLit);
     hash.append(_adaptiveStep);hash.append(_proxyMode);hash.append(_useFallbackLight);
     hash.append(_renderRegionEnable);hash.append(_rrX);hash.append(_rrY);hash.append(_rrW);hash.append(_rrH);
     hash.append(_skyPreset);hash.append(_studioPreset);hash.append(_skyMix);hash.append(_studioMix);
@@ -1911,8 +1951,8 @@ void VDBRenderIop::_validate(bool for_real) {
         if(!_gridValid||path2!=_loadedPath||curFrame!=_loadedFrame){
             if(!_neural)_neural=std::make_unique<neural::NeuralDecoder>();
             _neural->unload();_neuralMode=false;
-            _floatGrid.reset();_tempGrid.reset();_flameGrid.reset();_velGrid.reset();_colorGrid.reset();
-            _gridValid=false;_hasTempGrid=false;_hasFlameGrid=false;_hasVelGrid=false;_hasColorGrid=false;_previewPoints.clear();
+            _floatGrid.reset();_tempGrid.reset();_flameGrid.reset();_velGrid.reset();_colorGrid.reset();_pointGrid.reset();
+            _gridValid=false;_hasTempGrid=false;_hasFlameGrid=false;_hasVelGrid=false;_hasColorGrid=false;_hasPointGrid=false;_previewPoints.clear();
 
             std::string cp2=path2;for(auto&c:cp2)if(c=='\\')c='/';
             if(_neural->load(cp2,_neuralUseCuda)){
@@ -1969,8 +2009,8 @@ void VDBRenderIop::_validate(bool for_real) {
 
     // ── Standard OpenVDB path (.vdb files) ──
     if(!_gridValid||path2!=_loadedPath||grid!=_loadedGrid||curFrame!=_loadedFrame){
-        _floatGrid.reset();_tempGrid.reset();_flameGrid.reset();_velGrid.reset();_colorGrid.reset();
-        _gridValid=false;_hasTempGrid=false;_hasFlameGrid=false;_hasVelGrid=false;_hasColorGrid=false;_previewPoints.clear();
+        _floatGrid.reset();_tempGrid.reset();_flameGrid.reset();_velGrid.reset();_colorGrid.reset();_pointGrid.reset();
+        _gridValid=false;_hasTempGrid=false;_hasFlameGrid=false;_hasVelGrid=false;_hasColorGrid=false;_hasPointGrid=false;_previewPoints.clear();
         if(!path2.empty()){try{
             std::string cp2=path2;for(auto&c:cp2)if(c=='\\')c='/';
             openvdb::io::File file(cp2);file.open();
@@ -2010,6 +2050,19 @@ void VDBRenderIop::_validate(bool for_real) {
             if(hasFlame){_flameGrid=openvdb::gridPtrCast<openvdb::FloatGrid>(fbg);_hasFlameGrid=true;}
             if(hasVel){_velGrid=openvdb::gridPtrCast<openvdb::Vec3SGrid>(vbg);_hasVelGrid=true;}
             if(hasColor){_colorGrid=openvdb::gridPtrCast<openvdb::Vec3SGrid>(cbg);_hasColorGrid=true;}
+
+            // ── Point cloud grid (PointDataGrid) ──────────────────────────
+            _hasPointGrid = false;
+            _pointGrid.reset();
+            if (_pointGridName && std::strlen(_pointGridName) > 0) {
+                try {
+                    openvdb::GridBase::Ptr pbg = file.readGrid(_pointGridName);
+                    if (pbg && pbg->isType<openvdb::points::PointDataGrid>()) {
+                        _pointGrid = openvdb::gridPtrCast<openvdb::points::PointDataGrid>(pbg);
+                        _hasPointGrid = (_pointGrid != nullptr);
+                    }
+                } catch(...) {}  // silent — point grid is optional
+            }
             // Compute bbox from whichever grid we have (prefer density, fallback to temp/flame)
             openvdb::FloatGrid::Ptr bboxGrid=_floatGrid?_floatGrid:(_tempGrid?_tempGrid:_flameGrid);
             auto ab=bboxGrid->evalActiveVoxelBoundingBox();if(ab.empty()){error("No active voxels.");return;}
@@ -2497,7 +2550,6 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
         }else{
             rO[ix]=R;gO[ix]=G;bO[ix]=B;aO[ix]=A;
         }
-
         // AOV writes
         if(aovDenR){aovDenR[ix]=A;aovDenG[ix]=A;aovDenB[ix]=A;}
         if(aovEmR){aovEmR[ix]=emAccR;aovEmG[ix]=emAccG;aovEmB[ix]=emAccB;}
@@ -2586,6 +2638,11 @@ void VDBRenderIop::engine(int y,int x,int r,ChannelMask channels,Row&row) {
             }
         }
     }  // end for(int ix=x;ix<r;++ix)
+
+    // Point cloud splat — runs once per scanline over the full x..r range
+    // composites particles over the already-written volume pixels
+    if (_hasPointGrid)
+        renderPoints(y, x, r, ctx, rO, gO, bO, aO);
 }
 
 // ═══ Environment Map ═══
@@ -3739,6 +3796,160 @@ void VDBRenderIop::marchRayExplosion(
 }
 
 // ═══ marchRayDensity — ramp modes (HDDA + trilinear) ═══
+
+// ═══ Point cloud rendering — EWA Gaussian splatting ══════════════════════════
+// Iterates all PointDataGrid leaves whose projected Y range intersects scanline y.
+// Each particle is projected to screen, splatted with a Gaussian kernel scaled
+// by pscale (or _pointRadius as fallback), and composited over with 'over' blending.
+// Lighting: simple N·L (Lambert, no phase) using the same _lights array as volumes.
+
+void VDBRenderIop::renderPoints(
+        int y, int x, int r,
+        const MarchCtx& ctx,
+        float* outR, float* outG, float* outB, float* outA) const
+{
+    if (!_hasPointGrid || !_pointGrid) return;
+    const int W = format().width(), H = format().height();
+    if (W < 1 || H < 1) return;
+
+    // focalLen maps NDC → pixels: px = cx/cz * focalLen * W*0.5 + W*0.5
+    const double focalLen = 1.0 / (2.0 * _halfW);
+    const double halfH    = _halfW * (double)H / (double)W;
+
+    using PosHandle = openvdb::points::AttributeHandle<openvdb::Vec3f>;
+    using FltHandle = openvdb::points::AttributeHandle<float>;
+    using VecHandle = openvdb::points::AttributeHandle<openvdb::Vec3f>;
+    // AttributeHandle::create returns shared_ptr — use shared_ptr throughout
+    using PosPtr = std::shared_ptr<PosHandle>;
+    using FltPtr = std::shared_ptr<FltHandle>;
+    using VecPtr = std::shared_ptr<VecHandle>;
+
+    const auto& ptXf = _pointGrid->transform();
+    const double voxW = ptXf.voxelSize()[0];
+
+    for (auto leafIt = _pointGrid->tree().cbeginLeaf(); leafIt; ++leafIt) {
+        const auto& leaf = *leafIt;
+        // pointCount on the leaf directly via its index range
+        const auto& idxRange = leaf.beginIndexAll();
+        if (!idxRange) continue;  // empty leaf
+
+        // ── Leaf Y-extent cull ──────────────────────────────────────────────
+        // Project all 8 corners of the leaf bbox to screen, find min/max Y.
+        const auto& lb = leaf.getNodeBoundingBox();
+        double yMin =  1e30, yMax = -1e30;
+        for (int iz=0;iz<=1;++iz) for (int iy2=0;iy2<=1;++iy2) for (int ix2=0;ix2<=1;++ix2) {
+            openvdb::Vec3d wp = ptXf.indexToWorld(openvdb::Coord(
+                ix2 ? lb.max().x() : lb.min().x(),
+                iy2 ? lb.max().y() : lb.min().y(),
+                iz  ? lb.max().z() : lb.min().z()));
+            openvdb::Vec3d wrel = wp - _camOrigin;
+            double cz = _camRot[0][2]*wrel[0]+_camRot[1][2]*wrel[1]+_camRot[2][2]*wrel[2];
+            if (cz >= 0) continue;
+            double cy = _camRot[0][1]*wrel[0]+_camRot[1][1]*wrel[1]+_camRot[2][1]*wrel[2];
+            double sy = (-cy / -cz) * focalLen * H * 0.5 + H * 0.5;
+            yMin = std::min(yMin, sy);
+            yMax = std::max(yMax, sy);
+        }
+        // Conservative margin: max radius in pixels assuming 1-unit distance
+        const double maxRPx = _pointRadius * focalLen * H * 0.5 * 500.0;
+        if (yMax + maxRPx < (double)y - 2.0 || yMin - maxRPx > (double)y + 2.0) continue;
+
+        // ── Attribute handles ───────────────────────────────────────────────
+        PosPtr posHandle = PosHandle::create(leaf.attributeArray("P"));
+        const bool hasCd     = leaf.hasAttribute("Cd");
+        const bool hasPscale = leaf.hasAttribute("pscale");
+        VecPtr cdHandle = hasCd     ? VecHandle::create(leaf.attributeArray("Cd"))     : nullptr;
+        FltPtr psHandle = hasPscale ? FltHandle::create(leaf.attributeArray("pscale")) : nullptr;
+
+        // ── Per-particle splat ──────────────────────────────────────────────
+        for (auto idxIt = leaf.beginIndexOn(); idxIt; ++idxIt) {
+            const openvdb::Index idx = *idxIt;
+
+            // World position = voxel centre + local fractional offset * voxelSize
+            const openvdb::Vec3d voxCentre = ptXf.indexToWorld(
+                openvdb::Vec3d(idxIt.getCoord().x(),
+                               idxIt.getCoord().y(),
+                               idxIt.getCoord().z()));
+            const openvdb::Vec3f localOff  = posHandle->get(idx);
+            const openvdb::Vec3d wp = voxCentre + openvdb::Vec3d(localOff) * voxW;
+
+            // World → camera (translate by cam origin, then rotate)
+            const openvdb::Vec3d wrel = wp - _camOrigin;
+            const double cx = _camRot[0][0]*wrel[0]+_camRot[1][0]*wrel[1]+_camRot[2][0]*wrel[2];
+            const double cy = _camRot[0][1]*wrel[0]+_camRot[1][1]*wrel[1]+_camRot[2][1]*wrel[2];
+            const double cz = _camRot[0][2]*wrel[0]+_camRot[1][2]*wrel[1]+_camRot[2][2]*wrel[2];
+            if (cz >= -1e-6) continue;  // behind camera
+            const double invZ = 1.0 / -cz;
+
+            // Screen position (pixels, Y=0 at bottom)
+            const double sx = cx * invZ * focalLen * W * 0.5 + W * 0.5;
+            const double sy = cy * invZ * focalLen * H * 0.5 + H * 0.5;
+
+            // Radius in pixels (perspective correct)
+            const float pscale = hasPscale ? psHandle->get(idx) : (float)_pointRadius;
+            const double rPx   = (double)pscale * invZ * focalLen * H * 0.5;
+            if (rPx < 0.25) continue;   // sub-pixel
+
+            // Scanline cull with margin
+            const double dy2 = (double)y - sy;
+            if (std::abs(dy2) > rPx * 3.0) continue;
+
+            // Particle colour from Cd attribute or white
+            float cr = 1.0f, cg = 1.0f, cb2 = 1.0f;
+            if (hasCd && cdHandle) {
+                const openvdb::Vec3f cd = cdHandle->get(idx);
+                cr = std::max(0.f, cd[0]);
+                cg = std::max(0.f, cd[1]);
+                cb2= std::max(0.f, cd[2]);
+            }
+
+            // Lighting: Lambert N·L against all lights, same list as volumes
+            float litFactor = (float)_ambientIntensity + 0.05f;
+            if (_pointLit && !_lights.empty()) {
+                // Approximate surface normal as vector from bbox centre toward camera
+                const openvdb::Vec3d camDir(
+                    -(_camRot[0][0]*wrel[0]+_camRot[1][0]*wrel[1]+_camRot[2][0]*wrel[2]),
+                    -(_camRot[0][1]*wrel[0]+_camRot[1][1]*wrel[1]+_camRot[2][1]*wrel[2]),
+                    -(_camRot[0][2]*wrel[0]+_camRot[1][2]*wrel[1]+_camRot[2][2]*wrel[2]));
+                const double cnl = camDir.length();
+                const openvdb::Vec3d N = (cnl > 1e-8) ? camDir/cnl : openvdb::Vec3d(0,0,1);
+
+                litFactor = (float)_ambientIntensity;
+                for (const auto& lt : _lights) {
+                    openvdb::Vec3d lD;
+                    if (lt.isPoint) {
+                        lD = openvdb::Vec3d(lt.pos[0]-wp[0], lt.pos[1]-wp[1], lt.pos[2]-wp[2]);
+                        const double ll = lD.length(); if (ll < 1e-8) continue; lD /= ll;
+                    } else {
+                        lD = openvdb::Vec3d(lt.dir[0], lt.dir[1], lt.dir[2]);
+                    }
+                    const double NdotL = std::max(0.0, N.dot(lD));
+                    const double lum   = lt.color[0]*0.2126+lt.color[1]*0.7152+lt.color[2]*0.0722;
+                    litFactor += (float)(NdotL * lum);
+                }
+                litFactor = std::clamp(litFactor, 0.f, 8.f);
+            }
+
+            // EWA Gaussian splat over pixel range x..r-1
+            const double sigma2 = rPx * rPx * 0.5;
+            const int x0 = std::max(x,   (int)(sx - rPx * 3.0));
+            const int x1 = std::min(r-1, (int)(sx + rPx * 3.0));
+            for (int ix2 = x0; ix2 <= x1; ++ix2) {
+                const double dx2   = (double)ix2 - sx;
+                const double dist2 = dx2*dx2 + dy2*dy2;
+                if (dist2 > rPx * rPx * 9.0) continue;
+                const float w      = (float)std::exp(-dist2 / (2.0 * sigma2));
+                const float alpha  = w * std::min(1.f, (float)(rPx * 0.5f));
+                const float remain = 1.0f - outA[ix2];
+                const float lum2   = w * (float)(_pointIntensity) * litFactor;
+                outR[ix2] += lum2 * cr  * remain;
+                outG[ix2] += lum2 * cg  * remain;
+                outB[ix2] += lum2 * cb2 * remain;
+                outA[ix2]  = std::min(1.f, outA[ix2] + alpha * remain);
+            }
+        }
+    }
+}
 
 void VDBRenderIop::marchRayDensity(MarchCtx&ctx,const openvdb::Vec3d&origin,const openvdb::Vec3d&dir,float&outD,float&outA) const {
     outD=0;outA=0;if(!_floatGrid)return;

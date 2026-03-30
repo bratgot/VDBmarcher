@@ -90,7 +90,28 @@ install(TARGETS VDBRender
     DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17"
 )
 install(FILES "${CMAKE_SOURCE_DIR}/VDBRender_menu.py"
-    DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender"
+    DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17"
+)
+
+# Runtime DLLs must live next to VDBRender.dll so Windows finds them at load time
+set(VCPKG_BIN_INSTALL "$ENV{VCPKG_ROOT}/installed/x64-windows/bin")
+if(NOT EXISTS "${VCPKG_BIN_INSTALL}")
+    set(VCPKG_BIN_INSTALL "C:/vcpkg/installed/x64-windows/bin")
+endif()
+
+set(INSTALL_RUNTIME_DLLS
+    "${VCPKG_BIN_INSTALL}/openvdb.dll"
+    "${VCPKG_BIN_INSTALL}/Imath-3_2.dll"
+    "${VCPKG_BIN_INSTALL}/tbb12.dll"
+    "${VCPKG_BIN_INSTALL}/blosc.dll"
+    "${VCPKG_BIN_INSTALL}/zlib1.dll"
+    "${VCPKG_BIN_INSTALL}/zstd.dll"
+    "${VCPKG_BIN_INSTALL}/lz4.dll"
+)
+
+install(FILES ${INSTALL_RUNTIME_DLLS}
+    DESTINATION "$ENV{USERPROFILE}/.nuke/plugins/VDBRender/nuke17"
+    OPTIONAL   # skip silently if a DLL isn't present (e.g. blosc not always built)
 )
 
 # ── Distribution folder ────────────────────────────────────────────────────────
@@ -265,6 +286,11 @@ if(VDBRENDER_NEURAL)
 
     message(STATUS "    Encoder:     nvdb_encode.exe")
 endif()
+
+# ── make_cd_test — standalone VDB generator for Cd scatter albedo testing ──────
+add_executable(make_cd_test make_cd_test.cpp)
+target_link_libraries(make_cd_test PRIVATE OpenVDB::openvdb)
+set_property(TARGET make_cd_test PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
 # ── Status ─────────────────────────────────────────────────────────────────────
 message(STATUS "")

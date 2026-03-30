@@ -10,6 +10,9 @@
 #include <openvdb/tools/Interpolation.h>
 #include <openvdb/tools/RayIntersector.h>
 #include <openvdb/math/Ray.h>
+#include <openvdb/points/PointDataGrid.h>
+#include <openvdb/points/PointAttribute.h>
+#include <openvdb/points/PointCount.h>
 
 #ifdef VDBRENDER_HAS_NEURAL
 #include "NeuralDecoder.h"
@@ -81,6 +84,12 @@ private:
     const char* _gridName2     = "";   // density grid name for layer 2
     double      _densityMix2   = 1.0;  // density mix for layer 2
     bool        _grid2Enable   = false; // enable/disable layer 2
+
+    // ── Point cloud rendering ──
+    const char* _pointGridName  = "";    // PointDataGrid name in VDB file
+    double      _pointRadius    = 0.05;  // world-space default radius
+    double      _pointIntensity = 1.0;   // brightness multiplier
+    bool        _pointLit       = true;  // apply lights to particles
     bool   _autoSequence       = false;
     const char* _origFilePath  = "";
     const char* _gridName      = "density";
@@ -241,7 +250,9 @@ private:
 
     // ── Grid state ──
     openvdb::FloatGrid::Ptr _floatGrid, _tempGrid, _flameGrid;
-    openvdb::FloatGrid::Ptr _floatGrid2;    // second VDB layer density grid
+    openvdb::FloatGrid::Ptr _floatGrid2;
+    openvdb::points::PointDataGrid::Ptr _pointGrid;  // particle point cloud grid
+    bool _hasPointGrid = false;
     bool _grid2Valid = false;
     openvdb::Vec3SGrid::Ptr _velGrid;
     openvdb::Vec3d _bboxMin, _bboxMax;
@@ -528,6 +539,11 @@ private:
 
     void marchRayDensity(MarchCtx& ctx, const openvdb::Vec3d& o, const openvdb::Vec3d& d,
                          float& den, float& alpha) const;
+
+    // ── Point cloud rendering ──
+    void renderPoints(int y, int x, int r,
+                      const MarchCtx& ctx,
+                      float* outR, float* outG, float* outB, float* outA) const;
 
     // [V3] Three-path shadow transmittance: cache lookup / HDDA / uniform march
     static double evalShadowTransmittance(
