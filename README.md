@@ -77,6 +77,12 @@ Created by Marten Blumen
 
 ---
 
+## ☕ Support This Work
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-☕-FFDD00?style=flat&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/bratgot)
+
+---
+
 ## Building from Source
 
 ### Prerequisites
