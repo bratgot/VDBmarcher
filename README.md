@@ -6,6 +6,14 @@ A volume renderer that brings VDB files directly into Nuke's 2D compositing pipe
 
 Created by Marten Blumen
 
+> **This fork adds Linux support** — see [LINUX_BUILD.md](LINUX_BUILD.md).
+> The original project lives at
+> **[github.com/bratgot/VDBmarcher](https://github.com/bratgot/VDBmarcher)** —
+> all plugin source is unmodified upstream code by Marten Blumen; if you find
+> VDBRender useful, support the original author (see below).
+> Linux port by [Soup Kitchen Films](https://github.com/soupkitchenfilms),
+> developed with the assistance of Claude (Anthropic).
+
 ---
 
 ## Features
@@ -72,8 +80,8 @@ Created by Marten Blumen
 ## Requirements
 
 - **Nuke 17.0v1** or later
-- **Windows x64**
-- **OpenVDB** (via vcpkg)
+- **Windows x64** (upstream) or **Linux x64** (this fork — RHEL 9 family verified, see [LINUX_BUILD.md](LINUX_BUILD.md))
+- **OpenVDB** (via vcpkg on Windows; Nuke's bundled OpenVDB on Linux)
 
 ---
 
@@ -92,11 +100,17 @@ Created by Marten Blumen
 vcpkg install openvdb:x64-windows
 ```
 
-### Build
+### Build (Windows)
 
 ```powershell
 cmake -B build -DNUKE_ROOT="C:/Program Files/Nuke17.0v1" -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake --build build --config Release
+```
+
+### Build (Linux)
+
+```bash
+./build_linux.sh   # see LINUX_BUILD.md
 ```
 
 ### Package for Distribution

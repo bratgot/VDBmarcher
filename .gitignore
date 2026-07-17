@@ -30,3 +30,7 @@ build/
 build_neural/ 
 *.tar.gz 
 files.zip 
+
+# Linux build
+build_linux_nuke*/
+.deps/
