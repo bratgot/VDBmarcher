@@ -11,6 +11,12 @@ with the assistance of Claude (Anthropic).
 the node loads with all knobs (`nuke -t` smoke test). Originally ported and
 in production since Nuke 17.0v1 on Rocky Linux 9.
 
+> **Note from the maintainer:** Linux support is community-contributed and
+> community-maintained. I develop and test on Windows only, so I
+> can't personally verify Linux builds or debug Linux-specific issues.
+> Please file issues, but expect fixes to come from the community rather
+> than from me directly.
+
 ---
 
 ## Quick start

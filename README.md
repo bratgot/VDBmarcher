@@ -6,7 +6,8 @@ A volume renderer that brings VDB files directly into Nuke's 2D compositing pipe
 
 Created by Marten Blumen
 
-> **This fork adds Linux support** — see [LINUX_BUILD.md](LINUX_BUILD.md).
+> **Linux build available** (community-contributed, unverified by the
+> maintainer) — see [LINUX_BUILD.md](LINUX_BUILD.md).
 > The original project lives at
 > **[github.com/bratgot/VDBmarcher](https://github.com/bratgot/VDBmarcher)** —
 > all plugin source is unmodified upstream code by Marten Blumen; if you find
